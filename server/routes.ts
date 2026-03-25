@@ -16,7 +16,9 @@ import { comparisonService } from "./services/comparisonService";
 import { insertPlayerSchema, insertComparisonSchema } from "@shared/schema";
 import { z } from "zod";
 import { espnImageService } from "./services/espnImageService";
+import { espnScoreService } from "./services/espnScoreService";
 import { registerN8nWebhooks } from "./n8nWebhooks";
+import { memoryTeamOfTheWeek } from "./services/automationWorkflows";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register n8n Webhooks
@@ -24,6 +26,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize ESPN Image Service
   espnImageService.init().catch(err => console.error("ESPN init error:", err));
+
+  // ── Live Matches via ESPN ───────────────────────────────────────────
+  app.get("/api/live/matches", async (req, res) => {
+    try {
+      const matches = await espnScoreService.getTodayMatches();
+      return res.json({ success: true, matches });
+    } catch (error) {
+      console.error("Live matches error:", error);
+      res.status(500).json({ error: "Failed to fetch live matches" });
+    }
+  });
 
   // Search players endpoint
   app.get("/api/players/search", async (req, res) => {
@@ -397,16 +410,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Live Top Players (Saison 2026)
+  // Get Live Top Players (Saison 2026) - Team of the Week (11 players)
   app.get("/api/live/top-players", async (req, res) => {
-    const players = [
-      { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 15, Ast: 18, Pos: "FW", rating: 8.95 },
-      { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 28, Ast: 10, Pos: "FW", rating: 8.75 },
-      { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 21, Ast: 14, Pos: "FW", rating: 8.82 },
-      { Player: "Erling Haaland", Squad: "Man City", Gls: 34, Ast: 4, Pos: "FW", rating: 8.54 },
-      { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 16, Ast: 13, Pos: "MF", rating: 8.68 }
-    ];
-    res.json({ success: true, players });
+    res.json({ success: true, players: memoryTeamOfTheWeek || [] });
+  });
+
+  // Debug Route to trigger TOTW
+  app.get("/api/dev/trigger-totw", async (req, res) => {
+    try {
+      const { automationWorkflows } = await import("./services/automationWorkflows");
+      await (automationWorkflows as any).workflowTeamOfTheWeek();
+      res.json({ success: true, message: "TOTW triggered with SofaScore" });
+    } catch (err) {
+      res.status(500).json({ success: false, error: (err as any).message });
+    }
   });
 
   // Get player by ID
@@ -1960,8 +1977,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ----------------------------------------------------------------------
   app.get("/api/live-matches", async (req, res) => {
     try {
-      const matches = await getLiveMatches();
-      res.json(matches);
+      const matches = await espnScoreService.getTodayMatches();
+      // Format for the MatchCard widget
+      const formatted = matches.map((m: any) => ({
+        id: m.id,
+        homeTeam: { name: m.homeTeam.name, logo: m.homeTeam.logo },
+        awayTeam: { name: m.awayTeam.name, logo: m.awayTeam.logo },
+        score: { 
+          home: m.homeTeam.score !== undefined ? parseInt(m.homeTeam.score) : null, 
+          away: m.awayTeam.score !== undefined ? parseInt(m.awayTeam.score) : null 
+        },
+        status: m.status.type.state === 'in' ? 'LIVE' : (m.status.type.completed ? 'FINISHED' : 'SCHEDULED'),
+        minute: m.status.displayClock ? parseInt(m.status.displayClock) : null,
+        startTime: m.date
+      }));
+      res.json(formatted);
     } catch (error) {
       console.error("Erreur lors de la récupération des live matches:", error);
       res.status(500).json({ error: "Unable to fetch live matches" });

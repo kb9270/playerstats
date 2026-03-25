@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, BarChart3, Users, Trophy } from "lucide-react";
+import { Search, BarChart3, Users, Trophy, Activity } from "lucide-react";
 
 export default function Header() {
   const [location] = useLocation();
@@ -9,6 +9,7 @@ export default function Header() {
     { path: "/", label: "Joueurs", icon: Users, active: location === "/" },
     { path: "/teams", label: "Équipes", icon: Trophy, active: location.startsWith("/teams") },
     { path: "/leagues", label: "Ligues", icon: Trophy, active: location.startsWith("/leagues") },
+    { path: "/matches-live", label: "Direct", icon: Activity, active: location.startsWith("/matches-live") },
   ];
 
   return (

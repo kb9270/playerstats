@@ -5,12 +5,27 @@ import { players, playerStats, news, ballonDorRankings } from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
 import { exec } from 'child_process';
 import util from 'util';
+import axios from 'axios';
+import { sofaScoreService } from './sofaScoreService';
 
 const execAsync = util.promisify(exec);
 const rssParser = new Parser();
 
 export const memoryNews: any[] = [];
 export const memoryBallonDor: any[] = [];
+export const memoryTeamOfTheWeek: any[] = [
+  { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 15, Ast: 18, Pos: "FW", rating: 8.95 },
+  { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 28, Ast: 10, Pos: "FW", rating: 8.75 },
+  { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 21, Ast: 14, Pos: "FW", rating: 8.82 },
+  { Player: "Erling Haaland", Squad: "Man City", Gls: 34, Ast: 4, Pos: "FW", rating: 8.54 },
+  { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 16, Ast: 13, Pos: "MF", rating: 8.68 },
+  { Player: "Florian Wirtz", Squad: "Bayer Leverkusen", Gls: 12, Ast: 21, Pos: "MF", rating: 8.41 },
+  { Player: "Rodri", Squad: "Man City", Gls: 8, Ast: 10, Pos: "MF", rating: 8.92 },
+  { Player: "William Saliba", Squad: "Arsenal", Gls: 2, Ast: 1, Pos: "DF", rating: 8.45 },
+  { Player: "Pau Cubarsí", Squad: "FC Barcelone", Gls: 1, Ast: 2, Pos: "DF", rating: 8.35 },
+  { Player: "Nico Schlotterbeck", Squad: "Dortmund", Gls: 3, Ast: 1, Pos: "DF", rating: 8.25 },
+  { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90 }
+];
 
 export class AutomationWorkflows {
   
@@ -21,9 +36,8 @@ export class AutomationWorkflows {
   public startScheduledJobs() {
     console.log("🟢 [WORKFLOWS] Initialisation des automatisations internes...");
 
-    // a) Workflow Scraping Statistiques (Hebdomadaire, Lundi à 4h00)
-    // 0 4 * * 1 (tous les lundis à 04:00)
-    cron.schedule('0 4 * * 1', async () => {
+    // a) Workflow Matchs & Stats (Quotidien, 3h00)
+    cron.schedule('0 3 * * *', async () => {
       console.log("⏰ [CRON] Exécution du Workflow Scraping Statistiques...");
       await this.workflowScrapingStats();
     });
@@ -40,6 +54,12 @@ export class AutomationWorkflows {
       await this.workflowBallonDorLadder();
     });
 
+    // d) Workflow Team of the Week (Hebdomadaire, Dimanche à 23h59)
+    cron.schedule('59 23 * * 0', async () => {
+      console.log("⏰ [CRON] Exécution du Workflow Team of the Week...");
+      await this.workflowTeamOfTheWeek();
+    });
+
     // Exécution immédiate au démarrage (pour voir si ça marche en test)
     this.testAllWorkflows();
   }
@@ -49,13 +69,79 @@ export class AutomationWorkflows {
    */
   public async testAllWorkflows() {
     console.log("🧪 Lancement manuel des Workflows...");
+    await this.workflowTeamOfTheWeek();
     await this.workflowVeilleActualites();
     await this.workflowBallonDorLadder();
   }
 
   /**
+   * Workflow D : Team of the Week (11 joueurs)
+   * On utilise désormais l'API SofaScore pour les notes précises
+   */
+  private async workflowTeamOfTheWeek() {
+    try {
+      console.log("⚽ [SofaScore] Génération du 11 de la semaine (Notes live)...");
+      
+      const allTopPlayers = await sofaScoreService.fetchCollectiveTeamOfTheWeek();
+      
+      if (!allTopPlayers || allTopPlayers.length < 5) {
+        console.warn("⚠️ [SofaScore] Données insuffisantes, vérifiez la source.");
+      }
+
+      // 4-3-3 Formation logic
+      // SofaScore positions: 'F' (Forward), 'M' (Midfield), 'D' (Defender), 'G' (Goalkeeper)
+      const fws = allTopPlayers.filter(p => p.Pos?.includes('F') || p.Pos?.includes('W') || p.Pos === 'S').slice(0, 3);
+      const mfs = allTopPlayers.filter(p => !fws.includes(p) && (p.Pos?.includes('M') || p.Pos?.includes('C'))).slice(0, 3);
+      const dfs = allTopPlayers.filter(p => !fws.includes(p) && !mfs.includes(p) && (p.Pos?.includes('D') || p.Pos?.includes('B'))).slice(0, 4);
+      const gks = allTopPlayers.filter(p => !fws.includes(p) && !mfs.includes(p) && !dfs.includes(p) && (p.Pos?.includes('G'))).slice(0, 1);
+
+      let team = [...fws, ...mfs, ...dfs, ...gks];
+      
+      const fallbacks = [
+        { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 15, Ast: 18, Pos: "FW", rating: 8.95, displayRating: 8.9 },
+        { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 28, Ast: 10, Pos: "FW", rating: 8.75, displayRating: 8.7 },
+        { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 21, Ast: 14, Pos: "FW", rating: 8.82, displayRating: 8.8 },
+        { Player: "Erling Haaland", Squad: "Man City", Gls: 34, Ast: 4, Pos: "FW", rating: 8.54, displayRating: 8.5 },
+        { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 16, Ast: 13, Pos: "MF", rating: 8.68, displayRating: 8.6 },
+        { Player: "William Saliba", Squad: "Arsenal", Gls: 2, Ast: 1, Pos: "DF", rating: 8.45, displayRating: 8.4 },
+        { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9 }
+      ];
+
+      // Fill missing positions up to 11
+      const usedNames = new Set(team.map(p => p.Player));
+      
+      // First try to fill with OTHER players from the fetched list
+      if (team.length < 11) {
+        const remainingFetched = allTopPlayers.filter(p => !usedNames.has(p.Player));
+        while (team.length < 11 && remainingFetched.length > 0) {
+           const p = remainingFetched.shift()!;
+           team.push(p);
+           usedNames.add(p.Player);
+        }
+      }
+
+      // If still not 11, use hardcoded fallbacks
+      if (team.length < 11) {
+        for (const fb of fallbacks) {
+          if (team.length >= 11) break;
+          if (!usedNames.has(fb.Player)) {
+            team.push(fb);
+            usedNames.add(fb.Player);
+          }
+        }
+      }
+
+      memoryTeamOfTheWeek.length = 0;
+      memoryTeamOfTheWeek.push(...team.slice(0, 11));
+
+      console.log(`✅ [SofaScore] Nouveau 11 Prestige généré (${memoryTeamOfTheWeek.length} joueurs).`);
+    } catch (error) {
+       console.error("❌ [TOTW] Erreur construction TOTW Prestige:", error);
+    }
+  }
+
+  /**
    * Workflow A: Scraping Statistiques
-   * 1. Identifier source, 2. API ou scraper, 3. Nettoyer, 4. Insertion DB, 5. Gestion erreurs
    */
   private async workflowScrapingStats() {
     try {
@@ -109,12 +195,14 @@ export class AutomationWorkflows {
 
             if (db) {
                // Vérification des doublons par URL
-               const exists = await db.query.news.findFirst({
-                 where: eq(news.url, item.link || "")
-               });
-               if (!exists) {
-                 await db.insert(news).values(newsItem as any);
-                 nouvellesAjoutees++;
+               try {
+                 const results = await db.select().from(news).where(eq(news.url, item.link || "")).limit(1);
+                 if (results.length === 0) {
+                   await db.insert(news).values(newsItem as any);
+                   nouvellesAjoutees++;
+                 }
+               } catch (err) {
+                 console.error("Error inserting news into DB:", err);
                }
             } else {
                // In memory fallback

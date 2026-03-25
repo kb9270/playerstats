@@ -6,6 +6,7 @@ interface PlayerAvatarProps {
   teamName?: string;
   headshot?: string | null;
   logo?: string | null;
+  sofaId?: number | null;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
   showTeamBadge?: boolean;
@@ -88,12 +89,18 @@ export default function PlayerAvatar({
   teamName,
   headshot: providedHeadshot,
   logo,
+  sofaId,
   size = "md",
   className = "",
   showTeamBadge = false,
 }: PlayerAvatarProps) {
   const s = SIZE_MAP[size];
-  const { headshot } = useLazyHeadshot(playerName, teamName, providedHeadshot);
+  
+  // If we have sofaId, we use it directly for the image
+  const sofaUrl = sofaId ? `https://www.sofascore.com/api/v1/player/${sofaId}/image` : null;
+  const { headshot: lazyHeadshot } = useLazyHeadshot(playerName, teamName, providedHeadshot || sofaUrl);
+  
+  const headshot = sofaUrl || lazyHeadshot;
 
   const initials = playerName
     .split(" ")

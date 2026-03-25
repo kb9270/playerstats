@@ -7,7 +7,7 @@ import RankingWidget from "@/components/widgets/RankingWidget";
 import MatchSearchWidget from "@/components/widgets/MatchSearchWidget";
 import LiveMatchesWidget from "@/components/widgets/LiveMatchesWidget";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, Database, Shield, Zap, Search } from "lucide-react";
+import { ChevronRight, Database, Shield, Zap } from "lucide-react";
 import { Link } from "wouter";
 import heroImage from "@assets/football_hero.png";
 
@@ -74,10 +74,10 @@ export default function Home() {
       {/* Widget Section */}
       <section className="relative z-20 -mt-24 pb-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Column 1 */}
-            <div className="space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-              <NewsWidget />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Column 1: L'EQUIPE DE LA SEMAINE */}
+            <div className="lg:col-span-1 space-y-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+              <TeamOfTheWeekWidget />
               <div className="p-8 bg-stats-accent/10 border border-stats-accent/30 rounded-3xl relative overflow-hidden flex flex-col items-start gap-4">
                  <div className="absolute top-0 right-0 w-48 h-48 bg-stats-accent/20 blur-3xl -translate-y-12 translate-x-12" />
                  <Shield className="w-12 h-14 text-stats-accent mb-2" />
@@ -92,35 +92,16 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Column 2 */}
+            {/* Column 2: LIVE MATCHES */}
             <div className="lg:col-span-1 space-y-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              <TeamOfTheWeekWidget />
+              <LiveMatchesWidget />
               <MatchSearchWidget />
             </div>
             
-            {/* Column 3 */}
-            <div className="space-y-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+            {/* Column 3: ACTUALITÉS & CLASSEMENTS */}
+            <div className="lg:col-span-1 space-y-8 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <NewsWidget />
               <RankingWidget />
-              
-              {/* Promo Card */}
-              <div className="stats-card p-10 relative overflow-hidden min-h-[400px] flex flex-col justify-end">
-                <div className="absolute top-0 left-0 w-full h-full scale-110 opacity-30 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&auto=format&fit=crop&q=80)' }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-stats-dark via-stats-dark/60 text-stats-dark/20 to-transparent" />
-                <div className="relative z-10 flex flex-col items-start gap-4">
-                   <div className="w-16 h-16 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl flex items-center justify-center shadow-xl">
-                      <Zap className="w-8 h-8 text-stats-yellow fill-stats-yellow" />
-                   </div>
-                   <h3 className="text-4xl font-black text-white uppercase italic tracking-tighter leading-none">Scouting <br /> AI Engine</h3>
-                   <p className="text-gray-200 text-base font-medium opacity-90 drop-shadow-lg">
-                      L'intelligence artificielle au service du recrutement professionnel.
-                   </p>
-                   <Link href="/analyzer" className="mt-4 w-full">
-                      <Button className="bg-white text-stats-dark hover:bg-gray-200 w-full h-14 font-black uppercase italic shadow-2xl">
-                        Démarrer l'Analyse
-                      </Button>
-                   </Link>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -131,7 +112,6 @@ export default function Home() {
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-[0.4em] mb-12 italic">Data Powering Professional Scouting</h2>
             <div className="flex flex-wrap items-center justify-center gap-12 md:gap-24 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
-               {/* Just simple logos/text as placeholders for premium feel */}
                <span className="text-3xl font-black text-white italic tracking-tighter">FBREF</span>
                <span className="text-3xl font-black text-white italic tracking-tighter">OPTA</span>
                <span className="text-3xl font-black text-white italic tracking-tighter">TRANSFERMARKT</span>
