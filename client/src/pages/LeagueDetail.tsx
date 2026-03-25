@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, ChevronDown, ChevronUp, Search, Trophy, Users, Target, TrendingUp } from "lucide-react";
+import { TeamLogo } from "@/components/PlayerAvatar";
+import PlayerAvatar from "@/components/PlayerAvatar";
 
 const LEAGUE_META: Record<string, { flag: string; country: string; color: string }> = {
   "eng Premier League": { flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", country: "Angleterre", color: "#3b82f6" },
@@ -194,14 +196,8 @@ export default function LeagueDetail() {
                             <td className="px-3 py-3 text-gray-500 font-mono text-xs text-center">{row.rank}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                {row.logo ? (
-                                  <img src={row.logo} alt={row.abbr} className="w-6 h-6 object-contain" />
-                                ) : (
-                                  <div className="w-6 h-6 rounded bg-gray-700 flex items-center justify-center text-xs font-bold">
-                                    {(row.abbr || row.team).substring(0, 2)}
-                                  </div>
-                                )}
-                                <span className="font-semibold text-white">{row.team}</span>
+                                <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
+                                <span className="font-semibold text-white whitespace-nowrap">{row.team}</span>
                               </div>
                             </td>
                             <td className="px-3 py-3 text-right text-gray-400">{row.played}</td>
@@ -293,8 +289,22 @@ export default function LeagueDetail() {
                               onClick={() => setLocation("/joueur/" + encodeURIComponent(p.Player))}
                               className="border-b border-gray-900/80 hover:bg-gray-900/50 cursor-pointer transition-colors">
                               <td className="px-3 py-2.5 text-gray-600 text-xs">{rank}</td>
-                              <td className="px-3 py-2.5 font-semibold text-white whitespace-nowrap">{p.Player}</td>
-                              <td className="px-3 py-2.5 text-gray-400 whitespace-nowrap">{p.Squad}</td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <PlayerAvatar
+                                    playerName={p.Player}
+                                    teamName={p.Squad}
+                                    headshot={p.headshot}
+                                  />
+                                  <span className="font-semibold text-white">{p.Player}</span>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2.5 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <TeamLogo logo={p.logo} teamName={p.Squad} size="sm" />
+                                  <span className="text-gray-400">{p.Squad}</span>
+                                </div>
+                              </td>
                               <td className="px-3 py-2.5 text-center">
                                 <span className={"text-xs font-bold px-1.5 py-0.5 rounded " + (POS_COLOR[basePos] || POS_COLOR.MF)}>{p.Pos}</span>
                               </td>
@@ -356,9 +366,7 @@ export default function LeagueDetail() {
                           className="border-b border-gray-900/80 hover:bg-gray-900/50 cursor-pointer transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-xs font-bold shrink-0">
-                                {team.name.substring(0, 2).toUpperCase()}
-                              </div>
+                              <TeamLogo logo={team.logo} teamName={team.name} size="sm" />
                               <span className="font-semibold text-white">{team.name}</span>
                             </div>
                           </td>

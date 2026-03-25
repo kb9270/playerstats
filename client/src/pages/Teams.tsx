@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Search, Users, ArrowLeft } from "lucide-react";
+import PlayerAvatar, { TeamLogo } from "@/components/PlayerAvatar";
 
 const LEAGUE_FLAGS: Record<string, string> = {
   "eng Premier League": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
@@ -63,9 +64,7 @@ function TeamDetail({ teamName }: { teamName: string }) {
         {/* Hero */}
         <div className="bg-gray-900/40 border border-gray-800 rounded-3xl p-8">
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-3xl font-black shadow-2xl">
-              {teamName.substring(0, 2).toUpperCase()}
-            </div>
+            <TeamLogo logo={players[0]?.logo} teamName={teamName} size="lg" className="w-20 h-20" />
             <div>
               <h1 className="text-4xl font-black">{teamName}</h1>
               {league && <div className="text-gray-400 mt-1">{getFlag(league)} {getShortLeague(league)}</div>}
@@ -106,9 +105,14 @@ function TeamDetail({ teamName }: { teamName: string }) {
                         onClick={() => setLocation(`/joueur/${encodeURIComponent(p.Player)}`)}
                         className="bg-gray-900/60 hover:bg-gray-800 border border-gray-800 hover:border-blue-500/50 rounded-xl p-4 flex items-center gap-4 text-left transition-all group"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-sm font-bold shrink-0">
-                          {p.Player.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                        </div>
+                        <PlayerAvatar
+                          playerName={p.Player}
+                          teamName={p.Squad}
+                          headshot={p.headshot}
+                          logo={p.logo}
+                          size="md"
+                          showTeamBadge={false}
+                        />
                         <div className="flex-1 min-w-0">
                           <div className="font-bold text-white group-hover:text-blue-400 transition-colors truncate">{p.Player}</div>
                           <div className="text-xs text-gray-500">{p.Nation} • {p.Age} ans</div>
@@ -219,9 +223,7 @@ function TeamsList() {
                   className="bg-gray-900/60 hover:bg-gray-800 border border-gray-800 hover:border-blue-500/50 rounded-2xl p-5 text-left transition-all group"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-lg font-black shrink-0">
-                      {team.name.substring(0, 2).toUpperCase()}
-                    </div>
+                    <TeamLogo logo={team.logo} teamName={team.name} size="md" />
                     <div className="min-w-0">
                       <div className="font-bold text-white group-hover:text-blue-400 transition-colors truncate">{team.name}</div>
                       <div className="text-xs text-gray-500">{getFlag(team.league)} {getShortLeague(team.league)}</div>

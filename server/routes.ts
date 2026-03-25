@@ -62,7 +62,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Merge results avoiding exact duplicates by name
       localPlayers.forEach(p => {
         if (!players.find((m: any) => m.name?.toLowerCase() === p.name?.toLowerCase())) {
-          players.push(p);
+          players.push({
+            ...p,
+            logo: espnImageService.getTeamLogo(p.team || ''),
+            headshot: null,
+          });
         }
       });
 
@@ -1961,6 +1965,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erreur lors de la récupération des live matches:", error);
       res.status(500).json({ error: "Unable to fetch live matches" });
+    }
+  });
+
+  // ── Lazy image API (headshot + logo) – called by PlayerAvatar component ──
+  // Fast: logos are instant from cache; headshots fetched on demand (cached after first call)
+  app.get("/api/player-image", async (req, res) => {
+    try {
+      const player = (req.query.player as string || "").trim();
+      const team   = (req.query.team   as string || "").trim();
+      if (!player) return res.json({ headshot: null, logo: null });
+
+      const logo = espnImageService.getTeamLogo(team) || null;
+
+      // Try cache first (no HTTP round-trip)
+      const cached = espnImageService.getCachedPlayerHeadshot(player, team);
+      if (cached) {
+        return res.json({ headshot: cached, logo });
+      }
+
+      // Fetch from ESPN (one HTTP call, cached afterward)
+      const headshot = await espnImageService.getPlayerHeadshot(player, team);
+      return res.json({ headshot: headshot || null, logo });
+    } catch {
+      return res.json({ headshot: null, logo: null });
     }
   });
 

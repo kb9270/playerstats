@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, User, Target, BarChart3, Shield, Zap, TrendingUp, Award, Clock, Flag } from "lucide-react";
+import { ArrowLeft, Target, BarChart3, Shield, Zap, TrendingUp, Award, Clock, Flag } from "lucide-react";
 import { useLocation } from "wouter";
+import PlayerAvatar, { TeamLogo } from "@/components/PlayerAvatar";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmt = (v: any, dec = 1) => (v == null || v === "" || isNaN(Number(v))) ? "—" : Number(v).toFixed(dec);
@@ -159,10 +160,16 @@ export default function PlayerDetailedProfile() {
         <div className="flex flex-col md:flex-row items-start gap-8 bg-gray-900/40 rounded-3xl p-8 border border-gray-800">
           {/* Avatar */}
           <div className="relative">
-            <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-4xl font-black shadow-2xl shadow-blue-900/50">
-              {initials}
-            </div>
-            <div className="absolute -bottom-2 -right-2 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs font-bold text-blue-400">
+            <PlayerAvatar
+              playerName={p.Player}
+              teamName={p.Squad}
+              headshot={p.headshot}
+              logo={p.logo}
+              size="xl"
+              showTeamBadge={true}
+            />
+            <div className="absolute -bottom-2 -right-2 bg-gray-950 border border-gray-700 rounded-lg px-2 py-1 text-xs font-bold text-blue-400 flex items-center gap-1">
+              {p.logo && <TeamLogo logo={p.logo} teamName={p.Squad} size="sm" className="w-3 h-3" />}
               {positionLabel}
             </div>
           </div>
@@ -173,7 +180,10 @@ export default function PlayerDetailedProfile() {
             <div className="flex flex-wrap items-center gap-3 text-gray-400 mb-4">
               <span className="flex items-center gap-1">{flag} {p.Comp}</span>
               <span className="text-gray-600">•</span>
-              <span className="text-blue-400 font-semibold">{p.Squad}</span>
+              <span className="flex items-center gap-2 text-blue-400 font-semibold">
+                {p.logo && <TeamLogo logo={p.logo} teamName={p.Squad} size="sm" className="w-5 h-5" />}
+                {p.Squad}
+              </span>
               {age > 0 && <><span className="text-gray-600">•</span><span>{age} ans</span></>}
               {p.Nation && <><span className="text-gray-600">•</span><span><Flag className="w-4 h-4 inline mr-1" />{p.Nation}</span></>}
             </div>
@@ -341,19 +351,28 @@ export default function PlayerDetailedProfile() {
         {/* ── Similar Players ── */}
         {similar.length > 0 && (
           <div className="bg-gray-900/40 border border-gray-800 rounded-2xl p-6">
-            <SectionTitle><User className="w-5 h-5 text-pink-400" /> Joueurs similaires ({positionLabel})</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              {similar.map((s: any) => (
+            <SectionTitle>👥 Joueurs similaires ({positionLabel})</SectionTitle>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {similar.slice(0, 10).map((s: any) => (
                 <button
                   key={s.Player}
                   onClick={() => setLocation(`/joueur/${encodeURIComponent(s.Player)}`)}
                   className="bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 hover:border-blue-500/50 rounded-xl p-3 text-left transition-all group"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center text-xs font-bold mb-2">
-                    {s.Player.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
+                  <PlayerAvatar
+                    playerName={s.Player}
+                    teamName={s.Squad}
+                    headshot={s.headshot}
+                    logo={s.logo}
+                    size="lg"
+                    showTeamBadge={true}
+                    className="mb-2"
+                  />
                   <div className="text-sm font-bold text-white group-hover:text-blue-400 truncate">{s.Player}</div>
-                  <div className="text-xs text-gray-500 truncate">{s.Squad}</div>
+                  <div className="text-xs text-gray-500 truncate flex items-center gap-1">
+                    {s.logo && <TeamLogo logo={s.logo} teamName={s.Squad} size="sm" className="w-3 h-3" />}
+                    {s.Squad}
+                  </div>
                   <div className="text-xs text-gray-400 mt-1">
                     {fmtInt(s.Gls)}⚽ {fmtInt(s.Ast)}🅰️
                   </div>
