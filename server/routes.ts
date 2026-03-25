@@ -27,50 +27,248 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const q = req.query.q as string;
 
-      if (!q || typeof q !== 'string') {
-        return res.status(400).json({ error: "Search query is required" });
+      if (!q || typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
       }
 
-      // First try CSV for instant 2026 data (fastest)
-      console.log(`[Search] Query: "${q}"`);
-      const csvResult = await csvPlayerAnalyzer.searchPlayer(q);
-      console.log(`[Search] CSV Result found: ${csvResult?.found}, count: ${csvResult?.player?.length || 0}`);
-      
-      let players: any[] = [];
-      
-      if (csvResult && csvResult.found && Array.isArray(csvResult.player)) {
-        // Convert Python response format to array expected by UI
-        csvResult.player.forEach((player: any) => {
-          players.push({
-            id: player.Rk || Math.random(),
-            name: player.Player,
-            team: player.Squad,
-            position: player.Pos,
-            nationality: player.Nation,
-            age: player.Age,
-            league: player.Comp,
-            fbrefId: player.Rk ? `csv-${player.Rk}` : undefined
-          });
-        });
-      }
+      const query = q.trim();
+      console.log(`[Search] Query: "${query}"`);
+
+      // Use csvDirectAnalyzer - reads CSV directly in TypeScript (instant, no Python)
+      const csvPlayers = await csvDirectAnalyzer.searchPlayers(query);
+      console.log(`[Search] CSV Direct found: ${csvPlayers.length}`);
+
+      // Map to the format expected by the frontend
+      const players = csvPlayers.map((player: any) => ({
+        id: player.Rk || Math.random(),
+        name: player.Player,
+        team: player.Squad,
+        position: player.Pos,
+        nationality: player.Nation,
+        age: player.Age,
+        league: player.Comp,
+        fbrefId: player.Rk ? `csv-${player.Rk}` : undefined
+      }));
 
       // Also search local storage (DB) to merge results
-      const localPlayers = await storage.searchPlayers(q);
+      const localPlayers = await storage.searchPlayers(query);
       console.log(`[Search] Local DB count: ${localPlayers?.length || 0}`);
-      
+
       // Merge results avoiding exact duplicates by name
-      const merged = [...players];
       localPlayers.forEach(p => {
-        if (!merged.find(m => m.name.toLowerCase() === p.name.toLowerCase())) {
-          merged.push(p);
+        if (!players.find((m: any) => m.name?.toLowerCase() === p.name?.toLowerCase())) {
+          players.push(p);
         }
       });
-      console.log(`[Search] Returning ${merged.length} total results`);
 
-      return res.json(merged);
+      console.log(`[Search] Returning ${players.length} total results`);
+      return res.json(players);
 
     } catch (error) {
       console.error('Search error:', error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get full player data by name from CSV (used by player profile page)
+  app.get("/api/csv-direct/player/:name/full", async (req, res) => {
+    try {
+      const name = decodeURIComponent(req.params.name).trim();
+      const player = await csvDirectAnalyzer.getPlayerByName(name);
+      if (!player) {
+        return res.status(404).json({ error: `Player "${name}" not found in CSV database` });
+      }
+      
+      // Also get similar players (same position)
+      const pos = (player as any).Pos || '';
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const similar = allPlayers
+        .filter((p: any) => p.Pos === pos && p.Player !== (player as any).Player)
+        .sort((a: any, b: any) => (b.Gls || 0) - (a.Gls || 0))
+        .slice(0, 5);
+
+      return res.json({ player, similar });
+    } catch (error) {
+      console.error('Full player data error:', error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── Live Standings via ESPN public API ────────────────────────────────
+  const ESPNLEAGUES: Record<string, string> = {
+    "eng Premier League": "eng.1",
+    "es La Liga":         "esp.1",
+    "fr Ligue 1":        "fra.1",
+    "it Serie A":        "ita.1",
+    "de Bundesliga":     "ger.1",
+    "nl Eredivisie":     "ned.1",
+    "pt Primeira Liga":  "por.1",
+  };
+
+  // Simple in-process cache: { key -> { data, ts } }
+  const standingsCache: Record<string, { data: any; ts: number }> = {};
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  app.get("/api/standings/:league", async (req, res) => {
+    try {
+      const leagueName = decodeURIComponent(req.params.league);
+      const espnCode = ESPNLEAGUES[leagueName];
+      if (!espnCode) {
+        return res.status(404).json({ error: `No standings available for "${leagueName}"` });
+      }
+
+      const cached = standingsCache[espnCode];
+      if (cached && Date.now() - cached.ts < CACHE_TTL) {
+        return res.json(cached.data);
+      }
+
+      const url = `https://site.api.espn.com/apis/v2/sports/soccer/${espnCode}/standings`;
+      const response = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 PlayerStats/1.0" },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!response.ok) {
+        return res.status(502).json({ error: `ESPN API error: ${response.status}` });
+      }
+
+      const espnData = await response.json();
+
+      // Parse ESPN standings format
+      const standings: any[] = [];
+      const groups = espnData?.children?.[0]?.standings?.entries || espnData?.standings?.entries || [];
+
+      for (const entry of groups) {
+        const team = entry.team;
+        const stats: Record<string, any> = {};
+        for (const s of (entry.stats || [])) {
+          stats[s.name] = s.value;
+        }
+        standings.push({
+          rank:         stats.rank        ?? standings.length + 1,
+          team:         team?.displayName ?? team?.name ?? "?",
+          abbr:         team?.abbreviation ?? "",
+          logo:         team?.logos?.[0]?.href ?? null,
+          played:       stats.gamesPlayed  ?? 0,
+          wins:         stats.wins         ?? 0,
+          draws:        stats.ties         ?? stats.draws ?? 0,
+          losses:       stats.losses       ?? 0,
+          goalsFor:     stats.pointsFor    ?? 0,
+          goalsAgainst: stats.pointsAgainst ?? 0,
+          goalDiff:     stats.pointDifferential ?? 0,
+          points:       stats.points       ?? 0,
+          form:         (entry.note?.description ?? "").trim(),
+        });
+      }
+
+      standings.sort((a, b) => a.rank - b.rank);
+      const result = { leagueName, espnCode, standings };
+      standingsCache[espnCode] = { data: result, ts: Date.now() };
+      return res.json(result);
+    } catch (error: any) {
+      console.error("Standings fetch error:", error.message);
+      res.status(500).json({ error: "Could not fetch standings" });
+    }
+  });
+
+  // ── CSV Leagues ────────────────────────────────────────────────────────
+  app.get("/api/csv/leagues", async (req, res) => {
+    try {
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const leagueMap: Record<string, { players: any[] }> = {};
+
+      for (const p of allPlayers) {
+        const comp = (p as any).Comp || "Unknown";
+        if (!leagueMap[comp]) leagueMap[comp] = { players: [] };
+        leagueMap[comp].players.push(p);
+      }
+
+      const leagues = Object.entries(leagueMap).map(([comp, { players }]) => {
+        const teams = [...new Set(players.map((p: any) => p.Squad).filter(Boolean))];
+        const ages = players.map((p: any) => Number(p.Age)).filter(a => !isNaN(a) && a > 0);
+        const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 0;
+        const topScorer = players.reduce((best: any, p: any) => 
+          (Number(p.Gls) || 0) > (Number(best?.Gls) || 0) ? p : best, players[0]);
+        const topAssist = players.reduce((best: any, p: any) => 
+          (Number(p.Ast) || 0) > (Number(best?.Ast) || 0) ? p : best, players[0]);
+        const totalGoals = players.reduce((s, p: any) => s + (Number(p.Gls) || 0), 0);
+        return {
+          name: comp,
+          totalPlayers: players.length,
+          totalTeams: teams.length,
+          avgAge: Math.round(avgAge * 10) / 10,
+          totalGoals,
+          topScorer: topScorer ? { name: (topScorer as any).Player, goals: Number((topScorer as any).Gls) || 0, team: (topScorer as any).Squad } : null,
+          topAssist: topAssist ? { name: (topAssist as any).Player, assists: Number((topAssist as any).Ast) || 0, team: (topAssist as any).Squad } : null,
+        };
+      });
+
+      leagues.sort((a, b) => b.totalPlayers - a.totalPlayers);
+      return res.json(leagues);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── CSV League Players ─────────────────────────────────────────────────
+  app.get("/api/csv/leagues/:name/players", async (req, res) => {
+    try {
+      const leagueName = decodeURIComponent(req.params.name);
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const players = allPlayers.filter((p: any) => p.Comp === leagueName);
+      return res.json(players);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── CSV Teams ──────────────────────────────────────────────────────────
+  app.get("/api/csv/teams", async (req, res) => {
+    try {
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const league = req.query.league as string | undefined;
+      const filtered = league ? allPlayers.filter((p: any) => p.Comp === league) : allPlayers;
+
+      const teamMap: Record<string, { players: any[]; comp: string }> = {};
+      for (const p of filtered) {
+        const squad = (p as any).Squad || "Unknown";
+        const comp = (p as any).Comp || "";
+        if (!teamMap[squad]) teamMap[squad] = { players: [], comp };
+        teamMap[squad].players.push(p);
+      }
+
+      const teams = Object.entries(teamMap).map(([squad, { players, comp }]) => {
+        const ages = players.map((p: any) => Number(p.Age)).filter(a => !isNaN(a) && a > 0);
+        const avgAge = ages.length ? ages.reduce((a, b) => a + b, 0) / ages.length : 0;
+        const totalGoals = players.reduce((s, p: any) => s + (Number(p.Gls) || 0), 0);
+        const totalAssists = players.reduce((s, p: any) => s + (Number(p.Ast) || 0), 0);
+        const topScorer = players.reduce((best: any, p: any) =>
+          (Number(p.Gls) || 0) > (Number(best?.Gls) || 0) ? p : best, players[0]);
+        return {
+          name: squad,
+          league: comp,
+          playerCount: players.length,
+          avgAge: Math.round(avgAge * 10) / 10,
+          totalGoals,
+          totalAssists,
+          topScorer: topScorer ? { name: (topScorer as any).Player, goals: Number((topScorer as any).Gls) || 0 } : null,
+        };
+      });
+
+      teams.sort((a, b) => b.totalGoals - a.totalGoals);
+      return res.json(teams);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ── CSV Team Players ───────────────────────────────────────────────────
+  app.get("/api/csv/teams/:name/players", async (req, res) => {
+    try {
+      const teamName = decodeURIComponent(req.params.name);
+      const players = await csvDirectAnalyzer.getPlayersByTeam(teamName);
+      return res.json(players);
+    } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
   });

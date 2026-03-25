@@ -60,7 +60,7 @@ export interface PlayerData {
 }
 
 export class CSVDirectAnalyzer {
-  private csvPath = path.join(process.cwd(), 'players_data_light.csv');
+  private csvPath = path.join(process.cwd(), 'players_data_2025_2026.csv');
   private playersData: PlayerData[] = [];
   private loaded = false;
 

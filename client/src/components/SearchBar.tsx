@@ -52,7 +52,7 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
     if (onPlayerSelect) {
       onPlayerSelect(player.id);
     } else {
-      setLocation(`/player/${player.id}`);
+      setLocation(`/joueur/${encodeURIComponent(player.name)}`);
     }
     setShowResults(false);
     setQuery("");
