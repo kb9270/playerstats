@@ -154,17 +154,19 @@ export class ESPNImageService {
       if (!response.ok) return null;
 
       const data: any = await response.json();
-      const results = data.results?.[0]?.items || [];
+      const results = data.results?.[0]?.contents || [];
 
       // Prefer soccer players
       const soccerPlayer = results.find((item: any) =>
         item.type === 'player' &&
-        (item.complementaryName?.toLowerCase().includes('soccer') ||
-         item.url?.includes('/soccer/'))
+        (item.sport === 'soccer' || item.subtitle?.toLowerCase().includes('madrid') || item.url?.includes('/soccer/'))
       ) || results.find((item: any) => item.type === 'player');
 
-      if (soccerPlayer?.id) {
-        const headshotUrl = `https://a.espncdn.com/i/headshots/soccer/players/full/${soccerPlayer.id}.png`;
+      if (soccerPlayer?.uid) {
+        // uid looks like "s:600~a:231388", we want the last part
+        const idParts = soccerPlayer.uid.split(':');
+        const realId = idParts[idParts.length - 1];
+        const headshotUrl = `https://a.espncdn.com/i/headshots/soccer/players/full/${realId}.png`;
         this.playerHeadshotCache[key] = headshotUrl;
         return headshotUrl;
       }
