@@ -15,12 +15,15 @@ import { heatmapService } from "./services/heatmapService";
 import { comparisonService } from "./services/comparisonService";
 import { insertPlayerSchema, insertComparisonSchema } from "@shared/schema";
 import { z } from "zod";
-
+import { espnImageService } from "./services/espnImageService";
 import { registerN8nWebhooks } from "./n8nWebhooks";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register n8n Webhooks
   registerN8nWebhooks(app);
+
+  // Initialize ESPN Image Service
+  espnImageService.init().catch(err => console.error("ESPN init error:", err));
 
   // Search players endpoint
   app.get("/api/players/search", async (req, res) => {
@@ -47,7 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         nationality: player.Nation,
         age: player.Age,
         league: player.Comp,
-        fbrefId: player.Rk ? `csv-${player.Rk}` : undefined
+        fbrefId: player.Rk ? `csv-${player.Rk}` : undefined,
+        logo: espnImageService.getTeamLogo(player.Squad),
+        headshot: null // Instant search - don't blocks for headshot. Profile will load it.
       }));
 
       // Also search local storage (DB) to merge results
@@ -85,9 +90,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const similar = allPlayers
         .filter((p: any) => p.Pos === pos && p.Player !== (player as any).Player)
         .sort((a: any, b: any) => (b.Gls || 0) - (a.Gls || 0))
-        .slice(0, 5);
 
-      return res.json({ player, similar });
+      // Enrich with logos
+      const enrichedPlayer = {
+        ...player,
+        logo: espnImageService.getTeamLogo((player as any).Squad),
+        headshot: await espnImageService.getPlayerHeadshot((player as any).Player, (player as any).Squad)
+      };
+
+      const enrichedSimilar = await Promise.all(similar.map(async (p: any) => ({
+        ...p,
+        logo: espnImageService.getTeamLogo(p.Squad),
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+      })));
+
+      return res.json({ player: enrichedPlayer, similar: enrichedSimilar });
     } catch (error) {
       console.error('Full player data error:', error);
       res.status(500).json({ error: "Internal server error" });
@@ -203,8 +220,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      leagues.sort((a, b) => b.totalPlayers - a.totalPlayers);
-      return res.json(leagues);
+      // Enrich leagues with top scorer/assist logos (fast because logos are cached at init)
+      const enrichedLeagues = leagues.map((l: any) => {
+        if (l.topScorer) {
+          l.topScorer.logo = espnImageService.getTeamLogo(l.topScorer.team);
+          // Don't wait for headshots here to keep it fast
+        }
+        if (l.topAssist) {
+          l.topAssist.logo = espnImageService.getTeamLogo(l.topAssist.team);
+        }
+        return l;
+      });
+
+      return res.json(enrichedLeagues);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
@@ -216,7 +244,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leagueName = decodeURIComponent(req.params.name);
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
       const players = allPlayers.filter((p: any) => p.Comp === leagueName);
-      return res.json(players);
+      
+      const enrichedPlayers = await Promise.all(players.map(async (p: any) => ({
+        ...p,
+        logo: espnImageService.getTeamLogo(p.Squad),
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+      })));
+
+      return res.json(enrichedPlayers);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
@@ -255,8 +290,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      teams.sort((a, b) => b.totalGoals - a.totalGoals);
-      return res.json(teams);
+      const enrichedTeams = teams.map((t: any) => ({
+        ...t,
+        logo: espnImageService.getTeamLogo(t.name)
+      }));
+
+      enrichedTeams.sort((a, b) => b.totalGoals - a.totalGoals);
+      return res.json(enrichedTeams);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
@@ -267,7 +307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const teamName = decodeURIComponent(req.params.name);
       const players = await csvDirectAnalyzer.getPlayersByTeam(teamName);
-      return res.json(players);
+      
+      const enrichedPlayers = await Promise.all(players.map(async (p: any) => ({
+        ...p,
+        logo: espnImageService.getTeamLogo(p.Squad),
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+      })));
+
+      return res.json(enrichedPlayers);
     } catch (error) {
       res.status(500).json({ error: "Internal server error" });
     }
