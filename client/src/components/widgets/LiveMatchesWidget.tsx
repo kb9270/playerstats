@@ -6,7 +6,8 @@ import { Link } from 'wouter';
 export default function LiveMatchesWidget() {
   const { data: matches, isLoading, error } = useQuery<MatchCardProps[]>({
     queryKey: ['/api/live-matches'],
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    staleTime: 0,
   });
 
   return (
@@ -35,13 +36,13 @@ export default function LiveMatchesWidget() {
         </div>
       ) : matches && matches.length > 0 ? (
         <div className="flex flex-col gap-4 relative z-10">
-          {matches.slice(0, 3).map(match => (
+          {matches.slice(0, 4).map(match => (
             <MatchCard key={match.id} {...match} />
           ))}
-          {matches.length > 3 && (
+          {matches.length > 4 && (
             <Link href="/matches-live">
               <div className="text-center py-2 text-xs font-bold text-gray-400 hover:text-stats-accent transition-colors cursor-pointer border-t border-white/5 mt-2 uppercase tracking-widest pt-4">
-                +{matches.length - 3} autres matchs aujourd'hui
+                +{matches.length - 4} autres matchs aujourd'hui
               </div>
             </Link>
           )}
