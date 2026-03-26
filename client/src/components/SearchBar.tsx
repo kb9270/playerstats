@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { useLocation } from "wouter";
 import PlayerAvatar, { TeamLogo } from "@/components/PlayerAvatar";
@@ -18,11 +14,10 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
   const [showResults, setShowResults] = useState(false);
   const [, setLocation] = useLocation();
   const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(query);
-    }, 300);
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -33,16 +28,16 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
   });
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowResults(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) setShowResults(true);
   };
@@ -58,101 +53,115 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
   };
 
   return (
-    <div ref={searchRef} className="relative">
-      <form onSubmit={handleSearch} className="relative">
-        <Input
+    <div ref={searchRef} style={{ position: "relative", width: "100%" }}>
+      <form onSubmit={handleSubmit}>
+        <input
+          ref={inputRef}
           type="text"
-          placeholder="Rechercher un joueur (ex: Mbappé, Haaland, Bellingham...)"
+          className="search-input"
+          placeholder="Rechercher un joueur — Mbappé, Haaland, Bellingham…"
           value={query}
-          onChange={(e) => {
+          onChange={e => {
             setQuery(e.target.value);
             setShowResults(e.target.value.length > 2);
           }}
-          className="w-full px-6 py-4 search-input rounded-xl text-blue-100 placeholder-blue-300 focus:outline-none transition-all pr-16"
+          onFocus={() => { if (query.length > 2) setShowResults(true); }}
         />
-        <Button
-          type="submit"
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 stats-button px-6 py-2 rounded-lg"
-        >
-          <Search className="w-4 h-4" />
-        </Button>
+        <button type="submit" className="search-btn" aria-label="Rechercher">
+          <Search size={15} />
+        </button>
       </form>
 
-      {/* Search Results Dropdown */}
+      {/* Dropdown */}
       {showResults && debouncedQuery.length > 2 && (
-        <Card className="absolute top-full left-0 right-0 mt-2 bg-blue-950/60 border border-blue-400/40 rounded-xl z-50 max-h-96 overflow-y-auto backdrop-blur-md shadow-2xl">
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-4 space-y-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 py-2">
-                    <Skeleton className="w-10 h-10 rounded-xl bg-blue-800/40" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-36 bg-blue-800/40" />
-                      <Skeleton className="h-3 w-24 bg-blue-800/40" />
-                    </div>
-                    <Skeleton className="w-6 h-6 rounded bg-blue-800/40" />
+        <div className="search-dropdown">
+          {isLoading ? (
+            <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div className="skeleton" style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0 }} />
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="skeleton" style={{ height: 12, width: "50%" }} />
+                    <div className="skeleton" style={{ height: 10, width: "35%" }} />
                   </div>
-                ))}
-              </div>
-            ) : Array.isArray(searchResults) && searchResults.length > 0 ? (
-              <div className="divide-y divide-blue-800/30">
-                {searchResults.slice(0, 8).map((player: any, index: number) => {
-                  const colors = [
-                    "text-blue-300", "text-cyan-300", "text-emerald-300",
-                    "text-violet-300", "text-pink-300",
-                  ];
-                  const colorClass = colors[index % colors.length];
-                  return (
-                    <button
-                      key={player.id || player.name}
-                      onClick={() => handlePlayerClick(player)}
-                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-900/40 transition-colors text-left group"
-                    >
-                      {/* Headshot (lazy loaded) */}
-                      <PlayerAvatar
-                        playerName={player.name}
-                        teamName={player.team}
-                        headshot={player.headshot}
-                        logo={player.logo}
-                        size="md"
-                        showTeamBadge={!!player.logo}
-                      />
-
-                      {/* Player Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold truncate ${colorClass} group-hover:text-white transition-colors`}>
-                          {player.name}
-                        </div>
-                        <div className="text-xs text-blue-300/70 truncate">
-                          {player.team}
-                          {player.position && ` · ${player.position}`}
-                          {player.age && ` · ${player.age} ans`}
-                          {player.nationality && ` · ${player.nationality}`}
-                        </div>
-                      </div>
-
-                      {/* Team Logo */}
-                      {player.logo ? (
-                        <TeamLogo logo={player.logo} teamName={player.team || ""} size="sm" className="shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
-                      ) : (
-                        <div className="w-8 h-8 shrink-0 rounded bg-blue-800/30 flex items-center justify-center text-[9px] font-bold text-blue-400">
-                          {(player.league || "").replace("eng ", "").replace("es ", "").replace("fr ", "").replace("it ", "").replace("de ", "").replace("nl ", "").replace("pt ", "").substring(0, 3).toUpperCase()}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-blue-300/60">
-                {debouncedQuery.length > 2
-                  ? "Aucun joueur trouvé. Essayez un nom complet."
-                  : "Tapez au moins 3 caractères…"}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          ) : Array.isArray(searchResults) && searchResults.length > 0 ? (
+            searchResults.slice(0, 8).map((player: any) => (
+              <button
+                key={player.id || player.name}
+                onClick={() => handlePlayerClick(player)}
+                className="search-item"
+                style={{
+                  width: "100%",
+                  background: "none",
+                  border: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                <PlayerAvatar
+                  playerName={player.name}
+                  teamName={player.team}
+                  headshot={player.headshot}
+                  logo={player.logo}
+                  size="md"
+                  showTeamBadge={!!player.logo}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--c-text-1)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}>
+                    {player.name}
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    color: "var(--c-text-3)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    marginTop: 2,
+                  }}>
+                    {[player.team, player.position, player.age ? `${player.age} ans` : null, player.nationality]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </div>
+                </div>
+                {player.logo ? (
+                  <TeamLogo logo={player.logo} teamName={player.team || ""} size="sm" className="shrink-0" />
+                ) : (
+                  <div style={{
+                    width: 28, height: 28, flexShrink: 0,
+                    borderRadius: 6,
+                    background: "var(--c-surface-2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700, color: "var(--c-text-3)",
+                  }}>
+                    {(player.league || "").replace(/^[a-z]+ /, "").substring(0, 3).toUpperCase()}
+                  </div>
+                )}
+              </button>
+            ))
+          ) : (
+            <div style={{
+              padding: "24px 16px",
+              textAlign: "center",
+              fontSize: 13,
+              color: "var(--c-text-3)",
+            }}>
+              {debouncedQuery.length > 2
+                ? "Aucun joueur trouvé. Essayez un nom complet."
+                : "Tapez au moins 3 caractères…"}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

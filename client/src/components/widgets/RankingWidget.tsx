@@ -1,6 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Trophy, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 type BallonDorRanking = {
@@ -12,67 +10,82 @@ type BallonDorRanking = {
   metrics: any;
 };
 
+const medalColors = ["var(--c-gold)", "#C0C0C0", "#CD7F32"];
+
 export default function RankingWidget() {
-  const { data, isLoading } = useQuery<{ success: boolean, rankings: BallonDorRanking[] }>({
+  const { data, isLoading } = useQuery<{ success: boolean; rankings: BallonDorRanking[] }>({
     queryKey: ["/api/ballon-dor"],
   });
 
   const rankings = data?.rankings || [];
 
   return (
-    <Card className="stats-card">
-      <CardHeader className="pb-3 px-6 pt-6 flex flex-row items-center justify-between">
-        <CardTitle className="text-2xl font-bold flex items-center gap-2 text-yellow-400">
-          <Trophy className="w-6 h-6" />
-          Ballon d'Or Ladder
-        </CardTitle>
-        <Badge variant="outline" className="text-yellow-400 border-yellow-400">
-          En Cours
-        </Badge>
-      </CardHeader>
-      
-      <CardContent className="px-6 pb-6">
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-12 bg-white/5 animate-pulse rounded-lg" />
-              ))}
-            </div>
-          ) : rankings.length > 0 ? (
-            rankings.map((rank, idx) => (
-              <div key={idx} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-all group border border-transparent hover:border-yellow-400/30">
-                <span className="text-lg font-bold w-6 text-gray-400 group-hover:text-yellow-400 transition-colors">
+    <div className="widget animate-fade-up delay-300">
+      <div className="widget-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+          <Trophy size={13} style={{ color: "var(--c-gold)" }} />
+          <span className="widget-title">Ballon d'Or Ladder</span>
+        </div>
+        <span className="pill pill-gold">2026</span>
+      </div>
+
+      <div className="widget-body">
+        {isLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 40, borderRadius: 10 }} />
+            ))}
+          </div>
+        ) : rankings.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {rankings.map((rank, idx) => (
+              <div key={idx} className="rank-row">
+                <span className="rank-num" style={{ color: idx < 3 ? medalColors[idx] : undefined }}>
                   {idx + 1}
                 </span>
-                
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-base font-bold truncate group-hover:text-yellow-400 transition-colors">
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "var(--c-text-1)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}>
                     {rank.playerName}
-                  </h4>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-gray-500 font-medium truncate">{rank.team}</span>
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    color: "var(--c-text-3)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    marginTop: 1,
+                  }}>
+                    {rank.team}
                   </div>
                 </div>
-                
-                <div className="flex flex-col items-end">
-                  <span className="text-base font-black text-yellow-400">
+
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                  <span style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: idx === 0 ? "var(--c-gold)" : "var(--c-text-2)",
+                  }}>
                     {Math.round(rank.points)}
                   </span>
-                  <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                    <TrendingUp className="w-3 h-3 text-yellow-400" />
-                    <span>Pts</span>
-                  </div>
+                  <span style={{ fontSize: 10, color: "var(--c-text-3)", letterSpacing: "0.04em" }}>pts</span>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center p-8 text-gray-400 text-sm">
-              Le calcul du classement est en cours...
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        ) : (
+          <div style={{ textAlign: "center", padding: "32px 0", color: "var(--c-text-3)", fontSize: 13 }}>
+            Calcul en cours…
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

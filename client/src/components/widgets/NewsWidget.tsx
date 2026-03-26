@@ -1,5 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Clock, TrendingUp } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,51 +18,85 @@ export default function NewsWidget() {
   const newsItems = data?.news || [];
 
   return (
-    <Card className="stats-card overflow-hidden">
-      <CardHeader className="pb-3 px-6 pt-6">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-stats-accent" />
-            Actualités
-          </CardTitle>
-          <Badge variant="outline" className="text-stats-accent border-stats-accent">
-            Direct
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="px-6 pb-6 space-y-4">
+    <div className="widget animate-fade-up delay-225">
+      <div className="widget-header">
+        <span className="widget-title">Actualités</span>
+        <span className="pill pill-accent">Live</span>
+      </div>
+
+      <div className="widget-body">
         {isLoading ? (
-           <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 bg-white/5 animate-pulse rounded-xl" />
-              ))}
-           </div>
-        ) : newsItems.length > 0 ? (
-          newsItems.slice(0, 5).map((item) => (
-            <a href={item.url} target="_blank" rel="noopener noreferrer" key={item.id} className="group cursor-pointer flex gap-4 p-3 rounded-xl hover:bg-white/5 transition-all block">
-              <div className="flex flex-col justify-center gap-1 w-full">
-                <span className="text-xs text-stats-accent font-semibold flex items-center gap-1">
-                  {item.source || "Général"}
-                </span>
-                <h4 className="text-base font-semibold leading-tight group-hover:text-stats-accent transition-colors">
-                  {item.title}
-                </h4>
-                <p className="text-xs text-gray-300 line-clamp-2 mt-1">
-                  {item.summary}
-                </p>
-                <span className="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                  <Clock className="w-3 h-3" />
-                  {new Date(item.publishedAt).toLocaleDateString("fr-FR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" })}
-                </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div className="skeleton" style={{ height: 10, width: "30%" }} />
+                <div className="skeleton" style={{ height: 13, width: "90%" }} />
+                <div className="skeleton" style={{ height: 10, width: "60%" }} />
               </div>
+            ))}
+          </div>
+        ) : newsItems.length > 0 ? (
+          newsItems.slice(0, 5).map(item => (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              key={item.id}
+              className="news-item"
+              style={{ textDecoration: "none" }}
+            >
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "var(--c-accent)",
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+              }}>
+                {item.source || "Général"}
+              </span>
+              <h4 style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--c-text-1)",
+                lineHeight: 1.45,
+                margin: "3px 0",
+              }}>
+                {item.title}
+              </h4>
+              <p style={{
+                fontSize: 12,
+                color: "var(--c-text-3)",
+                lineHeight: 1.5,
+                margin: 0,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}>
+                {item.summary}
+              </p>
+              <span style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 10,
+                color: "var(--c-text-3)",
+                marginTop: 4,
+              }}>
+                <Clock size={10} />
+                {new Date(item.publishedAt).toLocaleDateString("fr-FR", {
+                  hour: "2-digit", minute: "2-digit",
+                  day: "2-digit", month: "short",
+                })}
+              </span>
             </a>
           ))
         ) : (
-          <div className="p-4 text-center text-sm text-gray-400">
-            Aucune actualité disponible pour le moment.
+          <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-3)", fontSize: 13 }}>
+            Aucune actualité disponible
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

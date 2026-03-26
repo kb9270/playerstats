@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import MatchCard, { MatchCardProps } from './MatchCard';
-import { Loader2, Activity, ChevronRight } from 'lucide-react';
+import { Activity, ChevronRight } from 'lucide-react';
 import { Link } from 'wouter';
+import MatchCard, { MatchCardProps } from './MatchCard';
 
 export default function LiveMatchesWidget() {
   const { data: matches, isLoading, error } = useQuery<MatchCardProps[]>({
@@ -11,47 +11,81 @@ export default function LiveMatchesWidget() {
   });
 
   return (
-    <div className="bg-stats-dark/50 border border-stats-accent/10 rounded-3xl p-6 md:p-8 relative overflow-hidden h-full">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-stats-accent/5 rounded-full blur-[80px] -translate-y-1/2 pointer-events-none" />
-      
-      <div className="flex items-center justify-between mb-8 relative z-10">
-        <div className="flex items-center gap-3">
-          <Activity className="w-6 h-6 text-stats-accent" />
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight">Scores <span className="text-stats-accent italic">Direct</span></h2>
+    <div className="widget animate-fade-up" style={{ height: "100%" }}>
+      <div className="widget-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="live-dot" />
+          <span className="widget-title">Scores Direct</span>
         </div>
-        <Link href="/matches-live">
-          <button className="text-stats-accent hover:text-white transition-colors flex items-center gap-1 text-sm font-bold uppercase italic">
-            Voir tout <ChevronRight className="w-4 h-4" />
+        <Link href="/matches-live" style={{ textDecoration: "none" }}>
+          <button style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            color: "var(--c-text-3)",
+            fontSize: 11,
+            fontWeight: 500,
+            transition: "color 0.15s ease",
+            padding: 0,
+          }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--c-text-1)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--c-text-3)")}
+          >
+            Voir tout <ChevronRight size={13} />
           </button>
         </Link>
       </div>
 
-      {isLoading ? (
-        <div className="h-40 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-stats-accent" />
-        </div>
-      ) : error ? (
-        <div className="text-center py-10 opacity-50">
-          <p className="text-sm">Erreur lors du chargement des scores</p>
-        </div>
-      ) : matches && matches.length > 0 ? (
-        <div className="flex flex-col gap-4 relative z-10">
-          {matches.slice(0, 4).map(match => (
-            <MatchCard key={match.id} {...match} />
-          ))}
-          {matches.length > 4 && (
-            <Link href="/matches-live">
-              <div className="text-center py-2 text-xs font-bold text-gray-400 hover:text-stats-accent transition-colors cursor-pointer border-t border-white/5 mt-2 uppercase tracking-widest pt-4">
-                +{matches.length - 4} autres matchs aujourd'hui
-              </div>
-            </Link>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-10 opacity-50 relative z-10">
-          <p className="text-sm font-medium">Aucun match en cours ou prévu.</p>
-        </div>
-      )}
+      <div className="widget-body">
+        {isLoading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 52, borderRadius: 12 }} />
+            ))}
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "var(--c-text-3)", fontSize: 13 }}>
+            Erreur de connexion
+          </div>
+        ) : matches && matches.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {matches.slice(0, 5).map(match => (
+              <MatchCard key={match.id} {...match} />
+            ))}
+            {matches.length > 5 && (
+              <Link href="/matches-live" style={{ textDecoration: "none" }}>
+                <div style={{
+                  textAlign: "center",
+                  padding: "10px 0 4px",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "var(--c-text-3)",
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                  borderTop: "1px solid var(--c-border)",
+                  marginTop: 6,
+                  transition: "color 0.15s ease",
+                }}>
+                  +{matches.length - 5} matchs aujourd'hui
+                </div>
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div style={{
+            textAlign: "center",
+            padding: "32px 0",
+            color: "var(--c-text-3)",
+            fontSize: 13,
+          }}>
+            Aucun match en cours
+          </div>
+        )}
+      </div>
     </div>
   );
 }
