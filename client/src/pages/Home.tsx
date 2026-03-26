@@ -146,13 +146,14 @@ export default function Home() {
         textAlign: "center",
       }}>
         {/* Decorative orbs */}
-        <div className="orb" style={{
+        <div className="absolute rounded-full blur-[120px] pointer-events-none" style={{
           width: 560, height: 560,
           background: "var(--c-accent)",
           top: -200, left: "50%",
           transform: "translateX(-50%)",
+          opacity: 0.15,
         }} />
-        <div className="orb" style={{
+        <div className="absolute rounded-full blur-[120px] pointer-events-none" style={{
           width: 300, height: 300,
           background: "#4f8ef7",
           bottom: -80, right: "10%",
