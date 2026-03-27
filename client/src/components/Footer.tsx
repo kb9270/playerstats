@@ -19,39 +19,65 @@ const links = {
 export default function Footer() {
   return (
     <footer style={{
-      borderTop: "1px solid var(--c-border)",
+      borderTop: "1px solid rgba(232,52,74,0.12)",
       marginTop: 80,
-      paddingTop: 48,
-      paddingBottom: 32,
+      position: "relative",
+      background: "rgba(8,11,30,0.6)",
     }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px" }}>
+      {/* Top accent bar */}
+      <div style={{
+        height: "2px",
+        background: "linear-gradient(90deg, var(--c-accent) 0%, rgba(26,111,255,0.5) 50%, transparent 100%)",
+      }} />
 
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px 32px" }}>
         {/* Top row */}
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr auto auto",
           gap: 48,
           marginBottom: 40,
-          flexWrap: "wrap",
         }}>
           {/* Brand */}
-          <div style={{ maxWidth: 280 }}>
+          <div style={{ maxWidth: 300 }}>
             <div style={{
-              fontSize: 16,
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "var(--c-text-1)",
-              marginBottom: 10,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 14,
             }}>
-              Player<span style={{ color: "var(--c-accent)" }}>Stats</span>
+              <div style={{
+                width: 28, height: 28,
+                background: "var(--c-accent)",
+                borderRadius: "3px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontWeight: 900,
+                fontSize: 12,
+                color: "#fff",
+                flexShrink: 0,
+              }}>PS</div>
+              <span style={{
+                fontSize: 16,
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                color: "var(--c-text-1)",
+                textTransform: "uppercase",
+              }}>
+                Player<span style={{ color: "var(--c-accent)" }}>Stats</span>
+              </span>
             </div>
             <p style={{
               fontSize: 13,
+              fontFamily: "'Barlow', sans-serif",
               color: "var(--c-text-3)",
               lineHeight: 1.7,
               margin: 0,
             }}>
-              Analyses footballistiques avancées — données en temps réel, modèles prédictifs et scouting 2026.
+              Analyses footballistiques avancées — données en temps réel, modèles prédictifs et scouting 2025/26.
             </p>
           </div>
 
@@ -59,12 +85,12 @@ export default function Footer() {
           {Object.entries(links).map(([section, items]) => (
             <div key={section}>
               <p style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: "0.08em",
+                fontSize: 10,
+                fontFamily: "'Barlow Condensed', sans-serif",
+                fontWeight: 700,
+                letterSpacing: "0.15em",
                 textTransform: "uppercase",
-                color: "var(--c-text-3)",
-                marginBottom: 16,
+                color: "var(--c-accent)",
                 margin: "0 0 16px",
               }}>
                 {section}
@@ -76,6 +102,7 @@ export default function Footer() {
                       href={item.href}
                       style={{
                         fontSize: 13,
+                        fontFamily: "'Barlow', sans-serif",
                         color: "var(--c-text-2)",
                         textDecoration: "none",
                         transition: "color 0.15s ease",
@@ -94,7 +121,7 @@ export default function Footer() {
 
         {/* Bottom row */}
         <div style={{
-          borderTop: "1px solid var(--c-border)",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
           paddingTop: 20,
           display: "flex",
           alignItems: "center",
@@ -102,10 +129,24 @@ export default function Footer() {
           gap: 12,
           flexWrap: "wrap",
         }}>
-          <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
-            © 2026 PlayerStats — Toutes les données proviennent de sources officielles.
+          <span style={{
+            fontSize: 11,
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            color: "var(--c-text-3)",
+            textTransform: "uppercase",
+          }}>
+            © 2026 PlayerStats · Toutes les données proviennent de sources officielles.
           </span>
-          <span style={{ fontSize: 12, color: "var(--c-text-3)" }}>
+          <span style={{
+            fontSize: 11,
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontWeight: 700,
+            color: "var(--c-accent)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}>
             Saison 2025/2026
           </span>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useLocation } from "wouter";
 import PlayerAvatar, { TeamLogo } from "@/components/PlayerAvatar";
 
@@ -55,34 +55,140 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
   return (
     <div ref={searchRef} style={{ position: "relative", width: "100%" }}>
       <form onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          type="text"
-          className="search-input"
-          placeholder="Rechercher un joueur — Mbappé, Haaland, Bellingham…"
-          value={query}
-          onChange={e => {
-            setQuery(e.target.value);
-            setShowResults(e.target.value.length > 2);
-          }}
-          onFocus={() => { if (query.length > 2) setShowResults(true); }}
-        />
-        <button type="submit" className="search-btn" aria-label="Rechercher">
-          <Search size={15} />
-        </button>
+        <div style={{ position: "relative" }}>
+          {/* Search icon left */}
+          <Search
+            size={16}
+            style={{
+              position: "absolute",
+              left: 16,
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "var(--c-text-3)",
+              pointerEvents: "none",
+            }}
+          />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Rechercher un joueur — Mbappé, Haaland, Bellingham…"
+            value={query}
+            onChange={e => {
+              setQuery(e.target.value);
+              setShowResults(e.target.value.length > 2);
+            }}
+            onFocus={() => { if (query.length > 2) setShowResults(true); }}
+            style={{
+              width: "100%",
+              height: 52,
+              padding: "0 52px",
+              background: "rgba(8, 11, 30, 0.85)",
+              backdropFilter: "blur(16px)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderBottom: "2px solid rgba(232,52,74,0.5)",
+              borderRadius: "4px 4px 0 0",
+              color: "var(--c-text-1)",
+              fontSize: 14,
+              fontFamily: "'Barlow', sans-serif",
+              outline: "none",
+              transition: "all 0.25s ease",
+            }}
+            onFocusCapture={e => {
+              e.currentTarget.style.borderBottomColor = "var(--c-accent)";
+              e.currentTarget.style.background = "rgba(8,11,30,0.95)";
+              e.currentTarget.style.boxShadow = "0 6px 24px rgba(232,52,74,0.12)";
+            }}
+            onBlurCapture={e => {
+              e.currentTarget.style.borderBottomColor = "rgba(232,52,74,0.5)";
+              e.currentTarget.style.background = "rgba(8,11,30,0.85)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
+          {/* Clear or submit button */}
+          {query ? (
+            <button
+              type="button"
+              onClick={() => { setQuery(""); setShowResults(false); }}
+              style={{
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 36,
+                height: 36,
+                background: "rgba(255,255,255,0.06)",
+                border: "none",
+                borderRadius: "3px",
+                color: "var(--c-text-3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+              aria-label="Effacer"
+            >
+              <X size={14} />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              style={{
+                position: "absolute",
+                right: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: 36,
+                height: 36,
+                background: "var(--c-accent)",
+                border: "none",
+                borderRadius: "3px",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "background 0.2s ease",
+              }}
+              aria-label="Rechercher"
+              onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "#c9253d"}
+              onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "var(--c-accent)"}
+            >
+              <Search size={14} />
+            </button>
+          )}
+        </div>
       </form>
 
       {/* Dropdown */}
       {showResults && debouncedQuery.length > 2 && (
-        <div className="search-dropdown">
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          background: "rgba(8, 11, 30, 0.97)",
+          backdropFilter: "blur(24px)",
+          border: "1px solid rgba(232,52,74,0.15)",
+          borderTop: "none",
+          borderRadius: "0 0 4px 4px",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.6)",
+          zIndex: 100,
+          overflow: "hidden",
+          maxHeight: 400,
+          overflowY: "auto",
+        }}>
+          {/* Red accent top line */}
+          <div style={{ height: "1px", background: "linear-gradient(90deg, var(--c-accent), transparent)" }} />
+
           {isLoading ? (
             <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
               {[...Array(4)].map((_, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div className="skeleton" style={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0 }} />
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 3, background: "rgba(255,255,255,0.05)", flexShrink: 0 }}
+                    className="shimmer" />
                   <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-                    <div className="skeleton" style={{ height: 12, width: "50%" }} />
-                    <div className="skeleton" style={{ height: 10, width: "35%" }} />
+                    <div className="shimmer" style={{ height: 11, width: "55%", borderRadius: 2 }} />
+                    <div className="shimmer" style={{ height: 9, width: "35%", borderRadius: 2 }} />
                   </div>
                 </div>
               ))}
@@ -92,15 +198,22 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
               <button
                 key={player.id || player.name}
                 onClick={() => handlePlayerClick(player)}
-                className="search-item"
                 style={{
                   width: "100%",
-                  background: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 16px",
+                  background: "transparent",
                   border: "none",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
                   textAlign: "left",
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  transition: "background 0.15s ease",
                 }}
+                onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = "rgba(232,52,74,0.06)"}
+                onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.background = "transparent"}
               >
                 <PlayerAvatar
                   playerName={player.name}
@@ -113,8 +226,11 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: 13,
-                    fontWeight: 600,
+                    fontFamily: "'Barlow Condensed', sans-serif",
+                    fontWeight: 700,
                     color: "var(--c-text-1)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -123,6 +239,7 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
                   </div>
                   <div style={{
                     fontSize: 11,
+                    fontFamily: "'Barlow', sans-serif",
                     color: "var(--c-text-3)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -139,10 +256,14 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
                 ) : (
                   <div style={{
                     width: 28, height: 28, flexShrink: 0,
-                    borderRadius: 6,
-                    background: "var(--c-surface-2)",
+                    borderRadius: 3,
+                    background: "rgba(232,52,74,0.08)",
+                    border: "1px solid rgba(232,52,74,0.15)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 9, fontWeight: 700, color: "var(--c-text-3)",
+                    fontSize: 9, fontWeight: 700,
+                    fontFamily: "'Barlow Condensed', sans-serif",
+                    color: "var(--c-accent)",
+                    letterSpacing: "0.05em",
                   }}>
                     {(player.league || "").replace(/^[a-z]+ /, "").substring(0, 3).toUpperCase()}
                   </div>
@@ -151,9 +272,10 @@ export default function SearchBar({ onPlayerSelect }: SearchBarProps) {
             ))
           ) : (
             <div style={{
-              padding: "24px 16px",
+              padding: "28px 16px",
               textAlign: "center",
               fontSize: 13,
+              fontFamily: "'Barlow', sans-serif",
               color: "var(--c-text-3)",
             }}>
               {debouncedQuery.length > 2
