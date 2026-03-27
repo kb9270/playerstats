@@ -20,36 +20,38 @@ const PlayerToken = ({ player, top, left }: { player: TopPlayer; top: string; le
   >
     <div style={{ position: "relative" }}>
       <div style={{
-        border: "2px solid rgba(245,200,66,0.4)",
-        borderRadius: "50%",
+        border: "2px solid rgba(255,207,64,0.4)",
+        borderRadius: "12px",
         boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
-        overflow: "hidden",
         display: "inline-flex",
+        background: "rgba(0,0,0,0.2)",
       }}>
         <PlayerAvatar
-          playerName={player.Player}
+          playerName={player.Player || ""}
           teamName={player.Squad}
           sofaId={player.sofaId}
           size="md"
-          className=""
+          className="rounded-xl"
         />
       </div>
       <div style={{
         position: "absolute",
-        top: -4, right: -4,
+        top: -5, right: -10,
         background: "var(--c-gold)",
         color: "#0a0a0f",
-        fontSize: 9,
-        fontWeight: 800,
-        padding: "1px 4px",
-        borderRadius: 4,
-        lineHeight: 1.4,
+        fontSize: 10,
+        fontWeight: 900,
+        padding: "2px 5px",
+        borderRadius: 5,
+        lineHeight: 1,
+        boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+        zIndex: 5,
       }}>
         {Number(player.displayRating || player.rating).toFixed(1)}
       </div>
     </div>
     <div className="player-token-name">
-      {player.Player?.split(" ").pop()}
+      {player.Player?.split(" ").pop() || "Player"}
     </div>
   </div>
 );
@@ -116,7 +118,7 @@ export default function TeamOfTheWeekWidget() {
         flex: 1,
         height: 380,
         borderRadius: 14,
-        overflow: "hidden",
+        overflow: "visible",
         background: "linear-gradient(180deg, #0d1f0d 0%, #112011 50%, #0d1f0d 100%)",
       }}>
         <FieldLines />
@@ -137,20 +139,20 @@ export default function TeamOfTheWeekWidget() {
         ) : players.length >= 11 ? (
           <>
             {/* Forwards */}
-            <PlayerToken player={fws[0]} top="12%" left="22%" />
-            <PlayerToken player={fws[1]} top="8%"  left="50%" />
-            <PlayerToken player={fws[2]} top="12%" left="78%" />
+            <PlayerToken player={fws[0]} top="13%" left="24%" />
+            <PlayerToken player={fws[1]} top="10%"  left="50%" />
+            <PlayerToken player={fws[2]} top="13%" left="76%" />
             {/* Midfielders */}
             <PlayerToken player={mfs[0]} top="37%" left="28%" />
             <PlayerToken player={mfs[1]} top="33%" left="50%" />
             <PlayerToken player={mfs[2]} top="37%" left="72%" />
             {/* Defenders */}
-            <PlayerToken player={dfs[0]} top="63%" left="13%" />
-            <PlayerToken player={dfs[1]} top="60%" left="37%" />
-            <PlayerToken player={dfs[2]} top="60%" left="63%" />
-            <PlayerToken player={dfs[3]} top="63%" left="87%" />
+            <PlayerToken player={dfs[0]} top="62%" left="15%" />
+            <PlayerToken player={dfs[1]} top="59%" left="37%" />
+            <PlayerToken player={dfs[2]} top="59%" left="63%" />
+            <PlayerToken player={dfs[3]} top="62%" left="85%" />
             {/* GK */}
-            <PlayerToken player={gk}    top="88%" left="50%" />
+            <PlayerToken player={gk}    top="85%" left="50%" />
           </>
         ) : (
           <div style={{
