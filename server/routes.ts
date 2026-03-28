@@ -426,6 +426,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug Route to trigger Ballon d'Or
+  app.get("/api/dev/trigger-ballondor", async (req, res) => {
+    try {
+      const { automationWorkflows } = await import("./services/automationWorkflows");
+      await (automationWorkflows as any).workflowBallonDorLadder();
+      res.json({ success: true, message: "Ballon d'Or ladder triggered" });
+    } catch (err) {
+      res.status(500).json({ success: false, error: (err as any).message });
+    }
+  });
+
   // Get player by ID
   app.get("/api/players/:id", async (req, res) => {
     try {

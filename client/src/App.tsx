@@ -16,6 +16,7 @@ import StreamlitEquivalent from "@/pages/StreamlitEquivalent";
 import BeautifulCSVDashboard from "@/pages/BeautifulCSVDashboard";
 import MatchAnalyzer from "@/pages/MatchAnalyzer";
 import LiveMatches from "@/pages/LiveMatches";
+import BallonDor from "@/pages/BallonDor";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/streamlit-style" component={StreamlitEquivalent} />
       <Route path="/matches" component={MatchAnalyzer} />
       <Route path="/matches-live" component={LiveMatches} />
+      <Route path="/ballon-dor" component={BallonDor} />
       <Route component={NotFound} />
     </Switch>
   );

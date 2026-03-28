@@ -264,23 +264,24 @@ export class AutomationWorkflows {
       // LIVE SCRAPING SIMULATION / INJECTION (Saison 2026)
       console.log("📡 [LIVE] Scraping des performances 2026 (Lamine Yamal, Mbappé, Haaland)...");
       const scoreList = [
-        { name: "Lamine Yamal", team: "FC Barcelone", g: 15, a: 18, r: 8.95 },
-        { name: "Kylian Mbappé", team: "Real Madrid", g: 28, a: 10, r: 8.75 },
-        { name: "Vinícius Júnior", team: "Real Madrid", g: 21, a: 14, r: 8.82 },
-        { name: "Erling Haaland", team: "Man City", g: 34, a: 4, r: 8.54 },
-        { name: "Jude Bellingham", team: "Real Madrid", g: 16, a: 13, r: 8.68 },
-        { name: "Florian Wirtz", team: "Bayer Leverkusen", g: 12, a: 21, r: 8.41 },
-        { name: "Cole Palmer", team: "Chelsea", g: 22, a: 11, r: 8.25 },
-        { name: "Jamal Musiala", team: "Bayern Munich", g: 14, a: 15, r: 8.35 },
-        { name: "Bukayo Saka", team: "Arsenal", g: 17, a: 12, r: 8.19 },
-        { name: "Rodri", team: "Man City", g: 8, a: 10, r: 8.92 }
+        { name: "Lamine Yamal", team: "FC Barcelone", g: 15, a: 18, r: 8.95, sid: 1402912 },
+        { name: "Kylian Mbappé", team: "Real Madrid", g: 28, a: 10, r: 8.75, sid: 826643 },
+        { name: "Vinícius Júnior", team: "Real Madrid", g: 21, a: 14, r: 8.82, sid: 868812 },
+        { name: "Erling Haaland", team: "Man City", g: 34, a: 4, r: 8.54, sid: 839956 },
+        { name: "Jude Bellingham", team: "Real Madrid", g: 16, a: 13, r: 8.68, sid: 991011 },
+        { name: "Florian Wirtz", team: "Bayer Leverkusen", g: 12, a: 21, r: 8.41, sid: 1019322 },
+        { name: "Cole Palmer", team: "Chelsea", g: 22, a: 11, r: 8.25, sid: 982780 },
+        { name: "Jamal Musiala", team: "Bayern Munich", g: 14, a: 15, r: 8.35, sid: 1010231 },
+        { name: "Bukayo Saka", team: "Arsenal", g: 17, a: 12, r: 8.19, sid: 934235 },
+        { name: "Rodri", team: "Man City", g: 8, a: 10, r: 8.92, sid: 827606 }
       ].map(p => {
          const points = (p.g * 5) + (p.a * 3) + (p.r * 10);
          return {
            playerName: p.name,
            team: p.team,
            points: Number(points.toFixed(2)),
-           metrics: { buts: p.g, passes: p.a, rating: p.r }
+           metrics: { buts: p.g, passes: p.a, rating: p.r },
+           sofaId: p.sid
          };
       });
 
@@ -297,7 +298,8 @@ export class AutomationWorkflows {
           week: currentWeek,
           metrics: scoreList[i].metrics,
           playerName: scoreList[i].playerName,
-          team: scoreList[i].team
+          team: scoreList[i].team,
+          sofaId: scoreList[i].sofaId,
         });
       }
 

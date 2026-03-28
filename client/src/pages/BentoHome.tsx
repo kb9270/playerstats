@@ -103,6 +103,93 @@ function Counter({ to, duration = 1600, suffix = "" }: { to: number; duration?: 
   return <span ref={ref}>{val.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
+/* ─── Team of the Week primitives ────────────────────────  */
+const PlayerToken = ({ player, top, left, onClick }: { player: any; top: string; left: string; onClick: () => void }) => {
+  if (!player) return null;
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        position: "absolute", top, left, transform: "translate(-50%, -50%)",
+        cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10
+      }}
+    >
+      <div style={{ position: "relative" }}>
+        <div style={{
+          border: "2px solid rgba(245,200,66,0.6)",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.6)",
+          display: "inline-flex",
+          background: "rgba(0,0,0,0.4)",
+        }}>
+          <PlayerAvatar
+            playerName={player.Player || ""}
+            teamName={player.Squad}
+            sofaId={player.sofaId}
+            size="md"
+            className="rounded-xl w-10 h-10"
+          />
+        </div>
+        <div style={{
+          position: "absolute",
+          top: -6, right: -12,
+          background: "#F5C842",
+          color: "#0a0a0f",
+          fontSize: 10,
+          fontFamily: "'Barlow Condensed', sans-serif",
+          fontWeight: 900,
+          padding: "2px 6px",
+          borderRadius: 6,
+          lineHeight: 1,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.6)",
+          zIndex: 5,
+        }}>
+          {Number(player.rating).toFixed(1)}
+        </div>
+      </div>
+      <div style={{
+        marginTop: 6,
+        fontSize: 10,
+        fontFamily: "'Barlow Condensed', sans-serif",
+        fontWeight: 700,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
+        color: "rgba(255,255,255,0.9)",
+        textShadow: "0 2px 4px rgba(0,0,0,0.9)",
+        background: "rgba(0,0,0,0.5)",
+        padding: "2px 6px",
+        borderRadius: 4,
+        whiteSpace: "nowrap",
+      }}>
+        {player.Player?.split(" ").pop() || "Player"}
+      </div>
+    </div>
+  );
+};
+
+const FieldLines = () => (
+  <svg
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    style={{
+      position: "absolute", inset: 0,
+      width: "100%", height: "100%",
+      opacity: 0.25, pointerEvents: "none", zIndex: 1,
+    }}
+  >
+    <rect x="4" y="3" width="92" height="94" fill="none" stroke="#fff" strokeWidth="0.8" rx="2" />
+    <line x1="4" y1="50" x2="96" y2="50" stroke="#fff" strokeWidth="0.6" />
+    <circle cx="50" cy="50" r="13" fill="none" stroke="#fff" strokeWidth="0.6" />
+    <circle cx="50" cy="50" r="1" fill="#fff" />
+    <rect x="26" y="3" width="48" height="20" fill="none" stroke="#fff" strokeWidth="0.6" />
+    <rect x="26" y="77" width="48" height="20" fill="none" stroke="#fff" strokeWidth="0.6" />
+    <rect x="36" y="3" width="28" height="9" fill="none" stroke="#fff" strokeWidth="0.5" />
+    <rect x="36" y="88" width="28" height="9" fill="none" stroke="#fff" strokeWidth="0.5" />
+    <path d="M 36 23 Q 50 32 64 23" fill="none" stroke="#fff" strokeWidth="0.4" />
+    <path d="M 36 77 Q 50 68 64 77" fill="none" stroke="#fff" strokeWidth="0.4" />
+  </svg>
+);
+
 /* ─── Nav ───────────────────────────────────────────────── */
 function BentoNav() {
   const [location] = useLocation();
@@ -421,6 +508,13 @@ export default function BentoHome() {
 
   const players = totwData?.players || [];
   const topPlayer = players[0];
+  
+  // Tactical layout for TOTW (4-3-3)
+  const fws = players.filter(p => p.Pos?.includes("F") || p.Pos?.includes("W")).slice(0, 3);
+  const mfs = players.filter(p => !fws.includes(p) && (p.Pos?.includes("M") || p.Pos?.includes("C"))).slice(0, 3);
+  const dfs = players.filter(p => !fws.includes(p) && !mfs.includes(p) && (p.Pos?.includes("D") || p.Pos?.includes("B"))).slice(0, 4);
+  const gk = players.find(p => p.Pos?.includes("G") || p.Pos?.includes("K")) || players[10];
+
   const matches = matchesData || [];
   const liveMatches = matches.filter(m => m.status === "LIVE" || m.status === "IN_PLAY");
   const rankings = rankingData?.rankings || [];
@@ -547,112 +641,70 @@ export default function BentoHome() {
           }}
         >
 
-          {/* ── CARD 1: Player of the Moment (large) ── */}
+          {/* ── CARD 1: Team of the Week (large) ── */}
           <GlassCard
-            glowColor="rgba(232,52,74,0.25)"
-            style={{ gridColumn: "1 / 6", gridRow: "1 / 3", padding: 0, overflow: "hidden", minHeight: 380 }}
-            onClick={() => topPlayer && setLocation(`/joueur/${encodeURIComponent(topPlayer.Player)}`)}
+            glowColor="rgba(245,200,66,0.3)"
+            style={{ gridColumn: "1 / 6", gridRow: "1 / 3", padding: 0, overflow: "hidden", minHeight: 440, display: "flex", flexDirection: "column" }}
           >
             {/* Background gradient */}
             <div style={{
               position: "absolute", inset: 0,
-              background: "linear-gradient(135deg, rgba(232,52,74,0.12) 0%, transparent 60%)",
-              pointerEvents: "none",
+              background: "linear-gradient(135deg, rgba(245,200,66,0.12) 0%, rgba(10,30,10,0.4) 100%)",
+              pointerEvents: "none", zIndex: 0,
             }} />
-            <div style={{ padding: "28px 28px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-                <Star size={13} style={{ color: "#E8344A" }} />
-                <span style={{ fontSize: 10, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#E8344A" }}>
-                  Joueur du Moment
-                </span>
-              </div>
-
-              {topPlayer ? (
-                <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: 90, height: 90,
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    border: "2px solid rgba(232,52,74,0.35)",
-                    boxShadow: "0 8px 32px rgba(232,52,74,0.2)",
-                    background: "rgba(255,255,255,0.05)",
-                  }}>
-                    <PlayerAvatar
-                      playerName={topPlayer.Player}
-                      teamName={topPlayer.Squad}
-                      sofaId={topPlayer.sofaId}
-                      size="xl"
-                      className="w-full h-full"
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <h2 style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontWeight: 900, fontSize: 32,
-                      textTransform: "uppercase", letterSpacing: "0.01em",
-                      lineHeight: 0.95, margin: "0 0 8px",
-                    }}>{topPlayer.Player}</h2>
-                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, margin: "0 0 12px" }}>{topPlayer.Squad}</p>
-                    <div style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "4px 12px",
-                      background: "rgba(245,200,66,0.12)",
-                      border: "1px solid rgba(245,200,66,0.25)",
-                      borderRadius: 100,
-                    }}>
-                      <span style={{ fontSize: 16, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, color: "#F5C842" }}>
-                        {Number(topPlayer.rating).toFixed(1)}
-                      </span>
-                      <Star size={11} style={{ color: "#F5C842" }} />
-                    </div>
-                  </div>
+            
+            {/* Header */}
+            <div style={{ padding: "26px 26px 0", position: "relative", zIndex: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Star size={14} style={{ color: "#F5C842" }} />
+                  <span style={{ fontSize: 12, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#F5C842" }}>
+                    Équipe de la Semaine
+                  </span>
                 </div>
+                <div style={{
+                  padding: "4px 10px", borderRadius: 100, background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)",
+                  fontSize: 10, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: "#F5C842", letterSpacing: "0.1em"
+                }}>
+                  4-3-3
+                </div>
+              </div>
+            </div>
+
+            {/* Field */}
+            <div style={{
+              position: "relative",
+              flex: 1,
+              margin: "20px 24px 24px",
+              borderRadius: 16,
+              background: "linear-gradient(180deg, rgba(20,50,20,0.6) 0%, rgba(10,35,10,0.6) 50%, rgba(20,50,20,0.6) 100%)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              overflow: "hidden",
+            }}>
+              <FieldLines />
+              {players.length >= 11 ? (
+                <>
+                  <PlayerToken player={fws[0]} top="15%" left="22%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[0]?.Player)}`)} />
+                  <PlayerToken player={fws[1]} top="12%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[1]?.Player)}`)} />
+                  <PlayerToken player={fws[2]} top="15%" left="78%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[2]?.Player)}`)} />
+                  
+                  <PlayerToken player={mfs[0]} top="39%" left="26%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[0]?.Player)}`)} />
+                  <PlayerToken player={mfs[1]} top="36%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[1]?.Player)}`)} />
+                  <PlayerToken player={mfs[2]} top="39%" left="74%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[2]?.Player)}`)} />
+                  
+                  <PlayerToken player={dfs[0]} top="65%" left="15%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[0]?.Player)}`)} />
+                  <PlayerToken player={dfs[1]} top="62%" left="38%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[1]?.Player)}`)} />
+                  <PlayerToken player={dfs[2]} top="62%" left="62%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[2]?.Player)}`)} />
+                  <PlayerToken player={dfs[3]} top="65%" left="85%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[3]?.Player)}`)} />
+                  
+                  <PlayerToken player={gk}    top="87%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(gk?.Player)}`)} />
+                </>
               ) : (
-                <div style={{ display: "flex", gap: 16 }}>
-                  <div style={{ width: 90, height: 90, borderRadius: 18, background: "rgba(255,255,255,0.05)" }} className="shimmer" />
-                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ height: 28, width: "70%", borderRadius: 6 }} className="shimmer" />
-                    <div style={{ height: 13, width: "50%", borderRadius: 4 }} className="shimmer" />
-                    <div style={{ height: 26, width: "35%", borderRadius: 100 }} className="shimmer" />
-                  </div>
+                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                   <div className="shimmer" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(245,200,66,0.1)" }} />
                 </div>
               )}
             </div>
-
-            {/* Stats row */}
-            {topPlayer && (
-              <div style={{
-                display: "flex", gap: 0,
-                marginTop: "auto",
-                padding: "24px 0 0",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                margin: "24px 0 0",
-              }}>
-                {[
-                  { label: "Buts", value: topPlayer.Gls ?? "–", icon: Target },
-                  { label: "Passes D.", value: topPlayer.Ast ?? "–", icon: Crosshair },
-                  { label: "xG", value: typeof topPlayer.xG === "number" ? topPlayer.xG.toFixed(1) : "–", icon: TrendingUp },
-                  { label: "Note", value: Number(topPlayer.rating).toFixed(1), icon: Star },
-                ].map((stat, i) => (
-                  <div key={i} style={{
-                    flex: 1,
-                    padding: "16px 20px",
-                    borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                    textAlign: "center",
-                  }}>
-                    <div style={{
-                      fontFamily: "'Barlow Condensed', sans-serif",
-                      fontWeight: 900, fontSize: 26,
-                      color: i === 0 ? "#E8344A" : i === 3 ? "#F5C842" : "#fff",
-                      letterSpacing: "-0.02em", lineHeight: 1,
-                      marginBottom: 4,
-                    }}>{stat.value}</div>
-                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </GlassCard>
 
           {/* ── CARD 2: Live Scores (medium) ────────── */}
@@ -753,7 +805,8 @@ export default function BentoHome() {
           {/* ── CARD 5: Ballon d'Or Ranking ─────── */}
           <GlassCard
             glowColor="rgba(245,200,66,0.18)"
-            style={{ gridColumn: "6 / 9", gridRow: "2 / 3", padding: 24 }}
+            style={{ gridColumn: "6 / 9", gridRow: "2 / 3", padding: 24, cursor: "pointer" }}
+            onClick={() => setLocation("/ballon-dor")}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <Trophy size={13} style={{ color: "#F5C842" }} />
@@ -765,6 +818,7 @@ export default function BentoHome() {
                 color: "#F5C842", background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.2)",
                 padding: "2px 8px", borderRadius: 100, letterSpacing: "0.1em", textTransform: "uppercase",
               }}>2026</span>
+              <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
             </div>
             {rankings.length > 0 ? rankings.slice(0, 4).map((r: any, i: number) => (
               <div key={i} style={{

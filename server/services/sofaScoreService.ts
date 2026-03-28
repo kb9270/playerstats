@@ -78,59 +78,63 @@ class SofaScoreService {
   }
 
   async fetchCollectiveTeamOfTheWeek() {
-    console.log("🚀 [SofaScore] Construction TOTW (Juste Milieu Fixed)...");
+    console.log("🚀 [SofaScore] Construction TOTW (Moteur de recherche étendu avec historique)...");
     const allCandidates: any[] = [];
 
     for (const league of this.leagues) {
       try {
         const seasonId = await this.getLatestSeasonId(league.id);
-        const latestPeriod = await this.getLatestRound(league.id, seasonId);
+        const periodsResp = await this.axiosInstance.get(`/unique-tournament/${league.id}/season/${seasonId}/team-of-the-week/periods`);
+        const periods = periodsResp.data?.periods || [];
         
-        if (!latestPeriod) continue;
+        if (periods.length === 0) continue;
 
-        console.log(`🔎 [SofaScore] Fetching ${league.name} Round ${latestPeriod.round?.round || 'Current'}...`);
-        const players = await this.getTeamOfTheWeek(league.id, seasonId, latestPeriod.id);
-        
-        const normalized = players.map((p: any) => {
-          let baseRating = parseFloat(p.rating) || 0.0;
-          let prestigeRating = baseRating * league.weight;
+        // Fetch current round and previous round to ensure we don't get an empty or weak Friday-night TOTW
+        const roundsToFetch = [periods[0]];
+        if (periods.length > 1) roundsToFetch.push(periods[1]);
 
-          const teamName = p.team?.name;
+        for (const period of roundsToFetch) {
+          console.log(`🔎 [SofaScore] Fetching ${league.name} Round ${period.round?.round || 'Fallback'}...`);
+          const players = await this.getTeamOfTheWeek(league.id, seasonId, period.id);
+          
+          const normalized = players.map((p: any) => {
+            let baseRating = parseFloat(p.rating) || 0.0;
+            let prestigeRating = baseRating * league.weight;
 
-          // 1. Super Elite & Elite Bonus
-          if (this.superElite.includes(teamName)) {
-            prestigeRating += 2.0; // Huge boost for superstars
-          } else if (this.eliteClubs.includes(teamName)) {
-            prestigeRating += 1.0; 
-          }
+            const teamName = p.team?.name;
 
-          // 2. Goal Scored Bonus
-          if ((p.statistics?.goals || 0) > 0) prestigeRating += 0.5;
+            // 1. Super Elite & Elite Bonus
+            if (this.superElite.includes(teamName)) {
+              prestigeRating += 2.0; // Huge boost for superstars
+            } else if (this.eliteClubs.includes(teamName)) {
+              prestigeRating += 1.0; 
+            }
 
-          return {
-            Player: p.player.name,
-            Squad: teamName || "Club",
-            Gls: p.statistics?.goals || 0,
-            Ast: p.statistics?.assists || 0,
-            Pos: p.player.position,
-            rating: prestigeRating,
-            displayRating: baseRating,
-            league: league.name,
-            sofaId: p.player.id
-          };
-        });
+            // 2. Goal Scored Bonus
+            if ((p.statistics?.goals || 0) > 0) prestigeRating += 0.5;
 
-        allCandidates.push(...normalized);
-      } catch (err: any) {
-        console.error(`❌ [SofaScore] Erreur critique pour ${league.name}:`, err.response?.status || err.message);
-        if (err.response?.status === 403) {
-          console.error("⚠️ [SofaScore] Accès refusé (403). Possible blocage Cloudflare/Bot.");
+            return {
+              Player: p.player.name,
+              Squad: teamName || "Club",
+              Gls: p.statistics?.goals || 0,
+              Ast: p.statistics?.assists || 0,
+              Pos: p.player.position,
+              rating: prestigeRating,
+              displayRating: baseRating,
+              league: league.name,
+              sofaId: p.player.id
+            };
+          });
+
+          allCandidates.push(...normalized);
         }
+      } catch (err: any) {
+        console.error(`❌ [SofaScore] Erreur pour ${league.name}:`, err.response?.status || err.message);
       }
     }
 
     const unique = Array.from(new Map(allCandidates.map(p => [p.Player, p])).values());
-    console.log(`📊 [SofaScore] Candidates Found: ${unique.length}`);
+    console.log(`📊 [SofaScore] Candidates Found (Current + Prev): ${unique.length}`);
     
     return unique.sort((a, b) => b.rating - a.rating);
   }
