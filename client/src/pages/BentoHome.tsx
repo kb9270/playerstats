@@ -144,7 +144,7 @@ const PlayerToken = ({ player, top, left, onClick }: { player: any; top: string;
           boxShadow: "0 2px 8px rgba(0,0,0,0.6)",
           zIndex: 5,
         }}>
-          {Number(player.rating).toFixed(1)}
+          {Number(player.displayRating || player.rating).toFixed(1)}
         </div>
       </div>
       <div style={{

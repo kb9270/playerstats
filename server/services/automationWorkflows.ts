@@ -14,17 +14,17 @@ const rssParser = new Parser();
 export const memoryNews: any[] = [];
 export const memoryBallonDor: any[] = [];
 export const memoryTeamOfTheWeek: any[] = [
-  { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 15, Ast: 18, Pos: "FW", rating: 8.95 },
-  { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 28, Ast: 10, Pos: "FW", rating: 8.75 },
-  { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 21, Ast: 14, Pos: "FW", rating: 8.82 },
-  { Player: "Erling Haaland", Squad: "Man City", Gls: 34, Ast: 4, Pos: "FW", rating: 8.54 },
-  { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 16, Ast: 13, Pos: "MF", rating: 8.68 },
-  { Player: "Florian Wirtz", Squad: "Bayer Leverkusen", Gls: 12, Ast: 21, Pos: "MF", rating: 8.41 },
-  { Player: "Rodri", Squad: "Man City", Gls: 8, Ast: 10, Pos: "MF", rating: 8.92 },
-  { Player: "William Saliba", Squad: "Arsenal", Gls: 2, Ast: 1, Pos: "DF", rating: 8.45 },
-  { Player: "Pau Cubarsí", Squad: "FC Barcelone", Gls: 1, Ast: 2, Pos: "DF", rating: 8.35 },
-  { Player: "Nico Schlotterbeck", Squad: "Dortmund", Gls: 3, Ast: 1, Pos: "DF", rating: 8.25 },
-  { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90 }
+  { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.95, displayRating: 8.9, sofaId: 826643 },
+  { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 1, Ast: 1, Pos: "FW", rating: 8.85, displayRating: 8.8, sofaId: 1402912 },
+  { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 2, Ast: 0, Pos: "FW", rating: 8.92, displayRating: 8.9, sofaId: 868812 },
+  { Player: "Erling Haaland", Squad: "Man City", Gls: 1, Ast: 0, Pos: "FW", rating: 8.54, displayRating: 8.5, sofaId: 839956 },
+  { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 0, Ast: 1, Pos: "MF", rating: 8.78, displayRating: 8.7, sofaId: 991011 },
+  { Player: "Florian Wirtz", Squad: "Bayer Leverkusen", Gls: 1, Ast: 1, Pos: "MF", rating: 8.41, displayRating: 8.4, sofaId: 1019322 },
+  { Player: "Rodri", Squad: "Man City", Gls: 0, Ast: 0, Pos: "MF", rating: 8.92, displayRating: 8.9, sofaId: 827606 },
+  { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.45, displayRating: 8.4, sofaId: 845422 },
+  { Player: "Pau Cubarsí", Squad: "FC Barcelone", Gls: 0, Ast: 0, Pos: "DF", rating: 8.35, displayRating: 8.3, sofaId: 1402913 },
+  { Player: "Virgil van Dijk", Squad: "Liverpool", Gls: 0, Ast: 0, Pos: "DF", rating: 8.55, displayRating: 8.5, sofaId: 146155 },
+  { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9, sofaId: 144544 }
 ];
 
 export class AutomationWorkflows {
@@ -80,7 +80,7 @@ export class AutomationWorkflows {
    */
   private async workflowTeamOfTheWeek() {
     try {
-      console.log("⚽ [SofaScore] Génération du 11 de la semaine (Notes live)...");
+      console.log("⚽ [SofaScore] Génération du 11 de la semaine (Notes live par round)...");
       
       const allTopPlayers = await sofaScoreService.fetchCollectiveTeamOfTheWeek();
       
@@ -89,28 +89,43 @@ export class AutomationWorkflows {
       }
 
       // 4-3-3 Formation logic
-      // SofaScore positions: 'F' (Forward), 'M' (Midfield), 'D' (Defender), 'G' (Goalkeeper)
-      const fws = allTopPlayers.filter(p => p.Pos?.includes('F') || p.Pos?.includes('W') || p.Pos === 'S').slice(0, 3);
-      const mfs = allTopPlayers.filter(p => !fws.includes(p) && (p.Pos?.includes('M') || p.Pos?.includes('C'))).slice(0, 3);
-      const dfs = allTopPlayers.filter(p => !fws.includes(p) && !mfs.includes(p) && (p.Pos?.includes('D') || p.Pos?.includes('B'))).slice(0, 4);
-      const gks = allTopPlayers.filter(p => !fws.includes(p) && !mfs.includes(p) && !dfs.includes(p) && (p.Pos?.includes('G'))).slice(0, 1);
+      // SofaScore positions can be complex (F, M, D, G + specific roles)
+      const fws = allTopPlayers.filter(p => {
+        const pos = p.Pos?.toUpperCase() || "";
+        return pos.includes('F') || pos.includes('W') || pos.includes('S') || pos.includes('ATT');
+      }).slice(0, 3);
+
+      const mfs = allTopPlayers.filter(p => 
+        !fws.includes(p) && 
+        (p.Pos?.toUpperCase().includes('M') || p.Pos?.toUpperCase().includes('C'))
+      ).slice(0, 3);
+
+      const dfs = allTopPlayers.filter(p => 
+        !fws.includes(p) && !mfs.includes(p) && 
+        (p.Pos?.toUpperCase().includes('D') || p.Pos?.toUpperCase().includes('B'))
+      ).slice(0, 4);
+
+      const gks = allTopPlayers.filter(p => 
+        !fws.includes(p) && !mfs.includes(p) && !dfs.includes(p) && 
+        p.Pos?.toUpperCase().includes('G')
+      ).slice(0, 1);
 
       let team = [...fws, ...mfs, ...dfs, ...gks];
       
       const fallbacks = [
-        { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 15, Ast: 18, Pos: "FW", rating: 8.95, displayRating: 8.9 },
-        { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 28, Ast: 10, Pos: "FW", rating: 8.75, displayRating: 8.7 },
-        { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 21, Ast: 14, Pos: "FW", rating: 8.82, displayRating: 8.8 },
-        { Player: "Erling Haaland", Squad: "Man City", Gls: 34, Ast: 4, Pos: "FW", rating: 8.54, displayRating: 8.5 },
-        { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 16, Ast: 13, Pos: "MF", rating: 8.68, displayRating: 8.6 },
-        { Player: "William Saliba", Squad: "Arsenal", Gls: 2, Ast: 1, Pos: "DF", rating: 8.45, displayRating: 8.4 },
+        { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 1, Ast: 1, Pos: "FW", rating: 8.95, displayRating: 8.9 },
+        { Player: "Lewandowski", Squad: "FC Barcelone", Gls: 2, Ast: 0, Pos: "FW", rating: 8.75, displayRating: 8.7 },
+        { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.82, displayRating: 8.8 },
+        { Player: "Erling Haaland", Squad: "Man City", Gls: 1, Ast: 0, Pos: "FW", rating: 8.54, displayRating: 8.5 },
+        { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 0, Ast: 1, Pos: "MF", rating: 8.68, displayRating: 8.6 },
+        { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.45, displayRating: 8.4 },
         { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9 }
       ];
 
       // Fill missing positions up to 11
       const usedNames = new Set(team.map(p => p.Player));
       
-      // First try to fill with OTHER players from the fetched list
+      // 1. Fill with other high rated players from fetched list regardless of position if needed
       if (team.length < 11) {
         const remainingFetched = allTopPlayers.filter(p => !usedNames.has(p.Player));
         while (team.length < 11 && remainingFetched.length > 0) {
@@ -120,7 +135,7 @@ export class AutomationWorkflows {
         }
       }
 
-      // If still not 11, use hardcoded fallbacks
+      // 2. Use fallbacks if still not 11
       if (team.length < 11) {
         for (const fb of fallbacks) {
           if (team.length >= 11) break;
@@ -134,7 +149,7 @@ export class AutomationWorkflows {
       memoryTeamOfTheWeek.length = 0;
       memoryTeamOfTheWeek.push(...team.slice(0, 11));
 
-      console.log(`✅ [SofaScore] Nouveau 11 Prestige généré (${memoryTeamOfTheWeek.length} joueurs).`);
+      console.log(`✅ [SofaScore] Nouveau 11 Prestige (Semaine) généré (${memoryTeamOfTheWeek.length} joueurs).`);
     } catch (error) {
        console.error("❌ [TOTW] Erreur construction TOTW Prestige:", error);
     }
@@ -258,50 +273,38 @@ export class AutomationWorkflows {
   private async workflowBallonDorLadder() {
     try {
       console.log("🏆 [BALLON D'OR] Calcul hebdomadaire du classement 2026-2027...");
-      const currentSeason = "2026-2027";
-      const currentWeek = _getWeekNumber(new Date());
+      const { csvDirectAnalyzer } = await import('./csvDirectAnalyzer');
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
       
-      // LIVE SCRAPING SIMULATION / INJECTION (Saison 2026)
-      console.log("📡 [LIVE] Scraping des performances 2026 (Lamine Yamal, Mbappé, Haaland)...");
-      const scoreList = [
-        { name: "Lamine Yamal", team: "FC Barcelone", g: 15, a: 18, r: 8.95, sid: 1402912 },
-        { name: "Kylian Mbappé", team: "Real Madrid", g: 28, a: 10, r: 8.75, sid: 826643 },
-        { name: "Vinícius Júnior", team: "Real Madrid", g: 21, a: 14, r: 8.82, sid: 868812 },
-        { name: "Erling Haaland", team: "Man City", g: 34, a: 4, r: 8.54, sid: 839956 },
-        { name: "Jude Bellingham", team: "Real Madrid", g: 16, a: 13, r: 8.68, sid: 991011 },
-        { name: "Florian Wirtz", team: "Bayer Leverkusen", g: 12, a: 21, r: 8.41, sid: 1019322 },
-        { name: "Cole Palmer", team: "Chelsea", g: 22, a: 11, r: 8.25, sid: 982780 },
-        { name: "Jamal Musiala", team: "Bayern Munich", g: 14, a: 15, r: 8.35, sid: 1010231 },
-        { name: "Bukayo Saka", team: "Arsenal", g: 17, a: 12, r: 8.19, sid: 934235 },
-        { name: "Rodri", team: "Man City", g: 8, a: 10, r: 8.92, sid: 827606 }
-      ].map(p => {
-         const points = (p.g * 5) + (p.a * 3) + (p.r * 10);
-         return {
-           playerName: p.name,
-           team: p.team,
-           points: Number(points.toFixed(2)),
-           metrics: { buts: p.g, passes: p.a, rating: p.r },
-           sofaId: p.sid
-         };
+      const candidates = allPlayers
+        .filter(p => (Number(p.Gls) || 0) + (Number(p.Ast) || 0) > 3 || p.Min > 1000)
+        .map(p => {
+          const g = Number(p.Gls) || 0;
+          const a = Number(p.Ast) || 0;
+          const xg = Number(p.xG) || 0;
+          const xag = Number(p.xAG) || 0;
+          let pts = (g * 5) + (a * 3) + (xg * 1.5) + (xag * 1);
+          if (p.Comp?.includes('Premier League')) pts += 10;
+          if (p.Comp?.includes('Champions Lg')) pts += 20;
+          if (['Arsenal', 'Man City', 'Liverpool', 'Real Madrid', 'FC Barcelone', 'Bayern Munich', 'PSG'].some(s => p.Squad?.includes(s))) pts += 15;
+
+          return {
+            playerName: p.Player,
+            team: p.Squad,
+            points: Number(pts.toFixed(2)),
+            season: "2025/2026",
+            metrics: { buts: g, passes: a, xg: xg, xag: xag }
+          };
+        })
+        .sort((a, b) => b.points - a.points)
+        .slice(0, 20);
+
+      memoryBallonDor.length = 0;
+      candidates.forEach((c, idx) => {
+        memoryBallonDor.push({ ...c, rank: idx + 1 });
       });
 
-      // Trier par points
-      scoreList.sort((x, y) => y.points - x.points);
-
-      // Rafraîchir la mémoire
-      memoryBallonDor.length = 0;
-      for (let i = 0; i < scoreList.length; i++) {
-        memoryBallonDor.push({
-          rank: i + 1,
-          points: scoreList[i].points,
-          season: currentSeason,
-          week: currentWeek,
-          metrics: scoreList[i].metrics,
-          playerName: scoreList[i].playerName,
-          team: scoreList[i].team,
-          sofaId: scoreList[i].sofaId,
-        });
-      }
+      console.log(`✅ [BALLON D'OR] Classement mis à jour (Données CSV Réelles).`);
 
       console.log(`✅ [BALLON D'OR] Ladder 2026 mis à jour avec succès. Leader : ${memoryBallonDor[0]?.playerName}`);
     } catch (error) {
