@@ -83,6 +83,15 @@ const Heatmap: React.FC<HeatmapProps> = ({ data, title, type = 'general' }) => {
             {point.actions > 30 ? point.actions : ''}
           </div>
         ))}
+
+        {/* Direction de l'attaque */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full border border-white/10 pointer-events-none">
+          <span className="text-[8px] font-black text-white/60 tracking-[0.2em] uppercase whitespace-nowrap">Sens de l'attaque</span>
+          <div className="flex items-center">
+            <div className="h-[0.5px] w-6 bg-gradient-to-r from-white/0 to-white/60"></div>
+            <div className="w-1 h-1 border-t border-r border-white/60 rotate-45 -ml-1"></div>
+          </div>
+        </div>
       </div>
       
       {/* Légende */}

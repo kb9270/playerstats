@@ -67,12 +67,20 @@ export class CSVDirectAnalyzer {
   private historicalData: PlayerData[] = [];
   private loaded = false;
 
+  constructor() {
+    console.log(`[CSV] Initializing CSVDirectAnalyzer...`);
+    console.log(`[CSV] CWD: ${process.cwd()}`);
+    console.log(`[CSV] Current CSV path: ${this.currentCsvPath}`);
+    console.log(`[CSV] Historical CSV path: ${this.historicalCsvPath}`);
+  }
+
   private async loadData(): Promise<void> {
     if (this.loaded && this.playersData.length > 0) return;
 
     try {
       // 1. Charger les données actuelles
       const currentData = await this.readAndParseCsv(this.currentCsvPath);
+      console.log(`[CSV] readAndParseCsv for current path returned ${currentData.length} players`);
       console.log(`Loaded ${currentData.length} players from current dataset (2025/26)`);
 
       // 2. Charger les données historiques si disponibles
@@ -105,11 +113,18 @@ export class CSVDirectAnalyzer {
   private async readAndParseCsv(csvPath: string): Promise<PlayerData[]> {
     if (!fs.existsSync(csvPath)) return [];
     
-    const csvContent = fs.readFileSync(csvPath, 'utf-8');
-    const lines = csvContent.split('\n');
+    const content = fs.readFileSync(csvPath, 'utf-8');
+    const lines = content.split('\n');
+    console.error(`[CSV DEBUG] Parsing ${csvPath}: ${lines.length} lines found`);
     const headers = this.parseCSVLine(lines[0]);
+    console.error(`[CSV DEBUG] Parsed headers (count ${headers.length}): ${headers.join('|')}`);
 
-    return lines.slice(1).filter(line => line.trim()).map(line => {
+    if (lines.length <= 1) {
+      console.error(`[CSV DEBUG] File ${csvPath} appears to have only headers or be empty.`);
+      return [];
+    }
+
+    return lines.slice(1).filter(line => line.trim()).map((line, idx) => {
       const values = this.parseCSVLine(line);
       const player: any = {};
 
@@ -131,14 +146,27 @@ export class CSVDirectAnalyzer {
   private mergeDatasets(current: PlayerData[], historical: PlayerData[]): PlayerData[] {
     if (historical.length === 0) return current;
 
+    const normalize = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
     const historicalMap = new Map<string, PlayerData>();
     historical.forEach(p => {
-      if (p.Player) historicalMap.set(p.Player.toLowerCase().trim(), p);
+      if (p.Player) historicalMap.set(normalize(p.Player), p);
     });
 
     return current.map(p => {
       if (!p.Player) return p;
-      const hMatch = historicalMap.get(p.Player.toLowerCase().trim());
+      const cpName = normalize(p.Player);
+      let hMatch = historicalMap.get(cpName);
+
+      if (!hMatch) {
+        const cpLastName = cpName.split(' ').pop() || '';
+        hMatch = historical.find(h => {
+          const hNameNorm = normalize(h.Player || '');
+          if (hNameNorm.includes(cpName) || cpName.includes(hNameNorm)) return true;
+          const hLastName = hNameNorm.split(' ').pop() || '';
+          if (cpLastName.length > 3 && cpLastName === hLastName) return true;
+          return false;
+        });
+      }
       if (!hMatch) return p;
 
       // Stats à récupérer si absentes (0 ou null) dans le fichier light 2025/26

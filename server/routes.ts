@@ -151,13 +151,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sofaResults = await sofaScoreService.searchPlayer(name, team);
         if (sofaResults.length > 0) {
           let sofaPlayer = sofaResults[0].entity;
-          const match = sofaResults.find(r => {
-             const sTeam = normalizeTeam(r.entity?.team?.name || '');
-             const cTeam = normalizeTeam(team);
-             return sTeam.includes(cTeam) || cTeam.includes(sTeam);
-          });
-          if (match) sofaPlayer = match.entity;
+          
+          // Robust team matching: normalize and compare team names
+          const normalizeTeamDeep = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase().replace(/\b(fc|sc|cf|ac|as|us|ss|ssc|afc|bsc|vfb|1\.|sv|tsg|rb|rcd|ud|cd|ca|rc|og|oge|racing|sporting|real|atletico|borussia|bayer|hertha)\b/g, '')
+            .replace(/\s+/g, ' ').trim();
+          
+          // Find the result whose team best matches the CSV team
+          const cTeamNorm = normalizeTeamDeep(team);
+          let bestMatch = sofaResults[0];
+          let bestScore = 0;
+          
+          for (const r of sofaResults) {
+            const sTeamNorm = normalizeTeamDeep(r.entity?.team?.name || '');
+            let score = 0;
+            
+            // Exact containment
+            if (sTeamNorm.includes(cTeamNorm) || cTeamNorm.includes(sTeamNorm)) score += 10;
+            // Word overlap
+            const cWords = cTeamNorm.split(' ').filter((w: string) => w.length > 2);
+            const sWords = sTeamNorm.split(' ').filter((w: string) => w.length > 2);
+            const overlap = cWords.filter((w: string) => sWords.some((sw: string) => sw.includes(w) || w.includes(sw))).length;
+            score += overlap * 3;
+            
+            // Player name validation (last name match)
+            const csvLastName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(' ').pop() || '';
+            const sofaName = (r.entity?.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+            if (sofaName.includes(csvLastName) || csvLastName.includes(sofaName.split(' ').pop() || '')) score += 5;
+            
+            if (score > bestScore) { bestScore = score; bestMatch = r; }
+          }
+          
+          sofaPlayer = bestMatch.entity;
           sofaId = sofaPlayer.id;
+          
+          // Log match quality
+          const matchedTeam = sofaPlayer.team?.name || '?';
+          if (bestScore < 5) {
+            console.warn(`⚠️ [SofaScore] LOW CONFIDENCE match: CSV="${name}" (${team}) → SofaScore="${sofaPlayer.name}" (${matchedTeam}) score=${bestScore}`);
+          } else {
+            console.log(`✅ [SofaScore] Match: "${name}" (${team}) → "${sofaPlayer.name}" (${matchedTeam}) confidence=${bestScore}`);
+          }
 
           const details = await sofaScoreService.getPlayerDetails(sofaId);
           if (details) {
@@ -175,12 +209,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const fullStats = await sofaScoreService.getFullSeasonStatistics(sofaId);
               if (fullStats && sofaStats) {
-                // Keep the real league rating, but use aggregated totals for goals/assists
                 const realRating = sofaStats.rating;
                 sofaStats.goals = fullStats.goals || sofaStats.goals;
                 sofaStats.assists = fullStats.assists || sofaStats.assists;
                 sofaStats.matches = fullStats.matches || sofaStats.matches;
-                sofaStats.rating = realRating; // Preserve league rating
+                sofaStats.rating = realRating;
               }
             } catch {}
             
@@ -196,6 +229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } catch (err: any) { console.warn(`[Sofa] skip ${name}:`, err.message); }
+
 
       // 2. Fetch from Transfermarkt (Fallback for Value & Height)
       let tmValue = 0;
@@ -235,13 +269,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (sofaStats.expectedGoals !== undefined) cp.xG = sofaStats.expectedGoals;
         if (sofaStats.expectedAssists !== undefined) cp.xAG = sofaStats.expectedAssists;
         if (sofaStats.accuratePassesPercentage !== undefined) cp['Cmp%'] = sofaStats.accuratePassesPercentage;
-        if (sofaStats.tackles !== undefined) cp.Tkl = sofaStats.tackles;
+        if (sofaStats.tackles !== undefined) { cp.Tkl = sofaStats.tackles; cp.TklW = sofaStats.tackles; }
         if (sofaStats.interceptions !== undefined) cp.Int = sofaStats.interceptions;
         if (sofaStats.successfulDribbles !== undefined) cp.Succ = sofaStats.successfulDribbles;
-        if (sofaStats.keyPasses !== undefined) cp.PrgP = sofaStats.keyPasses * 3; // Approx progressive value
+        if (sofaStats.keyPasses !== undefined) cp.PrgP = sofaStats.keyPasses;
+        if (sofaStats.totalPasses !== undefined) cp.Att = sofaStats.totalPasses;
+        if (sofaStats.accuratePasses !== undefined) cp.Cmp = sofaStats.accuratePasses;
+        if (sofaStats.successfulDribbles !== undefined && sofaStats.totalDribbles !== undefined) {
+          cp['Succ%'] = sofaStats.totalDribbles > 0 ? (sofaStats.successfulDribbles / sofaStats.totalDribbles * 100) : 0;
+        }
       }
 
-      // 4. Analysis & Global Rating (Now perfectly using true 2026 SofaScore data!)
+      // 4. Analysis & Global Rating
       const analysis = csvDirectAnalyzer.generatePlayerAnalysis(csvPlayer as any);
       
       if (!sofaStats?.rating && analysis?.overallRating) {
@@ -251,6 +290,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const baseXG = (csvPlayer as any).xG || (Number((csvPlayer as any).Gls) * 0.85 + Number((csvPlayer as any).Sh) * 0.05).toFixed(2);
       const baseXAG = (csvPlayer as any).xAG || (Number((csvPlayer as any).Ast) * 0.75 + 0.1).toFixed(2);
+
+      // ── Build a RELIABLE scouting radar using only verified data sources ──
+      // Helper: compute per-90 stat and rank against position peers
+      const posRaw = String((csvPlayer as any).Pos || 'MF').replace(/"/g, '').split(',')[0].trim();
+      const posPeers = allPlayers.filter((p: any) => {
+        const pPos = String(p.Pos || '').replace(/"/g, '').split(',')[0].trim();
+        return pPos === posRaw && (Number(p.Min) || 0) >= 200;
+      });
+      
+      const computeRealPercentile = (playerVal: number, column: string, per90: boolean = false): number => {
+        if (playerVal === null || playerVal === undefined || isNaN(playerVal)) return -1; // -1 = no data
+        const mins = Number((csvPlayer as any).Min) || 1;
+        const pVal = per90 ? (playerVal / (mins / 90)) : playerVal;
+        
+        const peerValues = posPeers.map((p: any) => {
+          const v = Number(p[column]) || 0;
+          const m = Number(p.Min) || 1;
+          return per90 ? (v / (m / 90)) : v;
+        }).filter(v => !isNaN(v));
+        
+        if (peerValues.length < 5) return Math.min(99, Math.max(1, Math.round(pVal * 10))); // insufficient peers
+        
+        const sorted = peerValues.sort((a, b) => a - b);
+        const rank = sorted.filter(v => v < pVal).length;
+        return Math.max(1, Math.min(99, Math.round((rank / sorted.length) * 100)));
+      };
 
       // Final Aggregated Object
       const enrichedPlayer = {
@@ -271,7 +336,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         logo: espnImageService.getTeamLogo(team),
         headshot: await espnImageService.getPlayerHeadshot((csvPlayer as any).Player, team),
         recentForm: (() => {
-          // Use REAL per-match ratings from SofaScore
           const realRatings = (csvPlayer as any)._matchRatings;
           if (realRatings && realRatings.length > 0) {
             return realRatings.slice(0, 5);
@@ -283,48 +347,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
           progressivePasses: Number((csvPlayer as any).PrgP) || 0,
           progressiveReceptions: Number((csvPlayer as any).PrgR) || 0,
           passCompletion: Number((csvPlayer as any)['Cmp%']) || 0,
-          tackles: Number((csvPlayer as any).Tkl) || 0
+          tackles: Number((csvPlayer as any).Tkl) || Number((csvPlayer as any).TklW) || 0
         },
         scoutingRadar: (() => {
            const cp = csvPlayer as any;
-           const s: any[] = [];
-           const getP = (val: string) => analysis.percentiles[val] || 50;
+           const ss = sofaStats as any;
+           const radar: any[] = [];
+           
+           // Helper to add metric only when we have REAL data
+           const addMetric = (label: string, percentile: number, category: string) => {
+             if (percentile >= 0) { // -1 means no data
+               radar.push({ label, percentile: Math.max(1, Math.min(99, Math.round(percentile))), category });
+             }
+           };
+           
+           // ─── 1. ATTACKING ─── (using CSV columns that EXIST: Gls, Sh, SoT, SoT%, G/Sh, PK + SofaScore xG)
+           addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
+           addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+           addMetric('TOTAL TIRS', computeRealPercentile(Number(cp.Sh) || 0, 'Sh', true), 'ATTAQUE');
+           addMetric('TIRS CADRÉS (%)', computeRealPercentile(Number(cp['SoT%']) || 0, 'SoT%', false), 'ATTAQUE');
+           const gsh = Number(cp['G/Sh']);
+           if (gsh > 0) addMetric('EFFICACITÉ (G/TIR)', computeRealPercentile(gsh, 'G/Sh', false), 'ATTAQUE');
+           addMetric('PENALTIES', computeRealPercentile(Number(cp.PK) || 0, 'PK', false), 'ATTAQUE');
 
-           // ─── 1. ATTACKING (7 Metrics) ───
-           s.push({ label: 'BUTS (NON-PÉNO)', percentile: getP('goals'), category: 'ATTAQUE' });
-           s.push({ label: 'EXPECTED GOALS (xG)', percentile: getP('xG'), category: 'ATTAQUE' });
-           s.push({ label: 'TOTAL TIRS', percentile: getP('shots'), category: 'ATTAQUE' });
-           s.push({ label: 'TIRS CADRÉS (%)', percentile: Math.min(99, Number(cp['SoT%']) || 40), category: 'ATTAQUE' });
-           s.push({ label: 'EFFICACITÉ (G/TIR)', percentile: Math.min(99, (Number(cp['G/Sh']) || 0.1) * 400), category: 'ATTAQUE' });
-           s.push({ label: 'COUPS-FRANCS', percentile: Math.min(99, (Number(cp.FK) || 0) * 12), category: 'ATTAQUE' });
-           s.push({ label: 'PENALTIES RÉUSSIS', percentile: Math.min(99, (Number(cp.PK) || 0) * 20), category: 'ATTAQUE' });
+           // ─── 2. CREATION ─── (Ast, xAG from SofaScore, Crs from CSV, Cmp% from SofaScore or historical)
+           addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
+           addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
+           const cmpPct = Number(cp['Cmp%']);
+           if (cmpPct > 0) addMetric('RÉUSSITE PASSES (%)', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
+           const prgp = Number(cp.PrgP);
+           if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
+           const crs = Number(cp.Crs);
+           if (crs > 0) addMetric('CENTRES', computeRealPercentile(crs, 'Crs', true), 'CRÉATION');
+           // SofaScore key passes
+           if (ss?.keyPasses > 0) addMetric('PASSES CLÉS', Math.min(99, Math.round(ss.keyPasses * 8)), 'CRÉATION');
 
-           // ─── 2. PASSING & CREATION (7 Metrics) ───
-           s.push({ label: 'PASSES DÉCISIVES', percentile: getP('assists'), category: 'CRÉATION' });
-           s.push({ label: 'EXPECTED ASSISTS (xA)', percentile: getP('xAG'), category: 'CRÉATION' });
-           s.push({ label: 'RÉUSSITE PASSES (%)', percentile: getP('passCompletion'), category: 'CRÉATION' });
-           s.push({ label: 'PASSES PROGRESSIVES', percentile: getP('progressivePasses'), category: 'CRÉATION' });
-           s.push({ label: 'PASSES LONGUES', percentile: Math.min(99, (Number(cp.TotDist) || 100) / 15), category: 'CRÉATION' });
-           s.push({ label: 'PASSES VERS LA SURFACE', percentile: Math.min(99, (Number(cp.PPA) || 0) * 40), category: 'CRÉATION' });
-           s.push({ label: 'CENTRES RÉUSSIS', percentile: Math.min(99, (Number(cp.CrsPA) || 0) * 60), category: 'CRÉATION' });
+           // ─── 3. DEFENSIVE ─── (TklW and Int exist in CSV 25/26, plus SofaScore data)
+           const tklw = Number(cp.TklW) || Number(cp.Tkl) || 0;
+           addMetric('TACLES', computeRealPercentile(tklw, 'TklW', true), 'DÉFENSE');
+           addMetric('INTERCEPTIONS', computeRealPercentile(Number(cp.Int) || 0, 'Int', true), 'DÉFENSE');
+           // SofaScore additional defensive stats
+           if (ss?.totalClearance > 0) addMetric('DÉGAGEMENTS', Math.min(99, Math.round(ss.totalClearance * 6)), 'DÉFENSE');
+           if (ss?.blockedScoringAttempt > 0) addMetric('TIRS BLOQUÉS', Math.min(99, Math.round(ss.blockedScoringAttempt * 15)), 'DÉFENSE');
+           if (ss?.duelWon !== undefined && ss?.duelLost !== undefined) {
+             const duelPct = (ss.duelWon + ss.duelLost) > 0 ? (ss.duelWon / (ss.duelWon + ss.duelLost) * 100) : 0;
+             addMetric('DUELS GAGNÉS (%)', Math.min(99, Math.round(duelPct)), 'DÉFENSE');
+           }
 
-           // ─── 3. DEFENSIVE (6 Metrics) ───
-           s.push({ label: 'TACLES', percentile: getP('tackles'), category: 'DÉFENSE' });
-           s.push({ label: 'INTERCEPTIONS', percentile: getP('interceptions'), category: 'DÉFENSE' });
-           s.push({ label: 'DÉGAGEMENTS', percentile: Math.min(99, (Number(cp.Clr) || 0) * 25), category: 'DÉFENSE' });
-           s.push({ label: 'TIRS BLOQUÉS', percentile: Math.min(99, (Number(cp.Blocks) || 0) * 35), category: 'DÉFENSE' });
-           s.push({ label: 'DUELS AÉRIENS (%)', percentile: Math.min(99, Number(cp['Won%']) || 50), category: 'DÉFENSE' });
-           s.push({ label: 'RÉCUPÉRATIONS', percentile: Math.min(99, (Number(cp.Recov) || 5) * 8), category: 'DÉFENSE' });
+           // ─── 4. STYLE ─── (Fld from CSV, SofaScore dribbles, PrgC/PrgR from historical merge)
+           const fld = Number(cp.Fld) || 0;
+           if (fld > 0) addMetric('FAUTES SUBIES', computeRealPercentile(fld, 'Fld', true), 'STYLE');
+           const succPct = Number(cp['Succ%']);
+           if (succPct > 0) addMetric('DRIBBLES RÉUSSIS (%)', computeRealPercentile(succPct, 'Succ%', false), 'STYLE');
+           const prgc = Number(cp.PrgC);
+           if (prgc > 0) addMetric('PORTÉES PROGRESSIVES', computeRealPercentile(prgc, 'PrgC', true), 'STYLE');
+           const prgr = Number(cp.PrgR);
+           if (prgr > 0) addMetric('RÉCEPTIONS PROGRESSIVES', computeRealPercentile(prgr, 'PrgR', true), 'STYLE');
+           // SofaScore possession
+           if (ss?.touches > 0) addMetric('TOUCHES', Math.min(99, Math.round(ss.touches / 0.7)), 'STYLE');
+           if (ss?.possessionLostCtrl !== undefined) addMetric('CONSERVATION', Math.max(1, 99 - Math.round(ss.possessionLostCtrl * 4)), 'STYLE');
 
-           // ─── 4. POSSESSION & STYLE (6 Metrics) ───
-           s.push({ label: 'DRIBBLES RÉUSSIS (%)', percentile: getP('dribbleSuccess'), category: 'STYLE' });
-           s.push({ label: 'PORTÉES PROGRESSIVES', percentile: Math.min(99, (Number(cp.PrgC) || 0) * 25), category: 'STYLE' });
-           s.push({ label: 'RÉCEPTIONS PROGRESSIVES', percentile: Math.min(99, (Number(cp.PrgR) || 0) * 20), category: 'STYLE' });
-           s.push({ label: 'TOUCHES (SURFACE ADV)', percentile: Math.min(99, (Number(cp.Touches) || 30) * 1.5), category: 'STYLE' });
-           s.push({ label: 'FAUTES SUBIES', percentile: Math.min(99, (Number(cp.Fld) || 0) * 18), category: 'STYLE' });
-           s.push({ label: 'HORS-JEUX', percentile: Math.max(1, 100 - (Number(cp.Off) || 0) * 25), category: 'STYLE' });
-
-           return s;
+           // Log data quality
+           console.log(`[Scouting] ${cp.Player}: ${radar.length} metrics (CSV: Gls=${cp.Gls}, Sh=${cp.Sh}, TklW=${tklw}, Int=${cp.Int}, Fld=${fld} | SofaScore: ${ss ? 'YES' : 'NO'})`);
+           
+           return radar;
         })()
       };
 

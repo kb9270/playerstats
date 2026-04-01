@@ -95,7 +95,7 @@ function HeatmapCanvas({ points }: { points: Array<{x: number, y: number, count?
     
     for (const pt of points) {
       // Map SofaScore coordinates to canvas pixels
-      const cx = m + ((100 - pt.y) / 100) * pW;
+      const cx = m + (pt.y / 100) * pW;
       const cy = m + (pt.x / 100) * pH;
       const count = pt.count || 1;
       const normCount = count / maxCount;
@@ -154,8 +154,15 @@ function HeatmapCanvas({ points }: { points: Array<{x: number, y: number, count?
   }, [points]);
 
   return (
-    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative">
       <canvas ref={canvasRef} width={W} height={H} style={{width: '100%', height: 'auto', display: 'block'}} />
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none">
+        <span className="text-[9px] font-black text-white/60 tracking-[0.2em] uppercase font-['Rajdhani']">Sens de l'attaque</span>
+        <div className="flex items-center">
+          <div className="h-[1px] w-8 bg-gradient-to-r from-white/0 to-white/60"></div>
+          <div className="w-1.5 h-1.5 border-t border-r border-white/60 rotate-45 -ml-1"></div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -40,7 +40,7 @@ function MatchHeatmap({ points }: { points: any[] }) {
     const maxCount = Math.max(...points.map(p => p.count || 1));
 
     for (const pt of points) {
-      const cx = m + ((100 - pt.y) / 100) * pW;
+      const cx = m + (pt.y / 100) * pW;
       const cy = m + (pt.x / 100) * pH;
       const normCount = (pt.count || 1) / maxCount;
       const radius = 22 + normCount * 28;
@@ -78,8 +78,15 @@ function MatchHeatmap({ points }: { points: any[] }) {
   }, [points]);
 
   return (
-    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto">
+    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto relative">
       <canvas ref={canvasRef} width={W} height={H} style={{width: '100%', height: 'auto', display: 'block'}} />
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none">
+        <span className="text-[9px] font-black text-white/60 tracking-[0.2em] uppercase font-['Rajdhani']">Sens de l'attaque</span>
+        <div className="flex items-center">
+          <div className="h-[1px] w-8 bg-gradient-to-r from-white/0 to-white/60"></div>
+          <div className="w-1.5 h-1.5 border-t border-r border-white/60 rotate-45 -ml-1"></div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -142,8 +149,18 @@ function MatchShotmap({ shots }: { shots: any[] }) {
   }, [shots]);
 
   return (
-    <div className="w-full max-w-[400px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto">
+    <div className="w-full max-w-[400px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto relative group">
       <canvas ref={canvasRef} width={W} height={H} style={{width: '100%', height: 'auto', display: 'block'}} />
+      
+      {/* Direction indicator for vertical map */}
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2 px-1.5 py-4 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none">
+        <div className="flex flex-col items-center">
+          <div className="w-1.5 h-1.5 border-t border-l border-white/60 rotate-45 -mb-1"></div>
+          <div className="w-[1px] h-8 bg-gradient-to-b from-white/60 to-white/0"></div>
+        </div>
+        <span className="text-[8px] font-black text-white/60 tracking-[0.2em] uppercase font-['Rajdhani'] [writing-mode:vertical-lr] rotate-180">Attaque</span>
+      </div>
+
       <div className="flex justify-center gap-4 bg-black/40 p-3 text-[10px] font-bold uppercase tracking-wider text-white/50">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 border border-white"></span> But</span>
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Cadré</span>
@@ -183,13 +200,13 @@ function MatchEventMap({ type, events }: { type: 'passes' | 'actions', events: a
 
     for (const ev of events) {
       if (!ev.x || !ev.y) continue;
-      const startX = m + ((100 - ev.y) / 100) * pW;
+      const startX = m + (ev.y / 100) * pW;
       const startY = m + (ev.x / 100) * pH;
 
       ctx.beginPath();
       // Render event depending on whether it has an end coordinate (like a pass/run)
       if (ev.endX && ev.endY) {
-        const endX = m + ((100 - ev.endY) / 100) * pW;
+        const endX = m + (ev.endY / 100) * pW;
         const endY = m + (ev.endX / 100) * pH;
         // Directional line (arrow)
         ctx.strokeStyle = ev.accurate !== false ? 'rgba(59, 130, 246, 0.7)' : 'rgba(239, 68, 68, 0.5)';
@@ -212,8 +229,17 @@ function MatchEventMap({ type, events }: { type: 'passes' | 'actions', events: a
   }, [events]);
 
   return (
-    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto">
+    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl mx-auto relative">
       <canvas ref={canvasRef} width={W} height={H} style={{width: '100%', height: 'auto', display: 'block'}} />
+      
+      <div className="absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-1.5 bg-black/60 backdrop-blur-md rounded-full border border-white/10 pointer-events-none">
+        <span className="text-[9px] font-black text-white/60 tracking-[0.2em] uppercase font-['Rajdhani']">Sens de l'attaque</span>
+        <div className="flex items-center">
+          <div className="h-[1px] w-8 bg-gradient-to-r from-white/0 to-white/60"></div>
+          <div className="w-1.5 h-1.5 border-t border-r border-white/60 rotate-45 -ml-1"></div>
+        </div>
+      </div>
+
       <div className="flex justify-center gap-4 bg-black/40 p-3 text-[10px] font-bold uppercase tracking-wider text-white/50">
         <span className="flex items-center gap-1">
           <span className={`w-2 h-2 rounded-full ${type === 'passes' ? 'bg-blue-500' : 'bg-emerald-500'}`}></span>

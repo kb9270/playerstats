@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
+
+// Load additional fonts for special widgets
+if (typeof document !== 'undefined') {
+  const link = document.createElement('link');
+  link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800;900&display=swap';
+  link.rel = 'stylesheet';
+  document.head.appendChild(link);
+}
 import {
   Search, Trophy, Zap, BarChart3, Users, Activity,
   TrendingUp, ArrowUpRight, Globe, ChevronRight,
@@ -189,6 +197,69 @@ const FieldLines = () => (
     <path d="M 36 77 Q 50 68 64 77" fill="none" stroke="#fff" strokeWidth="0.4" />
   </svg>
 );
+ 
+const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: string }) => {
+  if (!player) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.1, zIndex: 50 }}
+      style={{
+        position: "absolute", top, left, transform: "translate(-50%, -50%)",
+        display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10,
+        cursor: "pointer"
+      }}
+    >
+      <div style={{ 
+        position: "relative",
+        width: 65, height: 75,
+        background: "linear-gradient(135deg, #003399 0%, #001A4D 100%)",
+        border: "1.5px solid #00FFCC",
+        clipPath: "polygon(10% 0, 90% 0, 100% 20%, 100% 80%, 90% 100%, 10% 100%, 0 80%, 0 20%)", // Sharper style
+        boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden"
+      }}>
+        {/* Team mini logo */}
+        <div style={{
+          position: "absolute", top: 8, left: 8, zIndex: 5,
+          width: 18, height: 18, background: "#fff", borderRadius: "50%",
+          padding: 2, border: "1px solid #001A4D"
+        }}>
+           <PlayerAvatar playerName="" teamName={player.Squad} size="sm" />
+        </div>
+        
+        <PlayerAvatar
+          playerName={player.Player || ""}
+          teamName={player.Squad}
+          sofaId={player.sofaId}
+          size="lg"
+          className="w-full h-full object-cover"
+        />
+      </div>
+      
+      {/* Name Label */}
+      <div style={{
+        marginTop: -10,
+        background: "#fff",
+        color: "#001A4D",
+        padding: "2px 8px",
+        minWidth: 80,
+        textAlign: "center",
+        fontSize: 10,
+        fontFamily: "'Roboto Condensed', sans-serif",
+        fontWeight: 900,
+        textTransform: "uppercase",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
+        zIndex: 5,
+        clipPath: "polygon(0 0, 100% 0, 95% 100%, 5% 100%)" // Official slanted look
+      }}>
+        {player.Player?.split(" ").pop() || "NAME"}
+      </div>
+    </motion.div>
+  );
+};
 
 /* ─── Nav ───────────────────────────────────────────────── */
 function BentoNav() {
@@ -804,48 +875,123 @@ export default function BentoHome() {
 
           {/* ── CARD 5: Ballon d'Or Ranking ─────── */}
           <GlassCard
-            glowColor="rgba(245,200,66,0.18)"
-            style={{ gridColumn: "6 / 9", gridRow: "2 / 3", padding: 24, cursor: "pointer" }}
+            glowColor="rgba(223, 181, 68, 0.25)"
+            style={{ 
+              gridColumn: "6 / 9", 
+              gridRow: "2 / 3", 
+              padding: 0, 
+              cursor: "pointer",
+              background: "linear-gradient(135deg, rgba(0,0,0,1) 0%, rgba(20,20,20,1) 100%)",
+              border: "1px solid rgba(223, 181, 68, 0.3)",
+              fontFamily: "'Montserrat', sans-serif"
+            }}
             onClick={() => setLocation("/ballon-dor")}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <Trophy size={13} style={{ color: "#F5C842" }} />
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                Ballon d'Or
-              </span>
-              <span style={{
-                marginLeft: "auto", fontSize: 9, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
-                color: "#F5C842", background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.2)",
-                padding: "2px 8px", borderRadius: 100, letterSpacing: "0.1em", textTransform: "uppercase",
-              }}>2026</span>
-              <ChevronRight size={14} style={{ color: "rgba(255,255,255,0.3)" }} />
-            </div>
-            {rankings.length > 0 ? rankings.slice(0, 4).map((r: any, i: number) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 0",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
-              }}>
-                <span style={{
-                  width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 11,
-                  background: i === 0 ? "rgba(245,200,66,0.2)" : "rgba(255,255,255,0.05)",
-                  color: i === 0 ? "#F5C842" : "rgba(255,255,255,0.4)",
-                }}>{i + 1}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.playerName}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.team}</div>
+            <div style={{ padding: "20px 24px", position: "relative", zIndex: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <div style={{ transform: "scale(0.35)", transformOrigin: "left center", width: 40, height: 40, marginBottom: -25, marginTop: -15 }}>
+                  <svg width="140" height="220" viewBox="0 0 140 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <g stroke="#DFB544" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="67" cy="102" r="34" />
+                      <path d="M 67 85 L 82 95 L 75 113 L 59 113 L 52 95 Z" />
+                      <line x1="67" y1="85" x2="67" y2="68" />
+                      <line x1="82" y1="95" x2="98" y2="90" />
+                      <line x1="75" y1="113" x2="86" y2="129" />
+                      <line x1="59" y1="113" x2="48" y2="129" />
+                      <line x1="52" y1="95" x2="36" y2="90" />
+                    </g>
+                  </svg>
                 </div>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 16, color: i === 0 ? "#F5C842" : "rgba(255,255,255,0.7)" }}>
-                  {Math.round(r.points)}
-                </span>
+                <div style={{ marginLeft: -10 }}>
+                  <div style={{ 
+                    fontFamily: "'Montserrat', sans-serif", 
+                    fontWeight: 300, 
+                    fontSize: 14, 
+                    color: "#DFB544", 
+                    letterSpacing: "0.15em",
+                    textTransform: "uppercase",
+                    lineHeight: 1
+                  }}>
+                    Ballon d'Or
+                  </div>
+                  <div style={{ 
+                    fontSize: 8, 
+                    color: "rgba(223, 181, 68, 0.5)", 
+                    letterSpacing: "0.4em", 
+                    textTransform: "uppercase",
+                    marginTop: 2
+                  }}>
+                    The Race 2026
+                  </div>
+                </div>
+                <ChevronRight size={14} style={{ marginLeft: "auto", color: "rgba(223, 181, 68, 0.4)" }} />
               </div>
-            )) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[...Array(4)].map((_, i) => <div key={i} style={{ height: 36, borderRadius: 6 }} className="shimmer" />)}
-              </div>
-            )}
+
+              {rankings.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  {rankings.slice(0, 4).map((r: any, i: number) => {
+                    const isWinner = i === 0;
+                    return (
+                      <div key={i} style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom: i < 3 ? "1px solid rgba(223, 181, 68, 0.12)" : "none",
+                        transition: "all 0.2s ease"
+                      }}>
+                        <span style={{
+                          width: 20,
+                          fontFamily: "'Montserrat', sans-serif",
+                          fontWeight: isWinner ? 700 : 300,
+                          fontSize: isWinner ? 16 : 12,
+                          color: "#DFB544",
+                          opacity: isWinner ? 1 : 0.6,
+                          textAlign: "center"
+                        }}>{i + 1}</span>
+                        
+                        <div style={{ 
+                          width: 32, height: 32, borderRadius: "50%", overflow: "hidden", 
+                          border: `1px solid ${isWinner ? "#DFB544" : "rgba(223, 181, 68, 0.3)"}`,
+                          padding: 1.5, flexShrink: 0
+                        }}>
+                           <PlayerAvatar playerName={r.playerName} teamName={r.team} sofaId={r.sofaId} size="md" className="rounded-full h-full w-full object-cover" />
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ 
+                            fontFamily: "'Montserrat', sans-serif", 
+                            fontWeight: isWinner ? 600 : 400, 
+                            fontSize: 12, 
+                            textTransform: "uppercase", 
+                            letterSpacing: "0.08em", 
+                            color: "#DFB544",
+                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" 
+                          }}>
+                            {r.playerName}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ 
+                            fontFamily: "'Montserrat', sans-serif", 
+                            fontWeight: 700, 
+                            fontSize: 14, 
+                            color: "#DFB544",
+                            lineHeight: 1
+                          }}>{Math.round(r.points)}</div>
+                          <div style={{ fontSize: 7, color: "rgba(223, 181, 68, 0.4)", textTransform: "uppercase", marginTop: 2 }}>PTS</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[...Array(4)].map((_, i) => <div key={i} style={{ height: 40, borderRadius: 6, background: "rgba(223, 181, 68, 0.05)" }} className="shimmer" />)}
+                </div>
+              )}
+            </div>
           </GlassCard>
 
           {/* ── CARD 6: Quick stats 2 cols ────────── */}
@@ -898,54 +1044,132 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
-          {/* ── CARD 8: Top players strip ─────────── */}
+          {/* ── CARD 8: UCL Team of the Week (Official DA) ─────── */}
           <GlassCard
-            style={{ gridColumn: "1 / 7", gridRow: "3 / 4", padding: 24 }}
+            glowColor="rgba(0, 102, 255, 0.45)"
+            style={{ 
+              gridColumn: "1 / 7", 
+              gridRow: "3 / 5",
+              padding: 0,
+              background: "#001e4d",
+              border: "1.5px solid rgba(255, 255, 255, 0.15)",
+              overflow: "hidden",
+              position: "relative"
+            }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <TrendingUp size={13} style={{ color: "#E8344A" }} />
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase" }}>Top Performers</span>
+            {/* Official UCL Chevron Beam Background */}
+            <div style={{
+              position: "absolute", inset: 0, opacity: 0.2,
+              background: `
+                repeating-linear-gradient(125deg, transparent, transparent 60px, rgba(0, 85, 255, 0.15) 60px, rgba(0, 85, 255, 0.15) 120px),
+                linear-gradient(180deg, #001e4d 0%, #003399 100%)
+              `,
+              pointerEvents: "none"
+            }} />
+            
+            {/* Animated Glow over the pitch */}
+            <div style={{
+              position: "absolute", bottom: "-10%", left: 0, right: 0, height: "80%",
+              background: "radial-gradient(ellipse at 50% 100%, rgba(0,255,204,0.12) 0%, transparent 75%)",
+              pointerEvents: "none"
+            }} />
+
+            {/* Official Header Area inspired by Image */}
+            <div style={{ 
+              padding: "24px 28px", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: 20,
+              position: "relative",
+              zIndex: 5,
+              background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)"
+            }}>
+              {/* UCL Logo */}
+              <div style={{ width: 60, height: 60 }}>
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50 0 L54 36 L90 32 L65 54 L78 88 L50 67 L22 88 L35 54 L10 32 L46 36 L50 0 Z" fill="white" opacity="0.9" />
+                  <circle cx="50" cy="50" r="48" stroke="white" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
+                </svg>
+              </div>
+
+              {/* Crypto.com-like partner slot (optional, but adds "official" feel) */}
+              <div style={{ width: 1, height: 50, background: "rgba(255,255,255,0.2)" }} />
+              
+              <div style={{ flex: 1 }}>
+                <div style={{ 
+                  fontFamily: "'Barlow Condensed', sans-serif", 
+                  fontWeight: 900, 
+                  fontSize: 42, 
+                  color: "#fff", 
+                  textTransform: "uppercase", 
+                  lineHeight: 0.85,
+                  letterSpacing: "-0.01em",
+                  display: "flex",
+                  flexDirection: "column",
+                  transform: "scaleY(1.1)", /* Makes it more condensed like the image */
+                  transformOrigin: "left center"
+                }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    ÉQUIPE <span style={{ fontSize: 16, fontWeight: 300, verticalAlign: "middle", letterSpacing: "0.1em" }}>DE LA</span>
+                  </div>
+                  <div>SEMAINE</div>
+                </div>
+              </div>
+              
+              {/* UCL Starball Graphic small */}
+              <div style={{ width: 50, height: 50, opacity: 0.6 }}>
+                 <svg viewBox="0 0 100 100" opacity="0.8">
+                   <path d="M50 20 L53 38 L72 38 L57 48 L62 66 L50 56 L38 66 L43 48 L28 38 L47 38 Z" fill="#00FFCC" />
+                 </svg>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "nowrap", overflowX: "auto" }}>
-              {players.slice(0, 5).map((p: any, i: number) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ y: -4 }}
-                  onClick={() => setLocation(`/joueur/${encodeURIComponent(p.Player)}`)}
-                  style={{
-                    flexShrink: 0, width: 100, textAlign: "center",
-                    padding: "14px 8px 12px",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 14, cursor: "pointer",
-                  }}
-                >
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 14, margin: "0 auto 10px",
-                    overflow: "hidden", border: "2px solid rgba(232,52,74,0.3)",
-                    background: "rgba(255,255,255,0.05)",
-                  }}>
-                    <PlayerAvatar playerName={p.Player} teamName={p.Squad} sofaId={p.sofaId} size="md" />
-                  </div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {p.Player?.split(" ").pop()}
-                  </div>
-                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.Squad}</div>
-                  <div style={{
-                    marginTop: 8, padding: "3px 8px",
-                    background: "rgba(245,200,66,0.1)", border: "1px solid rgba(245,200,66,0.2)",
-                    borderRadius: 100, display: "inline-flex", alignItems: "center", gap: 3,
-                  }}>
-                    <Star size={9} style={{ color: "#F5C842" }} />
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, color: "#F5C842" }}>
-                      {Number(p.rating).toFixed(1)}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-              {players.length === 0 && [...Array(5)].map((_, i) => (
-                <div key={i} style={{ width: 100, height: 140, borderRadius: 14, flexShrink: 0 }} className="shimmer" />
-              ))}
+
+            {/* Tactical Field Container */}
+            <div style={{ 
+              position: "relative", 
+              height: 520, 
+              margin: "0 24px 28px",
+              background: "rgba(0,0,0,0.2)",
+              borderRadius: "2px",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              overflow: "hidden",
+            }}>
+              {/* Official UCL Pitch markings */}
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.3 }}>
+                <rect x="2" y="2" width="96" height="96" fill="none" stroke="#fff" strokeWidth="0.4" />
+                <line x1="2" y1="50" x2="98" y2="50" stroke="#fff" strokeWidth="0.5" />
+                <circle cx="50" cy="50" r="14" fill="none" stroke="#fff" strokeWidth="0.5" />
+                <rect x="22" y="2" width="56" height="18" fill="none" stroke="#fff" strokeWidth="0.4" />
+                <rect x="22" y="80" width="56" height="18" fill="none" stroke="#fff" strokeWidth="0.4" />
+                {/* Tactical Star markers */}
+                <circle cx="50" cy="50" r="1" fill="#fff" />
+              </svg>
+
+              {/* Player Deployment (4-3-3 format) */}
+              {players.length >= 11 ? (
+                <>
+                   {/* FORWARDS */}
+                   <UCLPlayerCard player={fws[0]} top="12%" left="22%" />
+                   <UCLPlayerCard player={fws[1]} top="8%" left="50%" />
+                   <UCLPlayerCard player={fws[2]} top="12%" left="78%" />
+
+                   {/* MIDFIELDERS */}
+                   <UCLPlayerCard player={mfs[0]} top="42%" left="25%" />
+                   <UCLPlayerCard player={mfs[1]} top="38%" left="50%" />
+                   <UCLPlayerCard player={mfs[2]} top="42%" left="75%" />
+
+                   {/* DEFENDERS */}
+                   <UCLPlayerCard player={dfs[2]} top="64%" left="62%" />
+                   <UCLPlayerCard player={dfs[3]} top="68%" left="85%" />
+
+                   {/* GOALKEEPER */}
+                   <UCLPlayerCard player={gk} top="88%" left="50%" />
+                </>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                  <div className="shimmer" style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+                </div>
+              )}
             </div>
           </GlassCard>
 
@@ -994,7 +1218,7 @@ export default function BentoHome() {
           {/* ── CARD 10: CTA Explorer ────────────── */}
           <GlassCard
             glowColor="rgba(232,52,74,0.3)"
-            style={{ gridColumn: "1 / 7", gridRow: "4 / 5", padding: 32, background: "rgba(232,52,74,0.08)" }}
+            style={{ gridColumn: "1 / 7", gridRow: "5 / 6", padding: 32, background: "rgba(232,52,74,0.08)" }}
             onClick={() => setLocation("/dashboard")}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1021,7 +1245,7 @@ export default function BentoHome() {
 
           {/* ── CARD 11: CTA Matches ─────────────── */}
           <GlassCard
-            style={{ gridColumn: "7 / 13", gridRow: "4 / 5", padding: 32 }}
+            style={{ gridColumn: "7 / 13", gridRow: "5 / 6", padding: 32 }}
             onClick={() => setLocation("/matches")}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
