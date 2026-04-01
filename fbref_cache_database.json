@@ -1,0 +1,16 @@
+{
+  "Harry Kane": {
+    "non-penalty_goals": 99,
+    "npxg:_non-penalty_expected_goals": 92,
+    "total_shots": 95,
+    "assists": 88,
+    "expected_assists_(xa)": 87,
+    "shot-creating_actions": 91,
+    "passes_attempted": 75,
+    "pass_completion_%": 82,
+    "progressive_passes": 85,
+    "progressive_carries": 78,
+    "successful_take-ons": 60,
+    "touches_(att_pen)": 96
+  }
+}

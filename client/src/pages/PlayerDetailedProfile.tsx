@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, TrendingUp, Shield, BarChart3, Flag, Map } from "lucide-react";
@@ -45,10 +45,167 @@ const formatMarketValue = (val: number | string) => {
   return cleanVal + "€" + suffix;
 };
 
+// ── HeatmapCanvas: SofaScore-accurate heatmap rendering ─────────────────
+function HeatmapCanvas({ points }: { points: Array<{x: number, y: number, count?: number}> }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const W = 740, H = 480; // 105:68 ratio
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !points?.length) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // 1. Dark pitch background (SofaScore style)
+    ctx.fillStyle = '#0e2818';
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Draw pitch markings FIRST (under heatmap)
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1.2;
+    const m = 20; // margin
+    const pW = W - m*2, pH = H - m*2;
+    ctx.strokeRect(m, m, pW, pH);
+    // Center
+    ctx.beginPath(); ctx.moveTo(W/2, m); ctx.lineTo(W/2, H-m); ctx.stroke();
+    ctx.beginPath(); ctx.arc(W/2, H/2, pH*0.134, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(W/2, H/2, 3, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fill();
+    // Penalty areas (16.5m = 15.7% of 105m)
+    const paW = pW*0.157, paH = pH*0.593;
+    ctx.strokeRect(m, (H-paH)/2, paW, paH);
+    ctx.strokeRect(W-m-paW, (H-paH)/2, paW, paH);
+    // Goal areas
+    const gaW = pW*0.052, gaH = pH*0.269;
+    ctx.strokeRect(m, (H-gaH)/2, gaW, gaH);
+    ctx.strokeRect(W-m-gaW, (H-gaH)/2, gaW, gaH);
+    // Penalty spots
+    ctx.beginPath(); ctx.arc(m + pW*0.11, H/2, 2, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(W-m - pW*0.11, H/2, 2, 0, Math.PI*2); ctx.fill();
+
+    // 3. Render heatmap on separate canvas with additive blending
+    const heatCanvas = document.createElement('canvas');
+    heatCanvas.width = W; heatCanvas.height = H;
+    const hCtx = heatCanvas.getContext('2d')!;
+    
+    // SofaScore coords are vertical (X: touchline-to-touchline, Y: goal-to-goal).
+    // To map to a horizontal pitch (attacking left-to-right), we MUST swap X and Y:
+    // horizontal X = 100 - vertical Y (assuming team attacks to the right)
+    // horizontal Y = vertical X
+    const maxCount = Math.max(...points.map(p => p.count || 1));
+    
+    for (const pt of points) {
+      // Map SofaScore coordinates to canvas pixels
+      const cx = m + ((100 - pt.y) / 100) * pW;
+      const cy = m + (pt.x / 100) * pH;
+      const count = pt.count || 1;
+      const normCount = count / maxCount;
+      const radius = 22 + normCount * 28;
+      const intensity = 0.12 + normCount * 0.35;
+      
+      const gradient = hCtx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+      gradient.addColorStop(0, `rgba(255,255,255,${intensity})`);
+      gradient.addColorStop(0.5, `rgba(255,255,255,${intensity * 0.4})`);
+      gradient.addColorStop(1, 'rgba(255,255,255,0)');
+      hCtx.fillStyle = gradient;
+      hCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    }
+
+    // 4. Colorize with SofaScore palette (transparent → green → yellow → orange → red)
+    const imageData = hCtx.getImageData(0, 0, W, H);
+    const d = imageData.data;
+    
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3];
+      if (a < 3) continue;
+      
+      // Make colors brighter and yellow much more prominent
+      const t = Math.min(1, a / 140); // Lower denominator for quicker brightness scaling
+      let r, g, b;
+      
+      if (t < 0.2) {
+        // Transparent → faint green
+        r = 30; g = Math.round(80 + t * 200); b = 30;
+      } else if (t < 0.35) {
+        // Green → bright Yellow (yellow starts early)
+        const s = (t - 0.2) / 0.15;
+        r = Math.round(50 + 205 * s); g = Math.round(180 + 75 * s); b = Math.round(30 - 30 * s);
+      } else if (t < 0.70) {
+        // Broad bright Yellow band
+        const s = (t - 0.35) / 0.35;
+        r = 255; g = 255 - Math.round(60 * s); b = 0;
+      } else if (t < 0.85) {
+        // Yellow → Orange
+        const s = (t - 0.70) / 0.15;
+        r = 255; g = Math.round(195 - 95 * s); b = 0;
+      } else {
+        // Orange → Red
+        const s = (t - 0.85) / 0.15;
+        r = 255; g = Math.round(100 - 100 * s); b = 0;
+      }
+      
+      d[i] = r; d[i+1] = g; d[i+2] = b;
+      d[i+3] = Math.min(220, Math.round(a * 2.0)); // higher alpha for visibility
+    }
+    
+    hCtx.putImageData(imageData, 0, 0);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.drawImage(heatCanvas, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+  }, [points]);
+
+  return (
+    <div className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+      <canvas ref={canvasRef} width={W} height={H} style={{width: '100%', height: 'auto', display: 'block'}} />
+    </div>
+  );
+}
+
+// ── All Season Matches (expandable list) ─────────────────────────────
+function AllSeasonMatches({ sofaId }: { sofaId: number }) {
+  const [, setLocation] = useLocation();
+  const { data, isLoading } = useQuery<any>({
+    queryKey: [`/api/sofa/player/${sofaId}/matches`],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) return (
+    <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="mt-6">
+      <div className="text-center text-white/40 py-8 text-sm">Chargement des matchs…</div>
+    </motion.div>
+  );
+
+  const matches = data?.matches || [];
+  
+  return (
+    <motion.div initial={{opacity:0,height:0}} animate={{opacity:1,height:'auto'}} exit={{opacity:0,height:0}} className="mt-6 space-y-1 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+      <div className="text-[10px] text-[var(--c-accent)] font-black uppercase tracking-[0.3em] mb-3">{matches.length} MATCHS CETTE SAISON</div>
+      {matches.map((m: any) => (
+        <button
+          key={m.eventId}
+          onClick={() => setLocation(`/match/${m.eventId}/${sofaId}`)}
+          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 transition-colors group"
+        >
+          <div className="text-[10px] text-white/30 w-20 shrink-0 font-['Rajdhani'] font-bold">
+            {new Date(m.date * 1000).toLocaleDateString('fr-FR', {day:'2-digit',month:'short'})}
+          </div>
+          <img src={m.homeTeam.logo} alt="" className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.2' }} />
+          <span className="text-xs font-bold text-white/70 font-['Barlow_Condensed'] w-16 text-right truncate">{m.homeTeam.name}</span>
+          <span className="text-sm font-black text-white font-['Rajdhani'] px-2">{m.homeScore ?? '?'} - {m.awayScore ?? '?'}</span>
+          <span className="text-xs font-bold text-white/70 font-['Barlow_Condensed'] w-16 truncate">{m.awayTeam.name}</span>
+          <img src={m.awayTeam.logo} alt="" className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0.2' }} />
+          <span className="ml-auto text-[9px] text-white/30 font-bold uppercase truncate">{m.tournament}</span>
+          <span className="text-[var(--c-accent)] text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+        </button>
+      ))}
+    </motion.div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function PlayerDetailedProfile() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
+  const [showAllMatches, setShowAllMatches] = useState(false);
   const playerName = decodeURIComponent(id as string).trim();
 
   const { data, isLoading, error } = useQuery<{ player: any; similar: any[] }>({
@@ -96,8 +253,8 @@ export default function PlayerDetailedProfile() {
   const positionStr = getPos(p);
   const marketValueDisplay = formatMarketValue(p.marketValue);
   const contractEnd = "JUIN 2027"; // Pro-rated for 2026/27 season
-  const preferredFoot = p.foot || "DROIT";
-  const heightDisplay = p.height > 0 ? `${(p.height/100).toFixed(2)}M` : (p.height || "1,80M");
+  const preferredFoot = (p.foot || "DROIT").toUpperCase();
+  const heightDisplay = p.height > 100 ? `${(p.height/100).toFixed(2)}M` : (p.height ? `${p.height}M` : "—");
 
   // Chart data simulation points
   const g_a = (Number(p.Gls) || 0) + (Number(p.Ast) || 0);
@@ -186,13 +343,15 @@ export default function PlayerDetailedProfile() {
           
           <div className="text-center flex flex-col items-center">
             <div className="font-['Rajdhani'] font-black text-[var(--c-accent)] text-2xl leading-none">{age} ANS</div>
-            <div className="text-[10px] uppercase tracking-widest text-white/50">12/07/1995</div>
+            <div className="text-[10px] uppercase tracking-widest text-white/50">
+              {p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString('fr-FR') : "NÉ EN " + (2025 - age)}
+            </div>
           </div>
           <div className="text-[var(--c-accent)]/30 font-light text-2xl">|</div>
           
           <div className="text-center flex flex-col items-center">
             <div className="text-[10px] uppercase tracking-widest text-white/50">PIED FORT</div>
-            <div className="font-['Rajdhani'] font-black text-[var(--c-accent)] text-xl leading-none">{preferredFoot}</div>
+            <div className="font-['Rajdhani'] font-black text-[var(--c-accent)] text-xl leading-none">{p.foot || "DROIT"}</div>
           </div>
           <div className="text-[var(--c-accent)]/30 font-light text-2xl">|</div>
           
@@ -229,14 +388,14 @@ export default function PlayerDetailedProfile() {
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">NOTES LIVE</div>
                   <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
-                    {fmt(p.sofaStats?.rating || 7.2)}
+                    {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}
                   </div>
                   <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">COTE SOFASCORE</div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">PRÉCISION RÉUSSIE</div>
                   <div className="text-6xl font-['Barlow_Condensed'] font-black text-white leading-none">
-                    {fmtInt(p.advancedStats?.passCompletion || p.sofaStats?.passAccuracy || 84)}%
+                    {fmtInt(p.advancedStats?.passCompletion || p.sofaStats?.passAccuracy || p['Cmp%'])}%
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -281,73 +440,142 @@ export default function PlayerDetailedProfile() {
               </div>
             </div>
 
-            {/* Form Bar */}
+            {/* Form Bar + All Matches */}
             <div className="mt-12 pt-8 border-t border-white/5 relative z-10">
               <div className="flex justify-between items-end mb-6">
                 <div>
-                  <div className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold mb-2">FORME RÉCENTE</div>
+                  <div className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold mb-2">5 DERNIERS MATCHS</div>
                 </div>
               </div>
               
-              <div className="flex gap-4">
-                {(p.recentForm?.length > 0 ? p.recentForm : [7.1, 8.2, 6.5, 7.8, 7.4]).map((f: any, i: number) => {
-                  const r = typeof f === 'object' ? f.rating : f;
-                  const color = r >= 7.5 ? 'bg-[var(--c-accent)]' : r >= 6.8 ? 'bg-blue-500' : 'bg-orange-500';
-                  return (
-                    <div key={i} className="flex flex-col items-center gap-2 group relative">
-                      <div className={`w-12 h-12 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-lg text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)]`}>
-                        {r.toFixed(1)}
+              <div className="flex gap-4 flex-wrap justify-start">
+                {(p.recentForm?.length > 0) ? (
+                  p.recentForm.slice(0, 5).map((f: any, i: number) => {
+                    const r = typeof f === 'object' ? f.rating : f;
+                    const color = r >= 7.5 ? 'bg-[var(--c-accent)]' : r >= 6.8 ? 'bg-blue-500' : 'bg-orange-500';
+                    return (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-xl text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)]`}>
+                          {r.toFixed(1)}
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="text-[8px] text-white/40 font-bold uppercase">vs</div>
+                          {f.opponentLogo && (
+                            <img src={f.opponentLogo} alt={f.opponentName || ''} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          )}
+                          <div className="text-[7px] text-white/50 font-bold text-center leading-tight uppercase">
+                            {f.opponentName || '—'}
+                          </div>
+                        </div>
                       </div>
+                    );
+                  })
+                ) : (
+                  [...Array(5)].map((_, i) => (
+                    <div key={i} className="flex flex-col items-center gap-2">
+                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black font-['Rajdhani'] text-xl text-white/20">—</div>
+                      <div className="text-[8px] text-white/20">—</div>
                     </div>
-                  );
-                })}
+                  ))
+                )}
+
+                {/* VOIR PLUS button */}
+                {p.sofaId && (
+                  <button
+                    onClick={() => setShowAllMatches(!showAllMatches)}
+                    className="flex flex-col items-center gap-2 group cursor-pointer"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black font-['Rajdhani'] text-2xl text-[var(--c-accent)] group-hover:bg-[var(--c-accent)]/20 transition-colors">
+                      {showAllMatches ? '−' : '+'}
+                    </div>
+                    <div className="text-[7px] text-[var(--c-accent)] font-bold uppercase">
+                      {showAllMatches ? 'FERMER' : 'VOIR +'}
+                    </div>
+                  </button>
+                )}
               </div>
+
+              {/* All Season Matches (expanded) */}
+              <AnimatePresence>
+                {showAllMatches && p.sofaId && (
+                  <AllSeasonMatches sofaId={p.sofaId} />
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* BLOCK 2: SCOUTING REPORT (Bento Medium - Full Metric List) */}
-          <div className="md:col-span-4 bg-[var(--c-accent)]/10 backdrop-blur-xl border border-[var(--c-accent)]/20 rounded-[40px] p-10 flex flex-col justify-between relative overflow-hidden group">
+          {/* BLOCK 2: SCOUTING REPORT — 26 METRICS (4 CATEGORIES) */}
+          <div className="md:col-span-4 bg-[var(--c-accent)]/10 backdrop-blur-xl border border-[var(--c-accent)]/20 rounded-[40px] p-8 flex flex-col relative overflow-hidden group">
              <div className="absolute -right-16 -bottom-16 text-[220px] font-black opacity-[0.04] select-none pointer-events-none transition-transform group-hover:scale-110 duration-700">
                {p.Player.split(' ').pop().toUpperCase()}
              </div>
              
-             <div className="relative z-10 space-y-8 flex flex-col h-full">
-                <div>
-                  <h4 className="text-[11px] text-[var(--c-accent)] font-black uppercase tracking-[0.3em] mb-2 font-['Barlow_Condensed']">RAPPORT DE SCOUTING (FBREF)</h4>
-                  <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest font-['Barlow']">PROFIL : {positionStr}</div>
+             <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-4">
+                  <h4 className="text-[11px] text-[var(--c-accent)] font-black uppercase tracking-[0.3em] mb-1 font-['Barlow_Condensed']">RAPPORT DE SCOUTING COMPLET</h4>
+                  <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest font-['Barlow']">{positionStr} — 26 INDICATEURS</div>
                 </div>
                 
-                <div className="space-y-5 h-[380px] overflow-y-auto pr-3 custom-scrollbar scroll-smooth">
-                   {(p.scoutingRadar || []).map((metric: any) => (
-                     <div key={metric.label}>
-                       <div className="flex justify-between text-[11px] font-black font-['Barlow_Condensed'] text-white/80 mb-2">
-                         <span className="uppercase tracking-widest">{metric.label}</span>
-                         <span className="text-[var(--c-accent)] font-black tabular-nums">{metric.percentile}e Percentile</span>
+                <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar scroll-smooth" style={{maxHeight: '600px'}}>
+                   {['ATTAQUE', 'CRÉATION', 'DÉFENSE', 'STYLE'].map(cat => {
+                     const metrics = (p.scoutingRadar || []).filter((m: any) => m.category === cat);
+                     if (metrics.length === 0) return null;
+                     const catColors: Record<string, string> = { 'ATTAQUE': '#ef4444', 'CRÉATION': '#3b82f6', 'DÉFENSE': '#f59e0b', 'STYLE': '#22c55e' };
+                     return (
+                       <div key={cat} className="mb-2">
+                         <div className="flex items-center gap-2 mb-3 mt-2">
+                           <div className="w-2 h-2 rounded-full" style={{background: catColors[cat]}}/>
+                           <span className="text-[10px] font-black uppercase tracking-[0.3em] font-['Barlow_Condensed']" style={{color: catColors[cat]}}>{cat}</span>
+                           <div className="flex-1 h-px bg-white/10"/>
+                         </div>
+                         {metrics.map((metric: any) => (
+                           <div key={metric.label} className="mb-2.5">
+                             <div className="flex justify-between text-[10px] font-black font-['Barlow_Condensed'] text-white/70 mb-1">
+                               <span className="uppercase tracking-wider">{metric.label}</span>
+                               <span className="tabular-nums" style={{color: catColors[cat]}}>{Math.round(metric.percentile)}</span>
+                             </div>
+                             <div className="h-1 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                               <motion.div 
+                                 initial={{ width: 0 }}
+                                 animate={{ width: `${Math.min(100, metric.percentile)}%` }}
+                                 transition={{ duration: 0.8, delay: 0.05 }}
+                                 className="h-full rounded-full"
+                                 style={{background: catColors[cat], boxShadow: `0 0 8px ${catColors[cat]}40`}}
+                               />
+                             </div>
+                           </div>
+                         ))}
                        </div>
-                       <div className="h-1.5 bg-black/40 rounded-full overflow-hidden p-[1px] border border-white/5">
-                         <motion.div 
-                           initial={{ width: 0 }}
-                           animate={{ width: `${metric.percentile}%` }}
-                           className="h-full rounded-full shadow-[0_0_15px_rgba(232,52,74,0.4)] bg-[var(--c-accent)]"
-                         />
-                       </div>
-                     </div>
-                   ))}
+                     );
+                   })}
                 </div>
 
-                <div className="pt-6 border-t border-white/5 mt-auto">
-                   <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                        <BarChart3 size={18} className="text-[var(--c-accent)]" />
-                      </div>
-                      <div className="text-[9px] text-white/40 leading-tight uppercase font-bold tracking-widest">
-                         BASÉ SUR LE TOP 5 EUROPÉEN <br/>DERNIÈRES 365 JOURS (FBREF)
+                <div className="pt-4 border-t border-white/5 mt-3">
+                   <div className="flex items-center gap-3">
+                      <BarChart3 size={16} className="text-[var(--c-accent)]" />
+                      <div className="text-[8px] text-white/40 leading-tight uppercase font-bold tracking-widest">
+                         DONNÉES CSV + SOFASCORE · TOP 5 EUROPÉEN · SAISON 2025/26
                       </div>
                    </div>
                 </div>
              </div>
           </div>
         </div>
+
+        {/* ─── HEATMAP DE SAISON (Canvas) ─── */}
+        {p._sofaHeatmap?.points?.length > 0 && (
+          <div className="mt-12 bg-black/20 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-sm">
+            <div className="p-6 md:p-8 border-b border-white/5">
+              <h3 className="text-xl font-['Rajdhani'] font-bold text-white uppercase tracking-widest">Heatmap de Saison</h3>
+              <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest mt-1">
+                {p._sofaHeatmap.points.length} ACTIONS · SAISON COMPLÈTE · SOFASCORE
+              </div>
+            </div>
+            <div className="p-6 flex justify-center">
+              <HeatmapCanvas points={p._sofaHeatmap.points} />
+            </div>
+          </div>
+        )}
 
         {/* ─── FULL SEASON STATISTICS TABLE ─── */}
         <div className="mt-12 bg-black/20 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-sm">

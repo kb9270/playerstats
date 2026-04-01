@@ -36,9 +36,9 @@ export class AutomationWorkflows {
   public startScheduledJobs() {
     console.log("🟢 [WORKFLOWS] Initialisation des automatisations internes...");
 
-    // a) Workflow Matchs & Stats (Quotidien, 3h00)
-    cron.schedule('0 3 * * *', async () => {
-      console.log("⏰ [CRON] Exécution du Workflow Scraping Statistiques...");
+    // a) Workflow Matchs & Stats & Pre-cache SofaScore (Quotidien, 00h00 / Minuit)
+    cron.schedule('0 0 * * *', async () => {
+      console.log("⏰ [CRON] Exécution du Workflow Veille de Données (Scraping + Cache)...");
       await this.workflowScrapingStats();
     });
 
@@ -156,28 +156,63 @@ export class AutomationWorkflows {
   }
 
   /**
-   * Workflow A: Scraping Statistiques
+   * Workflow A: Scraping Statistiques & Veille de Données (FBref + SofaScore Cache Warmer)
    */
   private async workflowScrapingStats() {
     try {
-      console.log("📥 [STATS] Lancement de l'extraction des données...");
-      // Exemple: On lance le script Python pour récupérer les vraies stats 2025/2026 FBref / TM
-      // En production, on peut faire un fetch vers une API Sportmonks ou autre.
-      // const { stdout, stderr } = await execAsync('python update_data_2025_26.py');
-      // console.log("✅ [STATS] Extraction script complétée :", stdout);
+      console.log("📥 [VEILLE] Lancement de l'extraction des données FBref / Transfermarkt...");
       
-      // Pseudo-code d'un appel API classique:
-      /*
-      const response = await fetch('https://api.football-data.org/v4/competitions/PL/scorers');
-      const data = await response.json();
-      for (const item of data.scorers) {
-        // insertion en base...
+      // 1. Exécution du script Python pour mettre à jour le CSV
+      try {
+        const { stdout, stderr } = await execAsync('python update_data_2025_26.py', { maxBuffer: 1024 * 1024 * 50 });
+        console.log("✅ [VEILLE] Extraction script complétée. Sortie partielle :", stdout.substring(0, 200) + "...");
+        if (stderr) console.warn("⚠️ [VEILLE] Avertissements script python :", stderr.substring(0, 200) + "...");
+      } catch (e: any) {
+        console.warn("⚠️ [VEILLE] Le script Python n'a pas pu s'exécuter (python introuvable ou erreur), on garde le CSV actuel.");
       }
-      */
-      console.log("✅ [STATS] Workflow de scraping exécuté avec succès (Traçabilité OK).");
+
+      // 2. Recharger les données instantanément en RAM
+      const { csvDirectAnalyzer } = await import('./csvDirectAnalyzer');
+      await csvDirectAnalyzer.reloadData();
+      console.log("✅ [VEILLE] Les données CSV ont été rechargées en mémoire.");
+
+      // 3. Chauffage du cache SofaScore (Cache Warmer) pour la recherche instantanée
+      console.log("🔥 [VEILLE] Lancement du réchauffement de cache SofaScore en arrière-plan...");
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      // Prendre l'intégralité des joueurs de la base de données
+      const topPlayersToCache = allPlayers.sort((a, b) => b.Min - a.Min);
+      
+      // Lancement asynchrone pour ne pas bloquer le thread principal, avec 4 secondes entre chaque requête
+      (async () => {
+        let cachedCount = 0;
+        let skippedCount = 0;
+        
+        // 🚀 Technique parallèle par lots de 5 (comme vu précédemment) pour les 3000 joueurs
+        const batchSize = 5;
+        for (let i = 0; i < topPlayersToCache.length; i += batchSize) {
+          const batch = topPlayersToCache.slice(i, i + batchSize);
+          
+          await Promise.allSettled(batch.map(async (p) => {
+            try {
+              const wasCached = await sofaScoreService.searchPlayer(p.Player);
+              if (wasCached?.length > 0) cachedCount++;
+              else skippedCount++;
+            } catch (e) {
+              console.warn(`[VEILLE] Échec pre-cache pour ${p.Player}`);
+              skippedCount++;
+            }
+          }));
+          
+          console.log(`[VEILLE] Progression Cache SofaScore: ${Math.min(i + batchSize, topPlayersToCache.length)} / ${topPlayersToCache.length}`);
+          await new Promise(r => setTimeout(r, 1500)); // Pause modérée entre les lots
+        }
+        
+        console.log(`✅ [VEILLE] Réchauffement de cache terminé. Confirmés: ${cachedCount}, Ratés: ${skippedCount}.`);
+      })();
+
+      console.log("✅ [VEILLE] Workflow de données nocturne exécuté avec succès.");
     } catch (error) {
-      console.error("❌ [STATS] Erreur de collecte :", error);
-      // Retry logic could be implemented here
+      console.error("❌ [VEILLE] Erreur de collecte globale :", error);
     }
   }
 

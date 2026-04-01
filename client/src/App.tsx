@@ -17,6 +17,7 @@ import BeautifulCSVDashboard from "@/pages/BeautifulCSVDashboard";
 import MatchAnalyzer from "@/pages/MatchAnalyzer";
 import LiveMatches from "@/pages/LiveMatches";
 import BallonDor from "@/pages/BallonDor";
+import MatchDetail from "@/pages/MatchDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/matches" component={MatchAnalyzer} />
       <Route path="/matches-live" component={LiveMatches} />
       <Route path="/ballon-dor" component={BallonDor} />
+      <Route path="/match/:eventId/:sofaId" component={MatchDetail} />
       <Route component={NotFound} />
     </Switch>
   );

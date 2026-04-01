@@ -3,3 +3,7 @@ node_modules
 .env
 dist/
 .DS_Store
+sofascore_cache.json
+*.log
+*.cjs
+*.js

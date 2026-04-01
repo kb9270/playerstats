@@ -57,52 +57,114 @@ export interface PlayerData {
   Won: number;
   Lost_stats_misc: number;
   'Won%': number;
+  [key: string]: any;
 }
 
 export class CSVDirectAnalyzer {
-  private csvPath = path.join(process.cwd(), 'players_data_2025_2026.csv');
+  private currentCsvPath = path.join(process.cwd(), 'players_data_2025_2026.csv');
+  private historicalCsvPath = path.join(process.cwd(), 'players_data-2024_2025_1751387048911.csv');
   private playersData: PlayerData[] = [];
+  private historicalData: PlayerData[] = [];
   private loaded = false;
 
   private async loadData(): Promise<void> {
-    if (this.loaded) return;
+    if (this.loaded && this.playersData.length > 0) return;
 
     try {
-      const csvContent = fs.readFileSync(this.csvPath, 'utf-8');
-      const lines = csvContent.split('\n');
-      const headers = this.parseCSVLine(lines[0]);
+      // 1. Charger les données actuelles
+      const currentData = await this.readAndParseCsv(this.currentCsvPath);
+      console.log(`Loaded ${currentData.length} players from current dataset (2025/26)`);
 
-      this.playersData = lines.slice(1).filter(line => line.trim()).map(line => {
-        const values = this.parseCSVLine(line);
-        const player: any = {};
+      // 2. Charger les données historiques si disponibles
+      let historicalData: PlayerData[] = [];
+      if (fs.existsSync(this.historicalCsvPath)) {
+        historicalData = await this.readAndParseCsv(this.historicalCsvPath);
+        console.log(`Loaded ${historicalData.length} players from historical dataset (2024/25)`);
+      }
 
-        headers.forEach((header, index) => {
-          let value: any = values[index] || '';
-
-          // Clean the value
-          if (typeof value === 'string') {
-            value = value.trim();
-          }
-
-          // Convert numeric fields
-          if (!isNaN(Number(value)) && value !== '' && value !== null) {
-            value = Number(value);
-          } else if (value === '' || value === 'null' || value === 'undefined') {
-            value = null;
-          }
-
-          player[header.trim()] = value;
-        });
-
-        return player as PlayerData;
-      });
-
+      // 3. Fusionner les données pour compléter les stats manquantes
+      this.playersData = this.mergeDatasets(currentData, historicalData);
+      this.historicalData = historicalData;
+      
       this.loaded = true;
-      console.log(`Loaded ${this.playersData.length} players from CSV`);
     } catch (error) {
       console.error('Error loading CSV data:', error);
       throw error;
     }
+  }
+
+  public async reloadData(): Promise<void> {
+    console.log("🔄 [CSV] Demande de rechargement des données FBref...");
+    this.loaded = false;
+    this.playersData = [];
+    this.historicalData = [];
+    await this.loadData();
+    console.log(`✅ [CSV] Rechargement terminé. Nouvelles données en mémoire.`);
+  }
+
+  private async readAndParseCsv(csvPath: string): Promise<PlayerData[]> {
+    if (!fs.existsSync(csvPath)) return [];
+    
+    const csvContent = fs.readFileSync(csvPath, 'utf-8');
+    const lines = csvContent.split('\n');
+    const headers = this.parseCSVLine(lines[0]);
+
+    return lines.slice(1).filter(line => line.trim()).map(line => {
+      const values = this.parseCSVLine(line);
+      const player: any = {};
+
+      headers.forEach((header, index) => {
+        let value: any = values[index] || '';
+        if (typeof value === 'string') value = value.trim();
+        
+        if (!isNaN(Number(value)) && value !== '' && value !== null) {
+          value = Number(value);
+        } else if (value === '' || value === 'null' || value === 'undefined') {
+          value = null;
+        }
+        player[header.trim()] = value;
+      });
+      return player as PlayerData;
+    });
+  }
+
+  private mergeDatasets(current: PlayerData[], historical: PlayerData[]): PlayerData[] {
+    if (historical.length === 0) return current;
+
+    const historicalMap = new Map<string, PlayerData>();
+    historical.forEach(p => {
+      if (p.Player) historicalMap.set(p.Player.toLowerCase().trim(), p);
+    });
+
+    return current.map(p => {
+      if (!p.Player) return p;
+      const hMatch = historicalMap.get(p.Player.toLowerCase().trim());
+      if (!hMatch) return p;
+
+      // Stats à récupérer si absentes (0 ou null) dans le fichier light 2025/26
+      const advancedStats = [
+        'Cmp%', 'PrgP', 'PrgC', 'Succ%', 'Int', 'Blocks', 'Tkl',
+        'xG', 'xAG', 'Height', 'Weight', 'Foot'
+      ];
+
+      const merged = { ...p };
+      advancedStats.forEach(stat => {
+        const val = merged[stat];
+        if (val === undefined || val === null || val === 0 || val === '') {
+          // Chercher dans l'historique avec les noms possibles (avec suffixes)
+          const fallbackVal = hMatch[stat] ?? 
+                             hMatch[`${stat}_stats_passing`] ?? 
+                             hMatch[`${stat}_stats_possession`] ?? 
+                             hMatch[`${stat}_stats_defense`];
+          
+          if (fallbackVal !== undefined && fallbackVal !== null) {
+            (merged as any)[stat] = fallbackVal;
+          }
+        }
+      });
+
+      return merged;
+    });
   }
 
   private parseCSVLine(line: string): string[] {
@@ -250,31 +312,50 @@ export class CSVDirectAnalyzer {
   }
 
   calculatePercentiles(player: PlayerData, position: string): Record<string, number> {
-    const positionPlayers = this.playersData.filter(p => 
-      p.Pos?.includes(position) && p.Min >= 90 // Au moins 90 minutes jouées
+    // Si le joueur n'a pas de stats techniques, on utilise le dataset historique comme base de comparaison
+    // pour garantir des percentiles réalistes et non nuls.
+    const hasTechnicalStats = (player['Cmp%'] || 0) > 0 || (player.PrgP || 0) > 0;
+    const referenceData = (hasTechnicalStats || this.historicalData.length === 0) 
+      ? this.playersData 
+      : this.historicalData;
+
+    const positionPlayers = referenceData.filter(p => 
+      p.Pos?.includes(position) && (p.Min || 0) >= 90
     );
 
-    if (positionPlayers.length < 2) return {};
+    if (positionPlayers.length < 2) return {
+      goals: 50, assists: 50, xG: 50, xAG: 50, shots: 50,
+      passCompletion: 50, tackles: 50, interceptions: 50,
+      progressivePasses: 50, dribbleSuccess: 50
+    };
 
-    const calculatePercentile = (value: number, values: number[]): number => {
-      const sorted = values.filter(v => v !== null && !isNaN(v)).sort((a, b) => a - b);
-      if (sorted.length === 0) return 0;
+    const calculatePercentile = (value: number, column: string): number => {
+      const allValues = positionPlayers
+        .map(p => {
+          // Essayer les noms de colonnes alternatifs si nécessaire
+          const v = p[column] ?? p[`${column}_stats_passing`] ?? p[`${column}_stats_possession`] ?? p[`${column}_stats_defense`];
+          return v;
+        })
+        .filter(v => v !== null && v !== undefined && !isNaN(Number(v))) as number[];
+      
+      if (allValues.length === 0) return 0;
 
+      const sorted = allValues.sort((a, b) => a - b);
       const rank = sorted.filter(v => v < value).length;
       return Math.round((rank / sorted.length) * 100);
     };
 
     return {
-      goals: calculatePercentile(player.Gls || 0, positionPlayers.map(p => p.Gls || 0)),
-      assists: calculatePercentile(player.Ast || 0, positionPlayers.map(p => p.Ast || 0)),
-      xG: calculatePercentile(player.xG || 0, positionPlayers.map(p => p.xG || 0)),
-      xAG: calculatePercentile(player.xAG || 0, positionPlayers.map(p => p.xAG || 0)),
-      shots: calculatePercentile(player.Sh || 0, positionPlayers.map(p => p.Sh || 0)),
-      passCompletion: calculatePercentile(player['Cmp%'] || 0, positionPlayers.map(p => p['Cmp%'] || 0)),
-      tackles: calculatePercentile(player.Tkl || 0, positionPlayers.map(p => p.Tkl || 0)),
-      interceptions: calculatePercentile(player.Int || 0, positionPlayers.map(p => p.Int || 0)),
-      progressivePasses: calculatePercentile(player.PrgP || 0, positionPlayers.map(p => p.PrgP || 0)),
-      dribbleSuccess: calculatePercentile(player['Succ%'] || 0, positionPlayers.map(p => p['Succ%'] || 0)),
+      goals: calculatePercentile(player.Gls || 0, 'Gls'),
+      assists: calculatePercentile(player.Ast || 0, 'Ast'),
+      xG: calculatePercentile(player.xG || 0, 'xG'),
+      xAG: calculatePercentile(player.xAG || 0, 'xAG'),
+      shots: calculatePercentile(player.Sh || 0, 'Sh'),
+      passCompletion: calculatePercentile(player['Cmp%'] || 0, 'Cmp%'),
+      tackles: calculatePercentile(player.Tkl || 0, 'Tkl'),
+      interceptions: calculatePercentile(player.Int || 0, 'Int'),
+      progressivePasses: calculatePercentile(player.PrgP || 0, 'PrgP'),
+      dribbleSuccess: calculatePercentile(player['Succ%'] || 0, 'Succ%'),
     };
   }
 
@@ -352,29 +433,16 @@ export class CSVDirectAnalyzer {
     return { weaknesses, suggestions };
   }
 
-  generateProgressionAnalysis(player: PlayerData, percentiles: Record<string, number>): any {
-    // Basé sur l'âge et les performances actuelles
+  public generateProgressionAnalysis(player: PlayerData, percentiles: Record<string, number>): any {
+    const progressionAreas: any[] = [];
     const age = player.Age || 25;
-    const minutesPlayed = player.Min || 0;
-    const experience = minutesPlayed / 90; // Approximation des matchs joués
-    
-    // Identifie les domaines à fort potentiel de progression
-    const progressionAreas: Array<{
-      domain: string;
-      currentLevel: string;
-      potential: string;
-      timeline: string;
-      recommendation: string;
-    }> = [];
-
-    // Analyse basée sur les vraies statistiques du joueur
     const goals = player.Gls || 0;
     const assists = player.Ast || 0;
-    const minutes = player.Min || 0;
     const matches = player.MP || 0;
+    const minutes = player.Min || 0;
     const position = player.Pos?.split(',')[0] || 'MF';
 
-    // Efficacité devant le but
+    // Finition
     if (position.includes('FW') || position.includes('MF')) {
       const goalsPerGame = matches > 0 ? goals / matches : 0;
       if (goalsPerGame < 0.3 && percentiles.xG > 60) {
@@ -391,7 +459,7 @@ export class CSVDirectAnalyzer {
     // Création de jeu
     if (position.includes('MF') || position.includes('FW')) {
       const assistsPerGame = matches > 0 ? assists / matches : 0;
-      if (assistsPerGame < 0.25 && percentiles.progressivePasses < 70) {
+      if (assistsPerGame < 0.25 && (percentiles.progressivePasses < 70 || percentiles.assists < 50)) {
         progressionAreas.push({
           domain: 'Création et passes décisives',
           currentLevel: `${assistsPerGame.toFixed(2)} passe/match`,
@@ -437,7 +505,7 @@ export class CSVDirectAnalyzer {
     }
 
     // Statistiques défensives pour tous les postes
-    if (percentiles.tackles < 40 && !position.includes('GK')) {
+    if ((percentiles.tackles < 40 || percentiles.interceptions < 40) && !position.includes('GK')) {
       progressionAreas.push({
         domain: 'Contribution défensive',
         currentLevel: 'Faible implication défensive',
@@ -453,7 +521,7 @@ export class CSVDirectAnalyzer {
 
     // Calculs avancés pour une analyse plus précise
     const performanceRating = this.calculatePerformanceRating(player);
-    const potentialCeiling = this.calculatePotentialCeiling(player, progressionAreas);
+    const PotentialCeiling = this.calculatePotentialCeiling(player, progressionAreas); // Correction camelCase potentialCeiling
     const transferProbability = this.calculateTransferProbability(player);
     
     return {
@@ -472,7 +540,7 @@ export class CSVDirectAnalyzer {
       },
       performance: {
         currentRating: performanceRating,
-        potentialCeiling: potentialCeiling,
+        potentialCeiling: PotentialCeiling,
         consistencyScore: this.calculateConsistency(player),
         improvementAreas: progressionAreas.length
       },
@@ -502,7 +570,7 @@ export class CSVDirectAnalyzer {
     return Math.max(0, Math.min(100, consistencyScore));
   }
 
-  private estimateMarketValue(player: PlayerData): number {
+  public estimateMarketValue(player: PlayerData): number {
     const age = player.Age || 25;
     const percentiles = this.calculatePercentiles(player, player.Pos?.split(',')[0] || 'MF');
     const avgPercentile = Object.values(percentiles).reduce((a, b) => a + b, 0) / Object.values(percentiles).length;
@@ -574,7 +642,7 @@ export class CSVDirectAnalyzer {
     return Math.round(baseValue / 500000) * 500000; // Round to nearest 500k pour plus de réalisme
   }
 
-  private projectMarketValue(player: PlayerData, progressionAreas: any[]): number {
+  public projectMarketValue(player: PlayerData, progressionAreas: any[]): number {
     const currentValue = this.estimateMarketValue(player);
     const age = player.Age || 25;
     
