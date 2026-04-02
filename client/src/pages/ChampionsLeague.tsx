@@ -181,7 +181,7 @@ export default function ChampionsLeague() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundImage: `url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+      backgroundImage: `url("/src/assets/ucl_starball_bg.png")`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundAttachment: "fixed",
@@ -278,7 +278,7 @@ export default function ChampionsLeague() {
                 {/* Field Grass Gradient with Official Background Overlay */}
                 <div style={{ 
                   position: "absolute", inset: 0, 
-                  backgroundImage: `linear-gradient(rgba(0,30,80,0.4), rgba(0,10,40,0.6)), url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+                  backgroundImage: `linear-gradient(rgba(0,30,80,0.4), rgba(0,10,40,0.6)), url("/src/assets/ucl_starball_bg.png")`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   zIndex: 0 

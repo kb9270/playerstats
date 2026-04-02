@@ -295,6 +295,53 @@ function LeagueWidget({
   goals?: number;
   onClick: () => void;
 }) {
+  const isPL = name === "Premier League";
+
+  if (isPL) {
+    return (
+      <GlassCard
+        className="theme-premier-league"
+        onClick={onClick}
+        style={{
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 220,
+          borderRadius: 20,
+          overflow: "hidden",
+          border: "none",
+        }}
+      >
+        <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 2 }}>
+          <img src={logo} alt={name} style={{ width: 24, height: 24, objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", color: "white" }}>Premier League</span>
+        </div>
+        
+        <div style={{ flex: 1, padding: "0 12px 12px", position: "relative", zIndex: 2 }}>
+          <div style={{ background: "white", borderRadius: 10, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }}>
+            <div style={{ background: "white", padding: "8px 12px", borderBottom: "1.5px solid #3d195b", display: "flex", justifyContent: "space-between", fontSize: 9, fontWeight: 800, color: "#3d195b", textTransform: "uppercase" }}>
+              <span>Pos / Club</span>
+              <span>Pts</span>
+            </div>
+            {[
+              { r: 1, t: "Arsenal", p: 18 },
+              { r: 2, t: "Man City", p: 17 },
+              { r: 3, t: "Liverpool", p: 17 },
+            ].map((row, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: i < 2 ? "1px solid rgba(61,25,91,0.06)" : "none", color: "#3d195b" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 900, width: 10 }}>{row.r}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700 }}>{row.t}</span>
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 900 }}>{row.p}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GlassCard>
+    );
+  }
+
   return (
     <GlassCard
       glowColor={`${color}33`}
@@ -364,8 +411,6 @@ function BentoNav() {
   const nav = [
     { href: "/", label: "Joueurs" },
     { href: "/comparison", label: "Comparaison" },
-    { href: "/teams", label: "Équipes" },
-    { href: "/leagues", label: "Ligues" },
     { href: "/ldc", label: "🏆 LDC" },
     { href: "/matches-live", label: "Direct" },
   ];
@@ -1391,63 +1436,6 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
-
-
-          {/* ── CARD 10: CTA Explorer ────────────── */}
-
-          <GlassCard
-            glowColor="rgba(232,52,74,0.3)"
-            style={{ gridColumn: "1 / 7", gridRow: "5 / 6", padding: 32, background: "rgba(232,52,74,0.08)" }}
-            onClick={() => setLocation("/dashboard")}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 28, textTransform: "uppercase", letterSpacing: "0.01em", marginBottom: 6 }}>
-                  Explorer les données
-                </div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>2 800+ joueurs · 42 métriques · Saison 2025/26</div>
-              </div>
-              <motion.div
-                whileHover={{ x: 4 }}
-                style={{
-                  width: 48, height: 48, borderRadius: 14,
-                  background: "#E8344A",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  boxShadow: "0 8px 24px rgba(232,52,74,0.5)",
-                  flexShrink: 0,
-                }}
-              >
-                <ArrowUpRight size={22} />
-              </motion.div>
-            </div>
-          </GlassCard>
-
-          {/* ── CARD 11: CTA Matches ─────────────── */}
-          <GlassCard
-            style={{ gridColumn: "7 / 13", gridRow: "5 / 6", padding: 32 }}
-            onClick={() => setLocation("/matches")}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900, fontSize: 28, textTransform: "uppercase", letterSpacing: "0.01em", marginBottom: 6 }}>
-                  Analyser les matchs
-                </div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>Prédictions · Historique · Live stats</div>
-              </div>
-              <motion.div
-                whileHover={{ x: 4 }}
-                style={{
-                  width: 48, height: 48, borderRadius: 14,
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <Activity size={22} />
-              </motion.div>
-            </div>
-          </GlassCard>
 
           {/* ── LEAGUES ROW (5 Widgets) ────────────────── */}
           <div style={{ gridColumn: "1 / 13", marginTop: 12 }}>

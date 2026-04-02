@@ -8,8 +8,6 @@ import BentoHome from "@/pages/BentoHome";
 import PlayerProfile from "@/pages/PlayerProfile";
 import PlayerDetailedProfile from "@/pages/PlayerDetailedProfile";
 import Comparison from "@/pages/Comparison";
-import Teams from "@/pages/Teams";
-import Leagues from "@/pages/Leagues";
 import LeagueDetail from "@/pages/LeagueDetail";
 import CSVAnalyzer from "@/pages/CSVAnalyzer";
 import StreamlitEquivalent from "@/pages/StreamlitEquivalent";
@@ -31,10 +29,7 @@ function Router() {
       <Route path="/player/:id" component={PlayerProfile} />
       <Route path="/player-profile/:playerName" component={PlayerDetailedProfile} />
       <Route path="/joueur/:id" component={PlayerDetailedProfile} />
-      <Route path="/equipe/:id" component={Teams} />
       <Route path="/comparison/:id?" component={Comparison} />
-      <Route path="/teams" component={Teams} />
-      <Route path="/leagues" component={Leagues} />
       <Route path="/league/:id" component={LeagueDetail} />
       <Route path="/csv-analyzer" component={CSVAnalyzer} />
       <Route path="/streamlit-style" component={StreamlitEquivalent} />

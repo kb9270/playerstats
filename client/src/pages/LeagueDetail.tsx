@@ -38,14 +38,14 @@ function GlassCard({ children, style, className = "" }: any) {
   );
 }
 
-function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer }: any) {
+function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer, isPL }: any) {
   return (
-    <GlassCard style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={16} style={{ color }} />
+    <GlassCard className={isPL ? "pl-table" : ""} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "20px 24px", borderBottom: isPL ? "1px solid rgba(61,25,91,0.1)" : "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: isPL ? "rgba(61,25,91,0.08)" : `${color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon size={16} style={{ color: isPL ? "#3d195b" : color }} />
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{title}</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0, color: isPL ? "#3d195b" : "white" }}>{title}</h3>
       </div>
       <div style={{ flex: 1, padding: "8px 0" }}>
         {data.slice(0, 5).map((row: any, i: number) => (
@@ -54,20 +54,28 @@ function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer
             onClick={() => onClickPlayer(row.name)}
             style={{ 
               display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", 
-              cursor: "pointer", transition: "background 0.2s" 
+              cursor: "pointer", transition: "background 0.2s",
+              borderBottom: (isPL && i < 4) ? "1px solid rgba(61,25,91,0.05)" : "none"
             }}
-            className="hover-bg-white-05"
+            className={isPL ? "pl-row" : "hover-bg-white-05"}
           >
-            <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.3)", width: 14 }}>{i + 1}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: isPL ? "rgba(61,25,91,0.4)" : "rgba(255,255,255,0.3)", width: 14 }}>{i + 1}</span>
             <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-               <TeamLogo logo={row.logo} teamName={row.team} size="sm" />
+               <PlayerAvatar 
+                 playerName={row.name} 
+                 teamName={row.team} 
+                 logo={row.logo} 
+                 size="sm" 
+                 className="rounded-full" 
+                 showTeamBadge={isPL} 
+               />
                <div style={{ display: "flex", flexDirection: "column" }}>
-                 <span style={{ fontSize: 13, fontWeight: 600 }}>{row.name}</span>
-                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{row.team}</span>
+                 <span style={{ fontSize: 13, fontWeight: 700, color: isPL ? "#3d195b" : "white" }}>{row.name}</span>
+                 <span style={{ fontSize: 11, color: isPL ? "rgba(61,25,91,0.6)" : "rgba(255,255,255,0.4)" }}>{row.team}</span>
                </div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: 14, fontWeight: 900, color }}>{row.value}<span style={{ fontSize: 10, opacity: 0.7, marginLeft: 2 }}>{unit}</span></span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: isPL ? "#3d195b" : color }}>{row.value}<span style={{ fontSize: 10, opacity: 0.7, marginLeft: 2 }}>{unit}</span></span>
             </div>
           </div>
         ))}
@@ -84,6 +92,7 @@ export default function LeagueDetail() {
 
   const meta = getMeta(leagueName);
   const name = shortName(leagueName);
+  const isPL = leagueName.toLowerCase().includes("premier league");
 
   // Queries
   const { data: standingsData, isLoading: loadingSt } = useQuery<any>({
@@ -99,11 +108,11 @@ export default function LeagueDetail() {
   const standings = standingsData?.standings || [];
 
   return (
-    <div className="min-h-screen bg-[#070708] text-white font-sans">
+    <div className={`min-h-screen ${isPL ? 'theme-premier-league' : 'bg-[#070708] text-white'} font-sans`} style={{ color: isPL ? '#3d195b' : 'white' }}>
       {/* ── Navbar ── */}
       <div style={{ 
-        position: "sticky", top: 0, zIndex: 100, background: "rgba(7,7,8,0.8)", 
-        backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.08)" 
+        position: "sticky", top: 0, zIndex: 100, background: isPL ? "rgba(255,255,255,0.1)" : "rgba(7,7,8,0.8)", 
+        backdropFilter: "blur(20px)", borderBottom: isPL ? "1px solid rgba(61,25,91,0.2)" : "1px solid rgba(255,255,255,0.08)" 
       }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -140,16 +149,16 @@ export default function LeagueDetail() {
         </div>
       </div>
 
-      <main style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
+      <main style={{ maxWidth: 1400, margin: "0 auto", padding: isPL ? "32px 120px" : "32px 24px", position: "relative", zIndex: 1 }}>
         
         {activeTab === "overview" && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 24 }}>
             
             {/* ── Left Column: Standings Teaser ── */}
             <div style={{ gridColumn: "span 4" }}>
-              <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+              <GlassCard className={isPL ? "pl-table" : ""} style={{ padding: 0, overflow: "hidden" }}>
                 <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                   <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0 }}>Classement</h3>
+                   <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0, color: isPL ? "#3d195b" : "white" }}>Classement</h3>
                    <button onClick={() => setActiveTab("standings")} style={{ background: "none", border: "none", color: meta.color, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                      Voir tout <ChevronRight size={14} />
                    </button>
@@ -159,13 +168,13 @@ export default function LeagueDetail() {
                     <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.4)" }}>Chargement...</div>
                   ) : (
                     standings.slice(0, 10).map((row: any, i: number) => (
-                      <div key={row.team} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }} className={i < 3 ? "bg-white-02" : ""}>
-                        <span style={{ width: 18, fontSize: 12, fontWeight: 800, color: i < 4 ? meta.color : "rgba(255,255,255,0.3)" }}>{row.rank}</span>
+                      <div key={row.team} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }} className={i < 3 ? (isPL ? "bg-pl-light" : "bg-white-02") : ""}>
+                        <span style={{ width: 18, fontSize: 12, fontWeight: 800, color: isPL ? "#3d195b" : (i < 4 ? meta.color : "rgba(255,255,255,0.3)") }}>{row.rank}</span>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
                           <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{row.team}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isPL ? "#3d195b" : "white" }}>{row.team}</span>
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 900 }}>{row.points}</span>
+                        <span style={{ fontSize: 13, fontWeight: 900, color: isPL ? "#3d195b" : "white" }}>{row.points}</span>
                       </div>
                     ))
                   )}
@@ -187,6 +196,7 @@ export default function LeagueDetail() {
                     data={rankings?.scorers || []} 
                     color="#f97316" 
                     unit="buts"
+                    isPL={isPL}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -195,6 +205,7 @@ export default function LeagueDetail() {
                     data={rankings?.assists || []} 
                     color="#3b82f6" 
                     unit="PD"
+                    isPL={isPL}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -203,6 +214,7 @@ export default function LeagueDetail() {
                     data={rankings?.ratings || []} 
                     color="#eab308" 
                     unit="/10"
+                    isPL={isPL}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -211,6 +223,7 @@ export default function LeagueDetail() {
                     data={rankings?.young || []} 
                     color="#a855f7" 
                     unit="/10"
+                    isPL={isPL}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -219,6 +232,7 @@ export default function LeagueDetail() {
                     data={rankings?.keepers || []} 
                     color="#22c55e" 
                     unit="CS"
+                    isPL={isPL}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                 </>
@@ -230,57 +244,65 @@ export default function LeagueDetail() {
 
         {/* ── Full Standings Tab ── */}
         {activeTab === "standings" && (
-          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <h3 style={{ fontSize: 18, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0 }}>Classement Complet</h3>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: "rgba(255,255,255,0.02)", textAlign: "left", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)" }}>
-                    <th style={{ padding: "12px 24px", width: 40 }}>Pos</th>
-                    <th style={{ padding: "12px 24px" }}>Équipe</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right" }}>MJ</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right", color: "#22c55e" }}>V</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right" }}>N</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right", color: "#ef4444" }}>D</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right" }}>BP</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right" }}>BC</th>
-                    <th style={{ padding: "12px 12px", textAlign: "right" }}>+/-</th>
-                    <th style={{ padding: "12px 24px", textAlign: "right", color: "#fff" }}>Pts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.map((row: any, i: number) => (
-                    <tr 
-                      key={row.team}
-                      onClick={() => setLocation("/equipe/" + encodeURIComponent(row.team))}
-                      style={{ borderBottom: "1px solid rgba(255,255,255,0.02)", cursor: "pointer" }}
-                      className="hover-bg-white-05"
-                    >
-                      <td style={{ padding: "14px 24px", fontWeight: 800, color: i < 4 ? meta.color : "rgba(255,255,255,0.3)" }}>{row.rank}</td>
-                      <td style={{ padding: "14px 24px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
-                          <span style={{ fontWeight: 600 }}>{row.team}</span>
-                        </div>
-                      </td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{row.played}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600 }}>{row.wins}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{row.draws}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", fontWeight: 600 }}>{row.losses}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{row.goalsFor}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", color: "rgba(255,255,255,0.5)" }}>{row.goalsAgainst}</td>
-                      <td style={{ padding: "14px 12px", textAlign: "right", fontFamily: "monospace", color: row.goalDiff > 0 ? "#22c55e" : row.goalDiff < 0 ? "#ef4444" : "#94a3b8" }}>
-                        {row.goalDiff > 0 ? "+" : ""}{row.goalDiff}
-                      </td>
-                      <td style={{ padding: "14px 24px", textAlign: "right", fontWeight: 900, fontSize: 16 }}>{row.points}</td>
+          <div style={{ position: "relative", zIndex: 1, maxWidth: 800, margin: "0 auto" }}>
+            {isPL && (
+              <div className="pl-logo-container">
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg" 
+                  alt="Premier League" 
+                  style={{ height: 60, filter: "brightness(0) saturate(100%) invert(14%) sepia(35%) saturate(3665%) hue-rotate(256deg) brightness(92%) contrast(100%)" }} 
+                />
+              </div>
+            )}
+            <GlassCard className={isPL ? "pl-table" : ""} style={{ padding: 0, overflow: "hidden" }}>
+              {!isPL && (
+                <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0 }}>Classement Complet</h3>
+                </div>
+              )}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 15, color: isPL ? "#3d195b" : "white" }}>
+                  <thead>
+                    <tr className={isPL ? "pl-header-dark" : ""} style={{ 
+                      background: isPL ? "transparent" : "rgba(255,255,255,0.02)", 
+                      textAlign: "left", fontSize: 12, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", 
+                      color: isPL ? "#fff" : "rgba(255,255,255,0.4)",
+                      borderBottom: isPL ? "none" : "none"
+                    }}>
+                      <th style={{ padding: "16px 24px", width: "7%" }}>Pos</th>
+                      <th style={{ padding: "16px 24px", width: "63%" }}>Club</th>
+                      <th style={{ padding: "16px 12px", textAlign: "right", width: "15%" }}>Pl</th>
+                      <th style={{ padding: "16px 12px", textAlign: "right", width: "15%" }}>GD</th>
+                      <th style={{ padding: "16px 24px", textAlign: "right", width: "15%" }}>Pts</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </GlassCard>
+                  </thead>
+                  <tbody>
+                    {standings.map((row: any, i: number) => (
+                      <tr 
+                        key={row.team}
+                        style={{ borderBottom: isPL ? "1px solid rgba(61,25,91,0.1)" : "1px solid rgba(255,255,255,0.02)" }}
+                        className={isPL ? "pl-row" : "hover-bg-white-05"}
+                      >
+                        <td style={{ padding: "16px 24px", fontWeight: 800, color: isPL ? "#3d195b" : (i < 4 ? meta.color : "rgba(255,255,255,0.3)") }}>{row.rank}</td>
+                        <td style={{ padding: "16px 24px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
+                            <span style={{ fontWeight: 700, fontSize: 18 }}>{row.team}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "16px 12px", textAlign: "right", fontWeight: 600 }}>{row.played}</td>
+                        <td style={{ padding: "16px 12px", textAlign: "right", fontWeight: 600 }}>{row.goalDiff > 0 ? "+" : ""}{row.goalDiff}</td>
+                        <td style={{ padding: "16px 24px", textAlign: "right", fontWeight: 900, fontSize: 20 }}>{row.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </GlassCard>
+            {isPL && (
+              <div className="pl-matchweek-badge">Matchweek 8</div>
+            )}
+          </div>
         )}
 
       </main>

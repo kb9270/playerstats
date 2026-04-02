@@ -5,8 +5,6 @@ import { BarChart3, Users, Trophy, Activity, Menu, X, Globe } from "lucide-react
 const navItems = [
   { path: "/", label: "Joueurs", icon: Users },
   { path: "/comparison", label: "Comparaison", icon: BarChart3 },
-  { path: "/teams", label: "Équipes", icon: Trophy },
-  { path: "/leagues", label: "Ligues", icon: Globe },
   { path: "/matches-live", label: "Direct", icon: Activity },
 ];
 
