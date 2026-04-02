@@ -1,8 +1,11 @@
+import fs from 'fs';
+import path from 'path';
+import { sofaScoreService } from './sofaScoreService.ts';
 
 // ── ESPN Image Service ─────────────────────────────────────────────────────
-// Fetches team logos and player headshots from the ESPN public API.
+// Fetches team logos and player headshots from the ESPN public API and Sofascore.
 // Logos are pre-cached at startup (fast synchronous lookup forever after).
-// Headshots are fetched lazily and cached in-memory.
+// Headshots are fetched lazily, deduplicated, and cached persistently on disk.
 
 const LEAGUES = ['eng.1', 'esp.1', 'fra.1', 'ger.1', 'ita.1', 'ned.1', 'por.1'];
 
@@ -68,10 +71,44 @@ const ALIAS: Record<string, string[]> = {
 export class ESPNImageService {
   private teamLogoCache: Record<string, string> = {};
   private playerHeadshotCache: Record<string, string> = {};
+  private inflight = new Map<string, Promise<string | null>>();
+  private requestQueue: (() => Promise<void>)[] = [];
+  private activeRequests = 0;
+  private readonly MAX_CONCURRENCY = 5;
   private initialized = false;
+  private cacheFile = path.join(process.cwd(), 'data', 'playerHeadshots.json');
+
+  private async processQueue() {
+    if (this.activeRequests >= this.MAX_CONCURRENCY || this.requestQueue.length === 0) return;
+    this.activeRequests++;
+    const task = this.requestQueue.shift();
+    if (task) {
+      await task().catch(() => {});
+    }
+    this.activeRequests--;
+    this.processQueue();
+  }
+
+  private loadCache() {
+    try {
+      if (fs.existsSync(this.cacheFile)) {
+        const data = fs.readFileSync(this.cacheFile, 'utf-8');
+        this.playerHeadshotCache = JSON.parse(data);
+        console.log(`[ESPN Service] Loaded ${Object.keys(this.playerHeadshotCache).length} headshots from cache.`);
+      }
+    } catch { }
+  }
+
+  private saveCache() {
+    try {
+      if (!fs.existsSync(path.dirname(this.cacheFile))) fs.mkdirSync(path.dirname(this.cacheFile), { recursive: true });
+      fs.writeFileSync(this.cacheFile, JSON.stringify(this.playerHeadshotCache, null, 2));
+    } catch { }
+  }
 
   async init() {
     if (this.initialized) return;
+    this.loadCache();
     console.log('[ESPN Service] Initializing team logo cache…');
     try {
       for (const league of LEAGUES) {
@@ -138,43 +175,74 @@ export class ESPNImageService {
   getCachedPlayerHeadshot(playerName: string, teamName?: string): string | null {
     if (!playerName) return null;
     const key = `${playerName.toLowerCase()}_${(teamName || '').toLowerCase()}`;
-    return this.playerHeadshotCache[key] || null;
+    const val = this.playerHeadshotCache[key];
+    return val ? val : null;
   }
 
   async getPlayerHeadshot(playerName: string, teamName?: string): Promise<string | null> {
     const key = `${playerName.toLowerCase()}_${(teamName || '').toLowerCase()}`;
+    
     const cached = this.playerHeadshotCache[key];
-    if (cached) return cached;
+    if (cached !== undefined) return cached ? cached : null;
 
-    try {
-      const query = encodeURIComponent(`${playerName} ${teamName || ''}`.trim());
-      const searchUrl = `https://site.web.api.espn.com/apis/search/v2?query=${query}&limit=5&type=player`;
+    if (this.inflight.has(key)) return this.inflight.get(key)!;
 
-      const response = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
-      if (!response.ok) return null;
+    const promise = new Promise<string | null>((resolve) => {
+      const task = async () => {
+        try {
+          const query = encodeURIComponent(`${playerName} ${teamName || ''}`.trim());
+          const searchUrl = `https://site.web.api.espn.com/apis/search/v2?query=${query}&limit=5&type=player`;
 
-      const data: any = await response.json();
-      const results = data.results?.[0]?.contents || [];
+          const response = await fetch(searchUrl, { signal: AbortSignal.timeout(5000) });
+          if (response.ok) {
+            const data: any = await response.json();
+            const results = data.results?.[0]?.contents || [];
+            const soccerPlayer = results.find((item: any) =>
+              item.type === 'player' &&
+              (item.sport === 'soccer' || item.subtitle?.toLowerCase().includes('madrid') || item.url?.includes('/soccer/'))
+            ) || results.find((item: any) => item.type === 'player');
 
-      // Prefer soccer players
-      const soccerPlayer = results.find((item: any) =>
-        item.type === 'player' &&
-        (item.sport === 'soccer' || item.subtitle?.toLowerCase().includes('madrid') || item.url?.includes('/soccer/'))
-      ) || results.find((item: any) => item.type === 'player');
+            if (soccerPlayer?.uid) {
+              const idParts = soccerPlayer.uid.split(':');
+              const realId = idParts[idParts.length - 1];
+              const headshotUrl = `https://a.espncdn.com/i/headshots/soccer/players/full/${realId}.png`;
+              this.playerHeadshotCache[key] = headshotUrl;
+              this.saveCache();
+              resolve(headshotUrl);
+              return;
+            }
+          }
+        } catch { }
 
-      if (soccerPlayer?.uid) {
-        // uid looks like "s:600~a:231388", we want the last part
-        const idParts = soccerPlayer.uid.split(':');
-        const realId = idParts[idParts.length - 1];
-        const headshotUrl = `https://a.espncdn.com/i/headshots/soccer/players/full/${realId}.png`;
-        this.playerHeadshotCache[key] = headshotUrl;
-        return headshotUrl;
-      }
-    } catch {
-      // Silently fail – headshot is non-critical
-    }
+        // Fallback: SofaScore search mapped directly to image URL using our robust service
+        try {
+          const results = await sofaScoreService.searchPlayer(playerName, teamName);
+          if (results && results.length > 0) {
+            const playerRes = results[0];
+            if (playerRes?.entity?.id) {
+              const headshotUrl = `https://api.sofascore.app/api/v1/player/${playerRes.entity.id}/image`;
+              this.playerHeadshotCache[key] = headshotUrl;
+              this.saveCache();
+              resolve(headshotUrl);
+              return;
+            }
+          }
+        } catch { }
 
-    return null;
+        // If all fail, cache as empty string so we don't spam the API on re-renders, but allow retry later if needed
+        this.playerHeadshotCache[key] = "";
+        this.saveCache();
+        resolve(null);
+      };
+
+      this.requestQueue.push(task);
+      this.processQueue();
+    });
+
+    this.inflight.set(key, promise);
+    const result = await promise;
+    this.inflight.delete(key);
+    return result;
   }
 }
 

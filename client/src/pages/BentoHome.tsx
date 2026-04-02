@@ -278,6 +278,7 @@ function BentoNav() {
     { href: "/comparison", label: "Comparaison" },
     { href: "/teams", label: "Équipes" },
     { href: "/leagues", label: "Ligues" },
+    { href: "/ldc", label: "🏆 LDC" },
     { href: "/matches-live", label: "Direct" },
   ];
 
@@ -553,6 +554,68 @@ function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   );
 }
 
+/* ─── Take Over Animated Stats Component ──────────────────── */
+function TakeOverExpandingStats() {
+  const [expanded, setExpanded] = useState(false);
+  
+  const maps = [
+    { map: "Maestro", opponent: "vs Villarreal", stats: "Hat-trick Historique, 10/10", rating: 10.0 },
+    { map: "Récital", opponent: "@ Real Madrid", stats: "1 But, 2 Passes Clés", rating: 9.2 },
+    { map: "Partition", opponent: "vs PSG", stats: "2 Passes Décisives, 4 Dribbles", rating: 8.9 },
+  ];
+
+  return (
+    <div style={{ position: "relative", zIndex: 10 }}>
+      {/* Expand/Collapse Toggle Button */}
+      <div 
+        onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+        style={{ 
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 12px", background: "rgba(212, 175, 55, 0.1)", border: "1px solid rgba(212, 175, 55, 0.3)",
+          borderRadius: 6, transition: "all 0.2s"
+        }}
+      >
+        <span style={{ fontSize: 11, color: "#D4AF37", fontFamily: "'Inter', sans-serif", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em" }}>{expanded ? "Fermer le récital" : "Voir la symphonie (Maps)"}</span>
+        <motion.div animate={{ rotate: expanded ? 180 : 0 }}>
+          <ChevronRight size={14} style={{ color: "#D4AF37", transform: expanded ? "none" : "rotate(90deg)" }} />
+        </motion.div>
+      </div>
+
+      {/* Expanded Animated Area */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0, y: -10 }}
+            animate={{ height: "auto", opacity: 1, y: 0 }}
+            exit={{ height: 0, opacity: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            style={{ overflow: "hidden", marginTop: expanded ? 12 : 0 }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {maps.map((m, i) => (
+                <motion.div 
+                  key={i} 
+                  initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.1 + (i*0.1) }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px", background: "rgba(0,0,0,0.3)", borderLeft: "2px solid #D4AF37", borderRadius: "0 4px 4px 0" }}
+                >
+                  <div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#D4AF37", fontFamily: "'Inter', sans-serif" }}>{m.map}</span>
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "'Inter', sans-serif" }}>{m.opponent}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.9)", fontFamily: "'Georgia', serif", fontStyle: "italic", marginTop: 2 }}>{m.stats}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#D4AF37", fontFamily: "'Georgia', serif" }}>{m.rating}</div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /* ─── Main BentoHome page ─────────────────────────────── */
 export default function BentoHome() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -712,69 +775,74 @@ export default function BentoHome() {
           }}
         >
 
-          {/* ── CARD 1: Team of the Week (large) ── */}
+          {/* ── CARD 1: TAKE OVER WIDGET (Wolfgang Amadeus Yamal) ── */}
           <GlassCard
-            glowColor="rgba(245,200,66,0.3)"
-            style={{ gridColumn: "1 / 6", gridRow: "1 / 3", padding: 0, overflow: "hidden", minHeight: 440, display: "flex", flexDirection: "column" }}
+            glowColor="rgba(212, 175, 55, 0.5)"
+            onClick={() => setLocation("/takeover")}
+            style={{ 
+              gridColumn: "1 / 6", 
+              gridRow: "1 / 3", 
+              padding: 0,
+              background: "linear-gradient(135deg, #1A0D00 0%, #3B0000 100%)", // Velours baroque / Rouge opéra profond
+              border: "1px solid rgba(212, 175, 55, 0.4)",
+              position: "relative",
+              overflow: "hidden",
+              minHeight: 440,
+              display: "flex",
+              flexDirection: "column",
+            }}
           >
-            {/* Background gradient */}
-            <div style={{
-              position: "absolute", inset: 0,
-              background: "linear-gradient(135deg, rgba(245,200,66,0.12) 0%, rgba(10,30,10,0.4) 100%)",
-              pointerEvents: "none", zIndex: 0,
-            }} />
-            
-            {/* Header */}
-            <div style={{ padding: "26px 26px 0", position: "relative", zIndex: 2 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Star size={14} style={{ color: "#F5C842" }} />
-                  <span style={{ fontSize: 12, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: "#F5C842" }}>
-                    Équipe de la Semaine
-                  </span>
+            {/* Décoration Baroque & Musique */}
+            <div style={{ position: "absolute", top: -20, right: -20, opacity: 0.1, pointerEvents: "none" }}>
+               {/* Clé de sol géante en filigrane */}
+               <svg width="250" height="350" viewBox="0 0 100 200" fill="none">
+                 <path d="M40 180 C10 180 10 150 30 140 C50 130 70 140 70 160 C70 180 30 180 30 110 C30 40 80 40 80 80 C80 100 50 110 50 80 C50 60 70 60 70 80 C70 120 40 120 40 180" stroke="#D4AF37" strokeWidth="3" fill="none" strokeLinecap="round"/>
+               </svg>
+            </div>
+            {/* Notes volantes */}
+            <motion.div animate={{ y: [0, -10, 0], opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 4, repeat: Infinity }} style={{ position: "absolute", top: 30, right: 120, fontSize: 32, color: "#D4AF37" }}>♪</motion.div>
+            <motion.div animate={{ y: [0, -15, 0], opacity: [0.2, 0.6, 0.2] }} transition={{ duration: 5, repeat: Infinity, delay: 1 }} style={{ position: "absolute", bottom: 60, left: 30, fontSize: 40, color: "#D4AF37" }}>♫</motion.div>
+
+            <div style={{ padding: "30px", height: "100%", display: "flex", flexDirection: "column", position: "relative", zIndex: 2 }}>
+              
+              {/* En-tête : Badge Take Over & Expire */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+                <div>
+                  <div style={{ 
+                    background: "rgba(212, 175, 55, 0.15)", border: "1px solid #D4AF37", borderRadius: 4, 
+                    padding: "4px 10px", fontSize: 11, fontWeight: 800, color: "#D4AF37", fontFamily: "'Inter', sans-serif",
+                    letterSpacing: "0.15em", display: "inline-block", textTransform: "uppercase"
+                  }}>
+                    ⚡ Take Over
+                  </div>
                 </div>
-                <div style={{
-                  padding: "4px 10px", borderRadius: 100, background: "rgba(245,200,66,0.15)", border: "1px solid rgba(245,200,66,0.3)",
-                  fontSize: 10, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: "#F5C842", letterSpacing: "0.1em"
-                }}>
-                  4-3-3
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em", textTransform: "uppercase", background: "rgba(0,0,0,0.3)", padding: "4px 10px", borderRadius: 100 }}>
+                  Expire dans 2j 14h
                 </div>
               </div>
-            </div>
 
-            {/* Field */}
-            <div style={{
-              position: "relative",
-              flex: 1,
-              margin: "20px 24px 24px",
-              borderRadius: 16,
-              background: "linear-gradient(180deg, rgba(20,50,20,0.6) 0%, rgba(10,35,10,0.6) 50%, rgba(20,50,20,0.6) 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              overflow: "hidden",
-            }}>
-              <FieldLines />
-              {players.length >= 11 ? (
-                <>
-                  <PlayerToken player={fws[0]} top="15%" left="22%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[0]?.Player)}`)} />
-                  <PlayerToken player={fws[1]} top="12%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[1]?.Player)}`)} />
-                  <PlayerToken player={fws[2]} top="15%" left="78%" onClick={() => setLocation(`/joueur/${encodeURIComponent(fws[2]?.Player)}`)} />
-                  
-                  <PlayerToken player={mfs[0]} top="39%" left="26%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[0]?.Player)}`)} />
-                  <PlayerToken player={mfs[1]} top="36%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[1]?.Player)}`)} />
-                  <PlayerToken player={mfs[2]} top="39%" left="74%" onClick={() => setLocation(`/joueur/${encodeURIComponent(mfs[2]?.Player)}`)} />
-                  
-                  <PlayerToken player={dfs[0]} top="65%" left="15%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[0]?.Player)}`)} />
-                  <PlayerToken player={dfs[1]} top="62%" left="38%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[1]?.Player)}`)} />
-                  <PlayerToken player={dfs[2]} top="62%" left="62%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[2]?.Player)}`)} />
-                  <PlayerToken player={dfs[3]} top="65%" left="85%" onClick={() => setLocation(`/joueur/${encodeURIComponent(dfs[3]?.Player)}`)} />
-                  
-                  <PlayerToken player={gk}    top="87%" left="50%" onClick={() => setLocation(`/joueur/${encodeURIComponent(gk?.Player)}`)} />
-                </>
-              ) : (
-                <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                   <div className="shimmer" style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(245,200,66,0.1)" }} />
+              {/* Titre & Surnom de L'Identité Visuelle */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 10 }}>
+                {/* Avatar du Joueur Cerclé d'Or Baroque */}
+                <div style={{ width: 80, height: 80, borderRadius: "50%", border: "2px solid #D4AF37", padding: 3, background: "#000", flexShrink: 0, boxShadow: "0 0 25px rgba(212, 175, 55, 0.4)" }}>
+                   <PlayerAvatar playerName="Lamine Yamal" teamName="Barcelone" sofaId={1402912} size="md" className="rounded-full w-full h-full object-cover" />
                 </div>
-              )}
+                <div>
+                  {/* Police style classique/symphonique */}
+                  <h3 style={{ margin: 0, fontSize: 38, fontWeight: 700, color: "#D4AF37", fontFamily: "'Georgia', serif", fontStyle: "italic", lineHeight: 1.1 }}>
+                    Wolfgang Amadeus Yamal
+                  </h3>
+                  <p style={{ margin: "12px 0 0 0", fontSize: 16, color: "rgba(255,255,255,0.85)", fontFamily: "'Inter', sans-serif", lineHeight: 1.4 }}>
+                    « 3 buts (Hat-trick). <br/>Le récital historique du Maestro. Note parfaite de 10. »
+                  </p>
+                </div>
+              </div>
+
+              {/* Système Rétractable des Statistiques Détaillées par Map */}
+              <div style={{ marginTop: "auto", paddingTop: 20 }}>
+                <TakeOverExpandingStats />
+              </div>
+
             </div>
           </GlassCard>
 
@@ -1044,139 +1112,134 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
-          {/* ── CARD 8: UCL Team of the Week (Official DA) ─────── */}
+          {/* ── CARD 8: LIVE MATCH WIDGET (2026 Ultimate Stage Style) ─── */}
           <GlassCard
-            glowColor="rgba(0, 102, 255, 0.45)"
+            glowColor="rgba(0, 229, 255, 0.4)"
             style={{ 
-              gridColumn: "1 / 7", 
+              gridColumn: "1 / 7",  // Takes a large space to show the wide TV broadcast layout
               gridRow: "3 / 5",
               padding: 0,
-              background: "#001e4d",
-              border: "1.5px solid rgba(255, 255, 255, 0.15)",
+              cursor: "pointer",
+              background: "linear-gradient(135deg, #000B29 0%, #002266 100%)", /* Bleu nuit to bleu royal */
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              fontFamily: "'Rajdhani', sans-serif",
               overflow: "hidden",
-              position: "relative"
-            }}
-          >
-            {/* Official UCL Chevron Beam Background */}
-            <div style={{
-              position: "absolute", inset: 0, opacity: 0.2,
-              background: `
-                repeating-linear-gradient(125deg, transparent, transparent 60px, rgba(0, 85, 255, 0.15) 60px, rgba(0, 85, 255, 0.15) 120px),
-                linear-gradient(180deg, #001e4d 0%, #003399 100%)
-              `,
-              pointerEvents: "none"
-            }} />
-            
-            {/* Animated Glow over the pitch */}
-            <div style={{
-              position: "absolute", bottom: "-10%", left: 0, right: 0, height: "80%",
-              background: "radial-gradient(ellipse at 50% 100%, rgba(0,255,204,0.12) 0%, transparent 75%)",
-              pointerEvents: "none"
-            }} />
-
-            {/* Official Header Area inspired by Image */}
-            <div style={{ 
-              padding: "24px 28px", 
-              display: "flex", 
-              alignItems: "center", 
-              gap: 20,
               position: "relative",
-              zIndex: 5,
-              background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)"
-            }}>
-              {/* UCL Logo */}
-              <div style={{ width: 60, height: 60 }}>
-                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M50 0 L54 36 L90 32 L65 54 L78 88 L50 67 L22 88 L35 54 L10 32 L46 36 L50 0 Z" fill="white" opacity="0.9" />
-                  <circle cx="50" cy="50" r="48" stroke="white" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.5" />
-                </svg>
-              </div>
-
-              {/* Crypto.com-like partner slot (optional, but adds "official" feel) */}
-              <div style={{ width: 1, height: 50, background: "rgba(255,255,255,0.2)" }} />
-              
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  fontFamily: "'Barlow Condensed', sans-serif", 
-                  fontWeight: 900, 
-                  fontSize: 42, 
-                  color: "#fff", 
-                  textTransform: "uppercase", 
-                  lineHeight: 0.85,
-                  letterSpacing: "-0.01em",
-                  display: "flex",
-                  flexDirection: "column",
-                  transform: "scaleY(1.1)", /* Makes it more condensed like the image */
-                  transformOrigin: "left center"
-                }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    ÉQUIPE <span style={{ fontSize: 16, fontWeight: 300, verticalAlign: "middle", letterSpacing: "0.1em" }}>DE LA</span>
-                  </div>
-                  <div>SEMAINE</div>
-                </div>
-              </div>
-              
-              {/* UCL Starball Graphic small */}
-              <div style={{ width: 50, height: 50, opacity: 0.6 }}>
-                 <svg viewBox="0 0 100 100" opacity="0.8">
-                   <path d="M50 20 L53 38 L72 38 L57 48 L62 66 L50 56 L38 66 L43 48 L28 38 L47 38 Z" fill="#00FFCC" />
-                 </svg>
-              </div>
+              backdropFilter: "blur(12px)",
+            }}
+            onClick={() => setLocation("/ldc")}
+          >
+            {/* Spotlight Accent Lines */}
+            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+              <div style={{ position: "absolute", top: "-50%", left: "10%", width: "20%", height: "200%", background: "linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.1), transparent)", transform: "rotate(30deg)" }} />
+              <div style={{ position: "absolute", top: "-50%", right: "10%", width: "20%", height: "200%", background: "linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.1), transparent)", transform: "rotate(-30deg)" }} />
             </div>
 
-            {/* Tactical Field Container */}
-            <div style={{ 
-              position: "relative", 
-              height: 520, 
-              margin: "0 24px 28px",
-              background: "rgba(0,0,0,0.2)",
-              borderRadius: "2px",
-              border: "1.5px solid rgba(255,255,255,0.1)",
-              overflow: "hidden",
-            }}>
-              {/* Official UCL Pitch markings */}
-              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0.3 }}>
-                <rect x="2" y="2" width="96" height="96" fill="none" stroke="#fff" strokeWidth="0.4" />
-                <line x1="2" y1="50" x2="98" y2="50" stroke="#fff" strokeWidth="0.5" />
-                <circle cx="50" cy="50" r="14" fill="none" stroke="#fff" strokeWidth="0.5" />
-                <rect x="22" y="2" width="56" height="18" fill="none" stroke="#fff" strokeWidth="0.4" />
-                <rect x="22" y="80" width="56" height="18" fill="none" stroke="#fff" strokeWidth="0.4" />
-                {/* Tactical Star markers */}
-                <circle cx="50" cy="50" r="1" fill="#fff" />
+            {/* Starball watermark */}
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.05, pointerEvents: "none" }}>
+              <svg width="250" height="250" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="47" stroke="#fff" strokeWidth="1"/>
+                <path d="M50 8 L54.9 34.5 L82 30 L62 48 L74 76 L50 60 L26 76 L38 48 L18 30 L45.1 34.5 Z" fill="#fff" />
               </svg>
+            </div>
 
-              {/* Player Deployment (4-3-3 format) */}
-              {players.length >= 11 ? (
-                <>
-                   {/* FORWARDS */}
-                   <UCLPlayerCard player={fws[0]} top="12%" left="22%" />
-                   <UCLPlayerCard player={fws[1]} top="8%" left="50%" />
-                   <UCLPlayerCard player={fws[2]} top="12%" left="78%" />
-
-                   {/* MIDFIELDERS */}
-                   <UCLPlayerCard player={mfs[0]} top="42%" left="25%" />
-                   <UCLPlayerCard player={mfs[1]} top="38%" left="50%" />
-                   <UCLPlayerCard player={mfs[2]} top="42%" left="75%" />
-
-                   {/* DEFENDERS */}
-                   <UCLPlayerCard player={dfs[2]} top="64%" left="62%" />
-                   <UCLPlayerCard player={dfs[3]} top="68%" left="85%" />
-
-                   {/* GOALKEEPER */}
-                   <UCLPlayerCard player={gk} top="88%" left="50%" />
-                </>
-              ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                  <div className="shimmer" style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 2 }}>
+              
+              {/* Header: Logo + Live Pill */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+                    <circle cx="50" cy="50" r="45" stroke="#00E5FF" strokeWidth="4" strokeDasharray="10 4"/>
+                    <path d="M50 15 L53 40 L75 35 L60 52 L68 75 L50 62 L32 75 L40 52 L25 35 L47 40 Z" fill="#00E5FF" />
+                  </svg>
+                  <span style={{ fontSize: 13, letterSpacing: "0.2em", fontWeight: 700, color: "#00E5FF", fontFamily: "'Inter', sans-serif" }}>CHAMPIONS LEAGUE</span>
                 </div>
-              )}
+                {/* Live Pill */}
+                <motion.div 
+                  animate={{ opacity: [1, 0.6, 1], boxShadow: ["0 0 0px #E8344A", "0 0 15px #E8344A", "0 0 0px #E8344A"] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  style={{ background: "rgba(232, 52, 74, 0.15)", border: "1px solid #E8344A", padding: "4px 12px", borderRadius: 100, display: "flex", alignItems: "center", gap: 6 }}
+                >
+                  <div style={{ width: 6, height: 6, background: "#E8344A", borderRadius: "50%" }} />
+                  <span style={{ color: "#E8344A", fontSize: 11, fontWeight: 700, fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em" }}>74'</span>
+                </motion.div>
+              </div>
+
+              {/* Main Scoreboard Area */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 40px" }}>
+                
+                {/* Team 1: Real Madrid */}
+                <motion.div whileHover={{ scale: 1.05 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 80, height: 80, padding: 10, background: "rgba(255,255,255,0.05)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)", filter: "drop-shadow(0 0 16px rgba(255,255,255,0.2))" }}>
+                    <img src="https://a.espncdn.com/i/teamlogos/soccer/500/86.png" alt="RMA" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </div>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>RMA</span>
+                </motion.div>
+
+                {/* Score */}
+                <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+                  <span style={{ fontSize: 64, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 0 20px rgba(0,229,255,0.4)" }}>2</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <div style={{ width: 8, height: 8, background: "rgba(255,255,255,0.5)", borderRadius: "50%", transform: "rotate(45deg)" }} />
+                    <div style={{ width: 8, height: 8, background: "rgba(255,255,255,0.5)", borderRadius: "50%", transform: "rotate(45deg)" }} />
+                  </div>
+                  <span style={{ fontSize: 64, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 0 20px rgba(0,229,255,0.4)" }}>2</span>
+                </div>
+
+                {/* Team 2: Manchester City */}
+                <motion.div whileHover={{ scale: 1.05 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 80, height: 80, padding: 10, background: "rgba(255,255,255,0.05)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)", filter: "drop-shadow(0 0 16px rgba(108,171,221,0.4))" }}>
+                    <img src="https://a.espncdn.com/i/teamlogos/soccer/500/382.png" alt="MCI" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </div>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>MCI</span>
+                </motion.div>
+
+              </div>
+
+              {/* Retractable Stats Area */}
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ delay: 0.5, duration: 0.5 }}
+                style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 16, background: "rgba(0,0,0,0.2)", padding: "16px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}
+              >
+                {/* Stat: Expected Goals (xG) */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", fontWeight: 600 }}>
+                    <span>1.84</span>
+                    <span style={{ color: "#00E5FF", letterSpacing: "0.1em" }}>Expected Goals (xG)</span>
+                    <span>2.12</span>
+                  </div>
+                  <div style={{ display: "flex", height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", gap: 2 }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: "46%" }} transition={{ duration: 1, delay: 0.8 }} style={{ background: "#fff", borderRadius: "10px 0 0 10px" }} />
+                    <motion.div initial={{ width: 0 }} animate={{ width: "54%" }} transition={{ duration: 1, delay: 0.8 }} style={{ background: "#00E5FF", borderRadius: "0 10px 10px 0" }} />
+                  </div>
+                </div>
+
+                {/* Stat: Possession */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", fontWeight: 600 }}>
+                    <span>42%</span>
+                    <span style={{ color: "#00E5FF", letterSpacing: "0.1em" }}>Possession</span>
+                    <span>58%</span>
+                  </div>
+                  <div style={{ display: "flex", height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", gap: 2 }}>
+                    <motion.div initial={{ width: 0 }} animate={{ width: "42%" }} transition={{ duration: 1.2, delay: 0.9 }} style={{ background: "#fff", borderRadius: "10px 0 0 10px" }} />
+                    <motion.div initial={{ width: 0 }} animate={{ width: "58%" }} transition={{ duration: 1.2, delay: 0.9 }} style={{ background: "#00E5FF", borderRadius: "0 10px 10px 0" }} />
+                  </div>
+                </div>
+              </motion.div>
+
             </div>
           </GlassCard>
 
+
           {/* ── CARD 9: News ─────────────────────── */}
+
           <GlassCard
             style={{ gridColumn: "7 / 13", gridRow: "3 / 4", padding: 24 }}
           >
+
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <Newspaper size={13} style={{ color: "#E8344A" }} />
               <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase" }}>Actualités</span>
@@ -1215,7 +1278,10 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
+
+
           {/* ── CARD 10: CTA Explorer ────────────── */}
+
           <GlassCard
             glowColor="rgba(232,52,74,0.3)"
             style={{ gridColumn: "1 / 7", gridRow: "5 / 6", padding: 32, background: "rgba(232,52,74,0.08)" }}

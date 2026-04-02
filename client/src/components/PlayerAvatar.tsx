@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User } from "lucide-react";
+import { UserRound } from "lucide-react";
 
 interface PlayerAvatarProps {
   playerName: string;
@@ -109,33 +109,32 @@ export default function PlayerAvatar({
     .slice(0, 2)
     .toUpperCase();
 
+  const isCircle = className.includes("rounded-full");
+  const shapeClass = isCircle ? "rounded-full" : "rounded-xl";
+
   return (
     <div className={`relative shrink-0 ${s.avatar} ${className}`}>
       {headshot ? (
         <img
           src={headshot}
           alt={playerName}
-          className={`${s.avatar} rounded-xl object-cover bg-gray-800 border border-gray-700/50`}
+          className={`w-full h-full ${shapeClass} object-cover object-[center_top] bg-gray-800 border border-gray-700/50 block`}
           onError={(e) => {
-            // Fallback to initials on broken image
+            // Fallback to silhouette on broken image
             const el = e.target as HTMLImageElement;
             el.style.display = "none";
             const parent = el.parentElement;
             if (parent && !parent.querySelector(".avatar-fallback")) {
               const div = document.createElement("div");
-              div.className = `avatar-fallback ${s.avatar} rounded-xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center font-bold text-white ${s.text}`;
-              div.textContent = initials;
+              div.className = `avatar-fallback w-full h-full ${shapeClass} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-500`;
+              div.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="60%" height="60%" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>`;
               parent.appendChild(div);
             }
           }}
         />
       ) : (
-        <div className={`${s.avatar} rounded-xl bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center font-bold text-white ${s.text}`}>
-          {size === "xl" ? (
-            <User className={s.icon} />
-          ) : (
-            initials
-          )}
+        <div className={`w-full h-full ${shapeClass} bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-500`}>
+          <UserRound className={s.icon} strokeWidth={2} />
         </div>
       )}
 

@@ -18,6 +18,8 @@ import MatchAnalyzer from "@/pages/MatchAnalyzer";
 import LiveMatches from "@/pages/LiveMatches";
 import BallonDor from "@/pages/BallonDor";
 import MatchDetail from "@/pages/MatchDetail";
+import ChampionsLeague from "@/pages/ChampionsLeague";
+import TakeOver from "@/pages/TakeOver";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -40,6 +42,9 @@ function Router() {
       <Route path="/matches-live" component={LiveMatches} />
       <Route path="/ballon-dor" component={BallonDor} />
       <Route path="/match/:eventId/:sofaId" component={MatchDetail} />
+      <Route path="/ldc" component={ChampionsLeague} />
+      <Route path="/champions-league" component={ChampionsLeague} />
+      <Route path="/takeover" component={TakeOver} />
       <Route component={NotFound} />
     </Switch>
   );

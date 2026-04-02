@@ -288,6 +288,7 @@ export default function PlayerDetailedProfile() {
                   teamName={p.Squad}
                   headshot={p.headshot}
                   size="xl"
+                  className="w-full h-full"
                   showTeamBadge={false}
                 />
               </div>
@@ -677,6 +678,7 @@ export default function PlayerDetailedProfile() {
                           teamName={s.Squad}
                           headshot={s.headshot}
                           size="xl"
+                          className="w-full h-full rounded-full"
                           showTeamBadge={false}
                         />
                     </div>

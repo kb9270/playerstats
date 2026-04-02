@@ -790,7 +790,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, players: memoryTeamOfTheWeek || [] });
   });
 
-  // Debug Route to trigger TOTW
+  // ── UCL Stats: Scorers / Assisters / Young Players ─────────────────
+  app.get("/api/ucl/stats", async (req, res) => {
+    try {
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      // Filter Champions League players from CSV
+      const uclPlayers = allPlayers.filter((p: any) => {
+        const comp = (p.Comp || "").toLowerCase();
+        return comp.includes("champion") || comp.includes("ucl") || comp.includes("cl");
+      });
+
+      // Fallback: if no UCL-specific data, use top players from all competitions
+      const pool = uclPlayers.length > 10 ? uclPlayers : allPlayers;
+
+      // Top Scorers
+      const scorers = pool
+        .filter((p: any) => Number(p.Gls) > 0)
+        .sort((a: any, b: any) => Number(b.Gls) - Number(a.Gls))
+        .slice(0, 10)
+        .map((p: any) => ({
+          name: p.Player,
+          team: p.Squad,
+          goals: Number(p.Gls) || 0,
+          nation: p.Nation,
+          logo: espnImageService.getTeamLogo(p.Squad),
+        }));
+
+      // Top Assisters
+      const assisters = pool
+        .filter((p: any) => Number(p.Ast) > 0)
+        .sort((a: any, b: any) => Number(b.Ast) - Number(a.Ast))
+        .slice(0, 10)
+        .map((p: any) => ({
+          name: p.Player,
+          team: p.Squad,
+          assists: Number(p.Ast) || 0,
+          nation: p.Nation,
+          logo: espnImageService.getTeamLogo(p.Squad),
+        }));
+
+      // Young Players (U23, ranked by goals + assists combined)
+      const young = pool
+        .filter((p: any) => {
+          const age = Number(p.Age);
+          return age > 0 && age <= 23;
+        })
+        .map((p: any) => ({
+          name:    p.Player,
+          team:    p.Squad,
+          age:     Number(p.Age),
+          goals:   Number(p.Gls) || 0,
+          assists: Number(p.Ast) || 0,
+          rating:  Number(p.displayRating || p.rating) || (Number(p.Gls) * 0.4 + Number(p.Ast) * 0.3 + 6.5),
+          logo:    espnImageService.getTeamLogo(p.Squad),
+        }))
+        .sort((a: any, b: any) => b.rating - a.rating)
+        .slice(0, 10);
+
+      res.json({ success: true, scorers, assisters, young });
+    } catch (error: any) {
+      console.error("UCL stats error:", error.message);
+      // Return empty (frontend uses seed data as fallback)
+      res.json({ success: false, scorers: [], assisters: [], young: [] });
+    }
+  });
+
+
   app.get("/api/dev/trigger-totw", async (req, res) => {
     try {
       const { automationWorkflows } = await import("./services/automationWorkflows");
