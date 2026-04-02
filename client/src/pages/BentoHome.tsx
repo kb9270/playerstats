@@ -200,66 +200,154 @@ const FieldLines = () => (
  
 const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: string }) => {
   if (!player) return null;
+  const teamId = player.teamId || 0;
+  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.1, zIndex: 50 }}
+      whileHover={{ scale: 1.15, zIndex: 100 }}
       style={{
         position: "absolute", top, left, transform: "translate(-50%, -50%)",
         display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10,
         cursor: "pointer"
       }}
     >
-      <div style={{ 
-        position: "relative",
-        width: 65, height: 75,
-        background: "linear-gradient(135deg, #003399 0%, #001A4D 100%)",
-        border: "1.5px solid #00FFCC",
-        clipPath: "polygon(10% 0, 90% 0, 100% 20%, 100% 80%, 90% 100%, 10% 100%, 0 80%, 0 20%)", // Sharper style
-        boxShadow: "0 8px 16px rgba(0,0,0,0.5)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        overflow: "hidden"
-      }}>
-        {/* Team mini logo */}
+      {/* Club Logo Badge - 10 o'clock angle */}
+      {teamLogo && (
         <div style={{
-          position: "absolute", top: 8, left: 8, zIndex: 5,
-          width: 18, height: 18, background: "#fff", borderRadius: "50%",
-          padding: 2, border: "1px solid #001A4D"
+          position: "absolute", top: -8, left: -26,
+          width: 32, height: 32,
+          background: "white",
+          borderRadius: "50%",
+          padding: 2,
+          boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
+          zIndex: 30,
+          border: "1.5px solid #0043ff"
         }}>
-           <PlayerAvatar playerName="" teamName={player.Squad} size="sm" />
+          <img src={teamLogo} alt={player.Squad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
-        
-        <PlayerAvatar
-          playerName={player.Player || ""}
-          teamName={player.Squad}
-          sofaId={player.sofaId}
-          size="lg"
-          className="w-full h-full object-cover"
-        />
-      </div>
-      
-      {/* Name Label */}
+      )}
+
+      {/* The Hexagon Shield with Neon Gradient Border */}
       <div style={{
-        marginTop: -10,
-        background: "#fff",
-        color: "#001A4D",
-        padding: "2px 8px",
-        minWidth: 80,
-        textAlign: "center",
-        fontSize: 10,
-        fontFamily: "'Roboto Condensed', sans-serif",
+        position: "relative",
+        width: 72, height: 86,
+        padding: "2.2px",
+        background: "linear-gradient(45deg, #A855F7, #06B6D4)", 
+        clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 12px 28px rgba(0,0,0,0.8)",
+      }}>
+        <div style={{
+          width: "100%", height: "100%",
+          background: "linear-gradient(180deg, #0043FF 0%, #001A4D 100%)",
+          clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden"
+        }}>
+          <div style={{ width: "100%", height: "100%", transform: "scale(1.18) translateY(4%)" }}>
+            <PlayerAvatar
+              playerName={player.Player || ""}
+              teamName={player.Squad}
+              sofaId={player.sofaId}
+              size="md"
+              className="w-full h-full object-cover object-[center_top] bg-transparent border-none opacity-98"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Name Label - Elevated white box with bold Condensed Font */}
+      <div style={{
+        marginTop: -16,
+        background: "white",
+        color: "#000B29",
+        width: 82,
+        height: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 11,
         fontWeight: 900,
         textTransform: "uppercase",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.4)",
-        zIndex: 5,
-        clipPath: "polygon(0 0, 100% 0, 95% 100%, 5% 100%)" // Official slanted look
+        boxShadow: "0 8px 18px rgba(0,0,0,0.6)",
+        zIndex: 20,
+        border: "1.2px solid #0043ff",
+        fontFamily: "'Saira Extra Condensed', sans-serif",
+        letterSpacing: "0.02em"
       }}>
         {player.Player?.split(" ").pop() || "NAME"}
       </div>
     </motion.div>
   );
 };
+
+/* ─── League Widget Primitive ──────────────────────────── */
+function LeagueWidget({
+  name, logo, color, leader, points, topScorer, goals, onClick
+}: {
+  name: string;
+  logo: string;
+  color: string;
+  leader?: string;
+  points?: number;
+  topScorer?: string;
+  goals?: number;
+  onClick: () => void;
+}) {
+  return (
+    <GlassCard
+      glowColor={`${color}33`}
+      onClick={onClick}
+      style={{
+        padding: "20px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        height: "100%",
+        minHeight: 180,
+        background: `linear-gradient(135deg, rgba(0,0,0,0.8) 0%, ${color}08 100%)`,
+        border: `1px solid ${color}22`,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img src={logo} alt={name} style={{ width: 28, height: 28, objectFit: "contain", filter: "drop-shadow(0 0 8px rgba(255,255,255,0.2))" }} />
+          <span style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontWeight: 800,
+            fontSize: 15,
+            letterSpacing: "0.02em",
+            textTransform: "uppercase",
+            color: "#fff"
+          }}>{name}</span>
+        </div>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: `0 0 10px ${color}` }} />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {leader && (
+          <div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 2 }}>Leader</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.9)" }}>{leader}</span>
+              <span style={{ fontSize: 14, fontWeight: 900, color: color }}>{points} pts</span>
+            </div>
+          </div>
+        )}
+        {topScorer && (
+          <div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, marginBottom: 2 }}>Meilleur Buteur</div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>{topScorer}</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{goals} <span style={{ fontSize: 10, opacity: 0.5 }}>⚽</span></span>
+            </div>
+          </div>
+        )}
+      </div>
+    </GlassCard>
+  );
+}
 
 /* ─── Nav ───────────────────────────────────────────────── */
 function BentoNav() {
@@ -284,16 +372,15 @@ function BentoNav() {
 
   return (
     <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ y: -20, opacity: 0, x: "-50%" }}
+      animate={{ y: 0, opacity: 1, x: "-50%" }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       style={{
         position: "fixed",
         top: 16, left: "50%",
-        transform: "translateX(-50%)",
         zIndex: 100,
         width: "calc(100% - 48px)",
-        maxWidth: 1100,
+        maxWidth: 1232,
         background: scrolled ? "rgba(10,10,10,0.85)" : "rgba(10,10,10,0.5)",
         backdropFilter: "blur(24px) saturate(1.8)",
         WebkitBackdropFilter: "blur(24px) saturate(1.8)",
@@ -764,6 +851,7 @@ export default function BentoHome() {
             BENTO GRID
         ═══════════════════════════════════════════ */}
         <motion.div
+          className="bento-grid"
           variants={containerVariants}
           initial="hidden"
           animate="show"
@@ -1112,124 +1200,149 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
-          {/* ── CARD 8: LIVE MATCH WIDGET (2026 Ultimate Stage Style) ─── */}
+          {/* ── CARD 8: UCL TEAM OF THE WEEK (Broadcast Style) ─── */}
           <GlassCard
             glowColor="rgba(0, 229, 255, 0.4)"
             style={{ 
-              gridColumn: "1 / 7",  // Takes a large space to show the wide TV broadcast layout
+              gridColumn: "1 / 7",  
               gridRow: "3 / 5",
               padding: 0,
               cursor: "pointer",
-              background: "linear-gradient(135deg, #000B29 0%, #002266 100%)", /* Bleu nuit to bleu royal */
+              background: "linear-gradient(135deg, #000B29 0%, #002266 100%)", 
               border: "1px solid rgba(255, 255, 255, 0.15)",
               fontFamily: "'Rajdhani', sans-serif",
-              overflow: "hidden",
+              overflow: "visible", // Set to visible so logo can 'pop' out
               position: "relative",
               backdropFilter: "blur(12px)",
             }}
             onClick={() => setLocation("/ldc")}
           >
-            {/* Spotlight Accent Lines */}
-            <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
-              <div style={{ position: "absolute", top: "-50%", left: "10%", width: "20%", height: "200%", background: "linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.1), transparent)", transform: "rotate(30deg)" }} />
-              <div style={{ position: "absolute", top: "-50%", right: "10%", width: "20%", height: "200%", background: "linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.1), transparent)", transform: "rotate(-30deg)" }} />
-            </div>
-
-            {/* Starball watermark */}
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.05, pointerEvents: "none" }}>
-              <svg width="250" height="250" viewBox="0 0 100 100" fill="none">
-                <circle cx="50" cy="50" r="47" stroke="#fff" strokeWidth="1"/>
-                <path d="M50 8 L54.9 34.5 L82 30 L62 48 L74 76 L50 60 L26 76 L38 48 L18 30 L45.1 34.5 Z" fill="#fff" />
-              </svg>
-            </div>
-
-            <div style={{ padding: "24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 2 }}>
+            <div style={{ padding: "24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 10 }}>
               
-              {/* Header: Logo + Live Pill */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "auto" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
-                    <circle cx="50" cy="50" r="45" stroke="#00E5FF" strokeWidth="4" strokeDasharray="10 4"/>
-                    <path d="M50 15 L53 40 L75 35 L60 52 L68 75 L50 62 L32 75 L40 52 L25 35 L47 40 Z" fill="#00E5FF" />
-                  </svg>
-                  <span style={{ fontSize: 13, letterSpacing: "0.2em", fontWeight: 700, color: "#00E5FF", fontFamily: "'Inter', sans-serif" }}>CHAMPIONS LEAGUE</span>
+              {/* Header with Direct Official Logo - Pure UEFA Glow */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, padding: "0 8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  {/* Official UCL Logo - No square, directly on blue with MAX brightness and BIG presence */}
+                  <div style={{
+                    width: 65, height: 65, 
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexShrink: 0,
+                    filter: "drop-shadow(0 0 15px rgba(255, 255, 255, 0.5))"
+                  }}>
+                    <img 
+                      src="https://upload.wikimedia.org/wikipedia/fr/b/bf/UEFA_Champions_League_logo_2.svg" 
+                      alt="UCL" 
+                      style={{ width: "100%", height: "100%", objectFit: "contain", filter: "brightness(0) invert(1)" }} // ABSOLUTE WHITE
+                    />
+                  </div>
+                  <div>
+                    <h2 style={{ 
+                      fontSize: 38, color: "white", 
+                      fontFamily: "'Saira Extra Condensed', sans-serif", fontWeight: 800,
+                      letterSpacing: "0.01em",
+                      textTransform: "uppercase", margin: 0, lineHeight: 0.85,
+                      textShadow: "0 4px 15px rgba(0,0,0,0.4)"
+                    }}>
+                      Équipe de la Semaine
+                    </h2>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: "#00E5FF", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: "'Oswald', sans-serif" }}>
+                        Champions League 2025/26
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                {/* Live Pill */}
-                <motion.div 
-                  animate={{ opacity: [1, 0.6, 1], boxShadow: ["0 0 0px #E8344A", "0 0 15px #E8344A", "0 0 0px #E8344A"] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  style={{ background: "rgba(232, 52, 74, 0.15)", border: "1px solid #E8344A", padding: "4px 12px", borderRadius: 100, display: "flex", alignItems: "center", gap: 6 }}
-                >
-                  <div style={{ width: 6, height: 6, background: "#E8344A", borderRadius: "50%" }} />
-                  <span style={{ color: "#E8344A", fontSize: 11, fontWeight: 700, fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em" }}>74'</span>
-                </motion.div>
               </div>
 
-              {/* Main Scoreboard Area */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 40px" }}>
+              {/* Tactical Pitch Container with Exact Official Background - No filter */}
+              <div style={{ 
+                flex: 1, position: "relative", minHeight: 460, marginTop: 10, 
+                backgroundImage: `url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                borderRadius: 16, overflow: "hidden", 
+                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)",
+                fontFamily: "'Montserrat', sans-serif"
+              }}>
+                {/* Grass texture / Glow effect */}
+                <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 50% 50%, rgba(0,229,255,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
                 
-                {/* Team 1: Real Madrid */}
-                <motion.div whileHover={{ scale: 1.05 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 80, height: 80, padding: 10, background: "rgba(255,255,255,0.05)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)", filter: "drop-shadow(0 0 16px rgba(255,255,255,0.2))" }}>
-                    <img src="https://a.espncdn.com/i/teamlogos/soccer/500/86.png" alt="RMA" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                  </div>
-                  <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>RMA</span>
-                </motion.div>
-
-                {/* Score */}
-                <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-                  <span style={{ fontSize: 64, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 0 20px rgba(0,229,255,0.4)" }}>2</span>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                    <div style={{ width: 8, height: 8, background: "rgba(255,255,255,0.5)", borderRadius: "50%", transform: "rotate(45deg)" }} />
-                    <div style={{ width: 8, height: 8, background: "rgba(255,255,255,0.5)", borderRadius: "50%", transform: "rotate(45deg)" }} />
-                  </div>
-                  <span style={{ fontSize: 64, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 0 20px rgba(0,229,255,0.4)" }}>2</span>
+                {/* UCL Watermark */}
+                <div style={{ 
+                  position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", 
+                  width: "50%", opacity: 0.05, pointerEvents: "none", zIndex: 0 
+                }}>
+                  <img 
+                    src="https://upload.wikimedia.org/wikipedia/commons/0/07/UEFA_Champions_League_Starsball.svg" 
+                    alt="" 
+                    style={{ width: "100%", filter: "brightness(10)" }} 
+                  />
                 </div>
 
-                {/* Team 2: Manchester City */}
-                <motion.div whileHover={{ scale: 1.05 }} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 80, height: 80, padding: 10, background: "rgba(255,255,255,0.05)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)", filter: "drop-shadow(0 0 16px rgba(108,171,221,0.4))" }}>
-                    <img src="https://a.espncdn.com/i/teamlogos/soccer/500/382.png" alt="MCI" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                  </div>
-                  <span style={{ fontSize: 24, fontWeight: 700, color: "#fff", letterSpacing: "0.05em" }}>MCI</span>
-                </motion.div>
+                {/* Tactical Lines */}
+                <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, opacity: 0.1 }}>
+                  <rect x="0" y="0" width="100" height="100" fill="none" stroke="#fff" strokeWidth="0.5" />
+                  <line x1="0" y1="50" x2="100" y2="50" stroke="#fff" strokeWidth="0.5" />
+                  <circle cx="50" cy="50" r="12" stroke="#fff" strokeWidth="0.5" fill="none" />
+                  <rect x="25" y="0" width="50" height="15" stroke="#fff" strokeWidth="0.5" fill="none" />
+                  <rect x="25" y="85" width="50" height="15" stroke="#fff" strokeWidth="0.5" fill="none" />
+                </svg>
 
+                {/* Professional Player Rendering */}
+                {(() => {
+                  const all = players.slice(0, 11);
+                  if (all.length === 0) return (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.2)" }}>
+                      Chargement des données SofaScore...
+                    </div>
+                  );
+                  const isYamal = (p: any) => p.Player?.toLowerCase().includes("yamal");
+                  const attackers = all.filter(p => isYamal(p) || ["F", "FW", "W", "S", "A", "ATT"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 3);
+                  const defenders = all.filter(p => !attackers.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
+                  const goalies = all.filter(p => !attackers.includes(p) && !defenders.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
+                  const mid = all.filter(p => !attackers.includes(p) && !defenders.includes(p) && !goalies.includes(p));
+
+                  const finalFw = [...attackers];
+                  const finalDf = [...defenders];
+                  const finalGk = goalies[0] || null;
+                  const finalMf = [...mid.slice(0, 3)];
+
+                  const usedIdx = new Set([...finalFw, ...finalMf, ...finalDf, finalGk].filter(Boolean).map(p => all.indexOf(p)));
+                  const remaining = all.filter((_, i) => !usedIdx.has(i));
+
+                  while (finalFw.length < 3 && remaining.length > 0) finalFw.push(remaining.shift());
+                  while (finalMf.length < 3 && remaining.length > 0) finalMf.push(remaining.shift());
+                  while (finalDf.length < 4 && remaining.length > 0) finalDf.push(remaining.shift());
+                  const safeGk = finalGk || remaining.shift() || all[0];
+
+                  const yamalIdx = finalFw.findIndex(p => isYamal(p));
+                  if (yamalIdx !== -1 && yamalIdx !== 2) {
+                    const temp = finalFw[2];
+                    finalFw[2] = finalFw[yamalIdx];
+                    finalFw[yamalIdx] = temp;
+                  }
+
+                  return (
+                    <div style={{ position: "absolute", inset: 0 }}>
+                      <UCLPlayerCard player={finalFw[0]} top="12%" left="15%" />
+                      <UCLPlayerCard player={finalFw[1]} top="7%" left="45%" />
+                      <UCLPlayerCard player={finalFw[2]} top="12%" left="75%" />
+
+                      <UCLPlayerCard player={finalMf[0]} top="39%" left="20%" />
+                      <UCLPlayerCard player={finalMf[1]} top="34%" left="45%" />
+                      <UCLPlayerCard player={finalMf[2]} top="39%" left="70%" />
+
+                      <UCLPlayerCard player={finalDf[0]} top="65%" left="10%" />
+                      <UCLPlayerCard player={finalDf[1]} top="61%" left="33%" />
+                      <UCLPlayerCard player={finalDf[2]} top="61%" left="57%" />
+                      <UCLPlayerCard player={finalDf[3]} top="65%" left="80%" />
+
+                      <UCLPlayerCard player={safeGk} top="81%" left="45%" />
+                    </div>
+                  );
+                })()}
               </div>
-
-              {/* Retractable Stats Area */}
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                transition={{ delay: 0.5, duration: 0.5 }}
-                style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: 16, background: "rgba(0,0,0,0.2)", padding: "16px 20px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)" }}
-              >
-                {/* Stat: Expected Goals (xG) */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", fontWeight: 600 }}>
-                    <span>1.84</span>
-                    <span style={{ color: "#00E5FF", letterSpacing: "0.1em" }}>Expected Goals (xG)</span>
-                    <span>2.12</span>
-                  </div>
-                  <div style={{ display: "flex", height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", gap: 2 }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: "46%" }} transition={{ duration: 1, delay: 0.8 }} style={{ background: "#fff", borderRadius: "10px 0 0 10px" }} />
-                    <motion.div initial={{ width: 0 }} animate={{ width: "54%" }} transition={{ duration: 1, delay: 0.8 }} style={{ background: "#00E5FF", borderRadius: "0 10px 10px 0" }} />
-                  </div>
-                </div>
-
-                {/* Stat: Possession */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "'Inter', sans-serif", fontSize: 11, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", fontWeight: 600 }}>
-                    <span>42%</span>
-                    <span style={{ color: "#00E5FF", letterSpacing: "0.1em" }}>Possession</span>
-                    <span>58%</span>
-                  </div>
-                  <div style={{ display: "flex", height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden", gap: 2 }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: "42%" }} transition={{ duration: 1.2, delay: 0.9 }} style={{ background: "#fff", borderRadius: "10px 0 0 10px" }} />
-                    <motion.div initial={{ width: 0 }} animate={{ width: "58%" }} transition={{ duration: 1.2, delay: 0.9 }} style={{ background: "#00E5FF", borderRadius: "0 10px 10px 0" }} />
-                  </div>
-                </div>
-              </motion.div>
-
             </div>
           </GlassCard>
 
@@ -1336,6 +1449,81 @@ export default function BentoHome() {
             </div>
           </GlassCard>
 
+          {/* ── LEAGUES ROW (5 Widgets) ────────────────── */}
+          <div style={{ gridColumn: "1 / 13", marginTop: 12 }}>
+             <h2 style={{ 
+               fontFamily: "'Barlow Condensed', sans-serif", 
+               fontSize: 14, 
+               fontWeight: 800, 
+               letterSpacing: "0.15em", 
+               textTransform: "uppercase", 
+               color: "rgba(255,255,255,0.4)", 
+               marginBottom: 16, 
+               display: "flex", 
+               alignItems: "center", 
+               gap: 10,
+               paddingLeft: 4
+             }}>
+               <Globe size={14} style={{ color: "#E8344A" }} /> Championnats Majeurs
+             </h2>
+             <div style={{ 
+               display: "grid", 
+               gridTemplateColumns: "repeat(5, 1fr)", 
+               gap: 12,
+             }} className="leagues-container">
+                <LeagueWidget
+                  name="Premier League"
+                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/23.png"
+                  color="#3D195B"
+                  leader="Liverpool"
+                  points={67}
+                  topScorer="M. Salah"
+                  goals={18}
+                  onClick={() => setLocation("/league/eng Premier League")}
+                />
+                <LeagueWidget
+                  name="Ligue 1"
+                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/9.png"
+                  color="#DAE025"
+                  leader="PSG"
+                  points={59}
+                  topScorer="B. Barcola"
+                  goals={15}
+                  onClick={() => setLocation("/league/fr Ligue 1")}
+                />
+                <LeagueWidget
+                  name="La Liga"
+                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/15.png"
+                  color="#EE1C23"
+                  leader="Barcelone"
+                  points={72}
+                  topScorer="R. Lewandowski"
+                  goals={21}
+                  onClick={() => setLocation("/league/es La Liga")}
+                />
+                <LeagueWidget
+                  name="Bundesliga"
+                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/10.png"
+                  color="#D3010C"
+                  leader="Bayer Leverkusen"
+                  points={63}
+                  topScorer="H. Kane"
+                  goals={24}
+                  onClick={() => setLocation("/league/de Bundesliga")}
+                />
+                <LeagueWidget
+                  name="Serie A"
+                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/12.png"
+                  color="#00438C"
+                  leader="Inter Milan"
+                  points={70}
+                  topScorer="L. Martínez"
+                  goals={20}
+                  onClick={() => setLocation("/league/it Serie A")}
+                />
+             </div>
+          </div>
+
         </motion.div>
 
         {/* ── Data sources ─────────────────────────── */}
@@ -1356,8 +1544,17 @@ export default function BentoHome() {
         @media (max-width: 1024px) {
           .bento-grid { grid-template-columns: repeat(6, 1fr) !important; }
         }
+        @media (max-width: 1200px) {
+          .leagues-container { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        @media (max-width: 768px) {
+          .leagues-container { grid-template-columns: repeat(2, 1fr) !important; }
+        }
         @media (max-width: 640px) {
           .bento-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .leagues-container { grid-template-columns: 1fr !important; }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>

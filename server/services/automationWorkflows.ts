@@ -14,17 +14,17 @@ const rssParser = new Parser();
 export const memoryNews: any[] = [];
 export const memoryBallonDor: any[] = [];
 export const memoryTeamOfTheWeek: any[] = [
-  { Player: "Kylian Mbappé", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.95, displayRating: 8.9, sofaId: 826643 },
-  { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 1, Ast: 1, Pos: "FW", rating: 8.85, displayRating: 8.8, sofaId: 1402912 },
-  { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 2, Ast: 0, Pos: "FW", rating: 8.92, displayRating: 8.9, sofaId: 868812 },
-  { Player: "Erling Haaland", Squad: "Man City", Gls: 1, Ast: 0, Pos: "FW", rating: 8.54, displayRating: 8.5, sofaId: 839956 },
-  { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 0, Ast: 1, Pos: "MF", rating: 8.78, displayRating: 8.7, sofaId: 991011 },
-  { Player: "Florian Wirtz", Squad: "Bayer Leverkusen", Gls: 1, Ast: 1, Pos: "MF", rating: 8.41, displayRating: 8.4, sofaId: 1019322 },
-  { Player: "Rodri", Squad: "Man City", Gls: 0, Ast: 0, Pos: "MF", rating: 8.92, displayRating: 8.9, sofaId: 827606 },
-  { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.45, displayRating: 8.4, sofaId: 845422 },
-  { Player: "Pau Cubarsí", Squad: "FC Barcelone", Gls: 0, Ast: 0, Pos: "DF", rating: 8.35, displayRating: 8.3, sofaId: 1402913 },
-  { Player: "Virgil van Dijk", Squad: "Liverpool", Gls: 0, Ast: 0, Pos: "DF", rating: 8.55, displayRating: 8.5, sofaId: 146155 },
-  { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9, sofaId: 144544 }
+  { Player: "Erling Haaland", Squad: "Man City", Gls: 3, Ast: 0, Pos: "FW", rating: 9.8, displayRating: 9.8, sofaId: 839956 },
+  { Player: "Kylian Mbappé", Squad: "PSG", Gls: 2, Ast: 0, Pos: "FW", rating: 9.4, displayRating: 9.4, sofaId: 826643 },
+  { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.9, displayRating: 8.9, sofaId: 868812 },
+  { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "MF", rating: 9.2, displayRating: 9.2, sofaId: 991011 },
+  { Player: "Florian Wirtz", Squad: "Bayer Leverkusen", Gls: 1, Ast: 2, Pos: "MF", rating: 9.5, displayRating: 9.5, sofaId: 1019322 },
+  { Player: "Jamal Musiala", Squad: "Bayern Munich", Gls: 1, Ast: 0, Pos: "MF", rating: 8.7, displayRating: 8.7, sofaId: 1045232 },
+  { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.4, displayRating: 8.4, sofaId: 845422 },
+  { Player: "Pau Cubarsí", Squad: "FC Barcelone", Gls: 0, Ast: 0, Pos: "DF", rating: 8.6, displayRating: 8.6, sofaId: 1402913 },
+  { Player: "Antonio Rüdiger", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "DF", rating: 8.2, displayRating: 8.2, sofaId: 216734 },
+  { Player: "Grimaldo", Squad: "Bayer Leverkusen", Gls: 0, Ast: 1, Pos: "DF", rating: 8.5, displayRating: 8.5, sofaId: 215342 },
+  { Player: "G. Donnarumma", Squad: "PSG", Gls: 0, Ast: 0, Pos: "GK", rating: 9.1, displayRating: 9.1, sofaId: 838742 }
 ];
 
 export class AutomationWorkflows {
@@ -82,56 +82,62 @@ export class AutomationWorkflows {
     try {
       console.log("⚽ [SofaScore] Génération du 11 de la semaine (Notes live par round)...");
       
-      const allTopPlayers = await sofaScoreService.fetchCollectiveTeamOfTheWeek();
+      // Try to get UCL específica since the user wants the "LDC" widget perfectly clean
+      let allTopPlayers = await sofaScoreService.fetchUCLTeamOfTheWeek();
+      
+      // Fallback to collective if UCL is empty or not enough
+      if (!allTopPlayers || allTopPlayers.length < 11) {
+        console.log("⚠️ [SofaScore] UCL TOTW insufficient, falling back to collective...");
+        allTopPlayers = await sofaScoreService.fetchCollectiveTeamOfTheWeek();
+      }
       
       if (!allTopPlayers || allTopPlayers.length < 5) {
         console.warn("⚠️ [SofaScore] Données insuffisantes, vérifiez la source.");
       }
 
-      // 4-3-3 Formation logic
-      // SofaScore positions can be complex (F, M, D, G + specific roles)
-      const fws = allTopPlayers.filter(p => {
+      // 4-3-3 Formation logic (Strict)
+      const fws = allTopPlayers.filter((p: any) => {
         const pos = p.Pos?.toUpperCase() || "";
         return pos.includes('F') || pos.includes('W') || pos.includes('S') || pos.includes('ATT');
       }).slice(0, 3);
 
-      const mfs = allTopPlayers.filter(p => 
+      const mfs = allTopPlayers.filter((p: any) => 
         !fws.includes(p) && 
-        (p.Pos?.toUpperCase().includes('M') || p.Pos?.toUpperCase().includes('C'))
+        (p.Pos?.toUpperCase().includes('M') || p.Pos?.toUpperCase().includes('C') || p.Pos?.toUpperCase().includes('A'))
       ).slice(0, 3);
 
-      const dfs = allTopPlayers.filter(p => 
-        !fws.includes(p) && !mfs.includes(p) && 
+      const dfs = allTopPlayers.filter((p: any) => 
+        !fws.includes(p) && !mfs.includes(p) &&
         (p.Pos?.toUpperCase().includes('D') || p.Pos?.toUpperCase().includes('B'))
       ).slice(0, 4);
 
-      const gks = allTopPlayers.filter(p => 
-        !fws.includes(p) && !mfs.includes(p) && !dfs.includes(p) && 
-        p.Pos?.toUpperCase().includes('G')
+      const gks = allTopPlayers.filter((p: any) => 
+        !fws.includes(p) && !mfs.includes(p) && !dfs.includes(p) &&
+        (p.Pos?.toUpperCase().includes('G') || p.Pos?.toUpperCase().includes('K'))
       ).slice(0, 1);
 
-      let team = [...fws, ...mfs, ...dfs, ...gks];
-      
+      const team = [...fws, ...mfs, ...dfs, ...gks];
+
       const fallbacks = [
-        { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 1, Ast: 1, Pos: "FW", rating: 8.95, displayRating: 8.9 },
-        { Player: "Lewandowski", Squad: "FC Barcelone", Gls: 2, Ast: 0, Pos: "FW", rating: 8.75, displayRating: 8.7 },
-        { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.82, displayRating: 8.8 },
-        { Player: "Erling Haaland", Squad: "Man City", Gls: 1, Ast: 0, Pos: "FW", rating: 8.54, displayRating: 8.5 },
-        { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 0, Ast: 1, Pos: "MF", rating: 8.68, displayRating: 8.6 },
-        { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.45, displayRating: 8.4 },
-        { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9 }
+        { Player: "Lamine Yamal", Squad: "FC Barcelone", Gls: 1, Ast: 1, Pos: "FW", rating: 8.95, displayRating: 8.9, sofaId: 1402912 },
+        { Player: "Lewandowski", Squad: "FC Barcelone", Gls: 2, Ast: 0, Pos: "FW", rating: 8.75, displayRating: 8.7, sofaId: 11119 },
+        { Player: "Vinícius Júnior", Squad: "Real Madrid", Gls: 1, Ast: 1, Pos: "FW", rating: 8.82, displayRating: 8.8, sofaId: 868812 },
+        { Player: "Erling Haaland", Squad: "Man City", Gls: 1, Ast: 0, Pos: "FW", rating: 8.54, displayRating: 8.5, sofaId: 839956 },
+        { Player: "Jude Bellingham", Squad: "Real Madrid", Gls: 0, Ast: 1, Pos: "MF", rating: 8.68, displayRating: 8.6, sofaId: 991011 },
+        { Player: "William Saliba", Squad: "Arsenal", Gls: 0, Ast: 0, Pos: "DF", rating: 8.45, displayRating: 8.4, sofaId: 845422 },
+        { Player: "Thibaut Courtois", Squad: "Real Madrid", Gls: 0, Ast: 0, Pos: "GK", rating: 8.90, displayRating: 8.9, sofaId: 144544 }
       ];
 
       // Fill missing positions up to 11
-      const usedNames = new Set(team.map(p => p.Player));
+      const usedNames = new Set(team.map((p: any) => p.Player));
       
       // 1. Fill with other high rated players from fetched list regardless of position if needed
       if (team.length < 11) {
-        const remainingFetched = allTopPlayers.filter(p => !usedNames.has(p.Player));
+        const remainingFetched = allTopPlayers.filter((p: any) => !usedNames.has(p.Player));
         while (team.length < 11 && remainingFetched.length > 0) {
-           const p = remainingFetched.shift()!;
-           team.push(p);
-           usedNames.add(p.Player);
+           const playerAtTop = remainingFetched.shift()!;
+           team.push(playerAtTop);
+           usedNames.add(playerAtTop.Player);
         }
       }
 

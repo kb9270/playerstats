@@ -193,6 +193,37 @@ class SofaScoreService {
     return unique.sort((a, b) => b.rating - a.rating);
   }
 
+  async fetchUCLTeamOfTheWeek() {
+    console.log("🚀 [SofaScore] Fetching UCL Specific TOTW...");
+    try {
+      const leagueId = 7; // Champions League
+      const seasonId = await this.getLatestSeasonId(leagueId);
+      
+      const periodsResp = await this.axiosInstance.get(`/unique-tournament/${leagueId}/season/${seasonId}/team-of-the-week/periods`);
+      const periods = periodsResp.data?.periods || [];
+      
+      if (periods.length === 0) return [];
+
+      const latestPeriod = periods[0];
+      const players = await this.getTeamOfTheWeek(leagueId, seasonId, latestPeriod.id);
+      
+      return players.map((p: any) => ({
+        Player: p.player?.name,
+        Squad: p.team?.name,
+        Gls: p.statistics?.goals || 0,
+        Ast: p.statistics?.assists || 0,
+        Pos: p.player?.position || "M",
+        rating: parseFloat(p.rating) || 0,
+        displayRating: parseFloat(p.rating) || 0,
+        sofaId: p.player?.id,
+        teamId: p.team?.id
+      })).sort((a: any, b: any) => b.rating - a.rating);
+    } catch (err) {
+      console.error("❌ [SofaScore] UCL Fetch Error:", err);
+      return [];
+    }
+  }
+
   private normalizeName(name: string): string {
     return name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   }

@@ -630,6 +630,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── CSV League Rankings Dashboard ──────────────────────────────────────
+  app.get("/api/csv/leagues/:name/rankings", async (req, res) => {
+    try {
+      const leagueName = decodeURIComponent(req.params.name);
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const players = allPlayers.filter((p: any) => p.Comp === leagueName);
+
+      if (players.length === 0) {
+        return res.json({ scorers: [], assists: [], ratings: [], young: [], keepers: [] });
+      }
+
+      const scorers = [...players]
+        .filter(p => !p.Pos?.includes('GK'))
+        .sort((a, b) => (b.Gls || 0) - (a.Gls || 0))
+        .slice(0, 10)
+        .map(p => ({ 
+          name: p.Player, 
+          team: p.Squad, 
+          value: p.Gls || 0, 
+          logo: espnImageService.getTeamLogo(p.Squad),
+          headshot: null // Fast load
+        }));
+
+      const assists = [...players]
+        .filter(p => !p.Pos?.includes('GK'))
+        .sort((a, b) => (b.Ast || 0) - (a.Ast || 0))
+        .slice(0, 10)
+        .map(p => ({ 
+          name: p.Player, 
+          team: p.Squad, 
+          value: p.Ast || 0, 
+          logo: espnImageService.getTeamLogo(p.Squad),
+          headshot: null
+        }));
+
+      // For ratings, let's use a combined metric for speed or pick top processed ones
+      // Since generatePlayerAnalysis is sync but expensive to run on all, we'll pick top G+A players first
+      const ratingCandidates = [...players]
+        .sort((a, b) => ((b.Gls || 0) + (b.Ast || 0)) - ((a.Gls || 0) + (a.Ast || 0)))
+        .slice(0, 50);
+
+      const ratings = ratingCandidates
+        .map(p => {
+          const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
+          return {
+            name: p.Player,
+            team: p.Squad,
+            value: (analysis.overallRating / 10).toFixed(1),
+            logo: espnImageService.getTeamLogo(p.Squad),
+            headshot: null
+          };
+        })
+        .sort((a, b) => Number(b.value) - Number(a.value))
+        .slice(0, 10);
+
+      const young = [...players]
+        .filter(p => p.Age && p.Age <= 21)
+        .map(p => {
+           const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
+           return {
+             name: p.Player,
+             team: p.Squad,
+             value: (analysis.overallRating / 10).toFixed(1),
+             age: p.Age,
+             logo: espnImageService.getTeamLogo(p.Squad),
+             headshot: null
+           };
+        })
+        .sort((a, b) => Number(b.value) - Number(a.value))
+        .slice(0, 10);
+
+      const keepers = [...players]
+        .filter(p => p.Pos?.includes('GK'))
+        .sort((a, b) => (b.CS || 0) - (a.CS || 0))
+        .slice(0, 10)
+        .map(p => ({
+          name: p.Player,
+          team: p.Squad,
+          value: p.CS || 0,
+          logo: espnImageService.getTeamLogo(p.Squad),
+          headshot: null
+        }));
+
+      return res.json({ scorers, assists, ratings, young, keepers });
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // ── CSV League Players ─────────────────────────────────────────────────
   app.get("/api/csv/leagues/:name/players", async (req, res) => {
     try {

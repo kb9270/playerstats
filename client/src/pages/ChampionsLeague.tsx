@@ -181,7 +181,10 @@ export default function ChampionsLeague() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: `linear-gradient(135deg, ${UCL_NIGHT} 0%, ${UCL_ROYAL} 100%)`,
+      backgroundImage: `url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed",
       color: "#fff",
       fontFamily: "'Inter', sans-serif",
       position: "relative", overflow: "hidden"
@@ -272,8 +275,14 @@ export default function ChampionsLeague() {
               
               {/* Tactical Pitch Container */}
               <div className="glass-panel" style={{ position: "relative", borderRadius: 16, overflow: "hidden", minHeight: 600, border: "1px solid rgba(255,255,255,0.1)" }}>
-                {/* Field Grass Gradient */}
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(0,30,80,0.6) 0%, rgba(0,10,40,0.8) 50%, rgba(0,30,80,0.6) 100%)", zIndex: 0 }} />
+                {/* Field Grass Gradient with Official Background Overlay */}
+                <div style={{ 
+                  position: "absolute", inset: 0, 
+                  backgroundImage: `linear-gradient(rgba(0,30,80,0.4), rgba(0,10,40,0.6)), url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  zIndex: 0 
+                }} />
                 <UCLField />
                 
                 {/* Players */}
