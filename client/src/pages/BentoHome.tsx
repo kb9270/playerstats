@@ -3,13 +3,7 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 
-// Load additional fonts for special widgets
-if (typeof document !== 'undefined') {
-  const link = document.createElement('link');
-  link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800;900&display=swap';
-  link.rel = 'stylesheet';
-  document.head.appendChild(link);
-}
+
 import {
   Search, Trophy, Zap, BarChart3, Users, Activity,
   TrendingUp, ArrowUpRight, Globe, ChevronRight,
@@ -1002,6 +996,21 @@ export default function BentoHome() {
   const liveMatches = matches.filter(m => m.status === "LIVE" || m.status === "IN_PLAY");
   const rankings = rankingData?.rankings || [];
   const news = newsData?.news || [];
+
+  /* Load Montserrat font safely inside React lifecycle (avoids HMR removeChild crash) */
+  useEffect(() => {
+    const FONT_ID = 'montserrat-font-link';
+    if (!document.getElementById(FONT_ID)) {
+      const link = document.createElement('link');
+      link.id = FONT_ID;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800;900&display=swap';
+      document.head.appendChild(link);
+    }
+    return () => {
+      // Do NOT remove: font is shared and would cause flash on HMR
+    };
+  }, []);
 
   /* Keyboard shortcut */
   useEffect(() => {
