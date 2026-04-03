@@ -906,13 +906,16 @@ function TakeOverExpandingStats() {
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0, y: -10 }}
-            animate={{ height: "auto", opacity: 1, y: 0 }}
-            exit={{ height: 0, opacity: 0, y: -10 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            style={{ overflow: "hidden", marginTop: expanded ? 12 : 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ 
+              height: { duration: 0.4, ease: [0.33, 1, 0.68, 1] },
+              opacity: { duration: 0.2, delay: 0.1 }
+            }}
+            style={{ overflow: "hidden" }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 0" }}>
               {maps.map((m, i) => (
                 <motion.div 
                   key={i} 
@@ -1516,7 +1519,7 @@ export default function BentoHome() {
               {/* Tactical Pitch Container with Exact Official Background - No filter */}
               <div style={{ 
                 flex: 1, position: "relative", minHeight: 460, marginTop: 10, 
-                backgroundImage: `url("https://editorial.uefa.com/resources/028c-1a7337f7f34c-6a7e0a8d6b9d-1000/ucl_kv_2024-25_16x9.jpg")`,
+                backgroundImage: `url("https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=2070&auto=format&fit=crop")`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
                 borderRadius: 16, overflow: "hidden", 
