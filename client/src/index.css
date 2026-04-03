@@ -710,47 +710,62 @@ table th {
 }
 .section-heading .section-label { margin: 0; }
 
-/* ─── Premier League Official Theme ─────────────────────── */
+/* --- Premier League Full Page Theme & Motion --- */
+@keyframes pl-bg-sheen {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pl-float-pattern {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
 .theme-premier-league {
   background: linear-gradient(135deg, #3d195b 0%, #00ff85 100%) !important;
+  background-size: 400% 400% !important;
+  animation: pl-bg-sheen 20s infinite linear;
   color: #3d195b !important;
   font-family: 'Barlow', sans-serif;
   position: relative;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 .theme-premier-league::before,
 .theme-premier-league::after {
   content: '';
-  position: absolute;
-  top: 0;
-  width: 80px;
-  height: 100%;
+  position: fixed;
+  top: -10%;
+  width: 120px;
+  height: 120%;
   z-index: 0;
-  opacity: 0.4;
+  opacity: 0.3;
   pointer-events: none;
+  animation: pl-float-pattern 15s infinite ease-in-out;
 }
 
-/* Jagged patterns on sides */
+/* Jagged patterns on sides with motion */
 .theme-premier-league::before {
-  left: 0;
+  left: -20px;
   background: 
     linear-gradient(135deg, #3d195b 25%, transparent 25%) -50px 0,
     linear-gradient(225deg, #3d195b 25%, transparent 25%) -50px 0,
     linear-gradient(315deg, #3d195b 25%, transparent 25%),
     linear-gradient(45deg, #3d195b 25%, transparent 25%);
-  background-size: 100px 100px;
+  background-size: 60px 60px;
   background-color: #240b36;
 }
 
 .theme-premier-league::after {
-  right: 0;
+  right: -20px;
+  animation-delay: -7s;
   background: 
     linear-gradient(135deg, #00ff85 25%, transparent 25%) -50px 0,
     linear-gradient(225deg, #00ff85 25%, transparent 25%) -50px 0,
     linear-gradient(315deg, #00ff85 25%, transparent 25%),
     linear-gradient(45deg, #00ff85 25%, transparent 25%);
-  background-size: 100px 100px;
+  background-size: 60px 60px;
   background-color: #00d16f;
 }
 
@@ -838,3 +853,462 @@ table th {
 .stats-overlay { backdrop-filter: blur(8px); background: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); margin: 16px; }
 .ucl-score-badge { background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00E5FF; padding: 6px 16px; border-radius: 8px; font-family: "Barlow Condensed", sans-serif; font-weight: 900; font-size: 24px; }
 
+
+/* --- Premier League Original & Motion Hybrid --- */
+:root {
+  --pl-purple-dark: #3D195B;
+  --pl-purple-light: #4F2471;
+  --pl-green-neon: #00FF85;
+  --pl-cyan: #04F5FF;
+  --pl-white: #FFFFFF;
+}
+
+@keyframes pl-sheen {
+  0% { transform: translateX(-150%) skewX(-15deg); }
+  20%, 100% { transform: translateX(250%) skewX(-15deg); }
+}
+
+.pl-ui-container {
+  font-family: 'Montserrat', sans-serif;
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--pl-purple-dark);
+  background-image: linear-gradient(135deg, var(--pl-purple-dark) 0%, var(--pl-purple-light) 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.pl-ui-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-bottom: 2px solid var(--pl-cyan);
+  position: relative;
+  overflow: hidden;
+}
+
+.pl-ui-header::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 40%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(4, 245, 255, 0.1), transparent);
+  animation: pl-sheen 8s infinite ease-in-out;
+}
+
+.pl-header-title {
+  color: var(--pl-white);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+}
+
+/* Stacked title effect */
+.pl-header-title[data-text]::before,
+.pl-header-title[data-text]::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0; top: -1px; width: 100%; height: 100%;
+  z-index: -1;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.15);
+  color: transparent;
+  pointer-events: none;
+}
+.pl-header-title[data-text]::after { top: -2.5px; -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08); }
+
+.pl-header-icon {
+  width: 28px;
+  height: 28px;
+  background-image: url('https://icons.iconarchive.com/icons/giannis-zographos/british-football-clubs/256/Premier-League-icon.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: brightness(0) invert(1) drop-shadow(0 0 8px var(--pl-cyan));
+}
+
+.pl-ui-body {
+  padding: 10px 0;
+}
+
+.pl-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 44px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 0 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--pl-white);
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.pl-ui-row:last-child { border-bottom: none; }
+
+.pl-row-accent {
+  background-color: rgba(0, 255, 133, 0.08);
+  border-left: 4px solid var(--pl-green-neon);
+  margin: 0;
+  padding-left: 26px;
+  box-shadow: inset 5px 0 20px rgba(0, 255, 133, 0.15);
+  overflow: hidden;
+}
+
+.pl-row-accent::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 133, 0.12), transparent);
+  animation: pl-sheen 5s infinite;
+}
+
+.pl-ui-row:hover:not(.pl-row-accent) {
+  background-color: rgba(255, 255, 255, 0.04);
+  padding-left: 24px;
+  cursor: pointer;
+}
+
+.pl-ui-row:hover .pl-team-name { color: var(--pl-cyan); }
+.pl-ui-row:hover .pl-rank { transform: scale(1.2); color: #fff; }
+
+.pl-team-info { display: flex; align-items: center; gap: 14px; }
+
+.pl-rank {
+  font-weight: 800;
+  width: 22px;
+  color: var(--pl-cyan);
+  transition: all 0.3s ease;
+}
+
+.pl-team-name {
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.pl-points {
+  font-weight: 900;
+  color: var(--pl-green-neon);
+  font-size: 1rem;
+  text-shadow: 0 0 10px rgba(0, 255, 133, 0.3);
+}
+
+/* --- LaLiga Theme (2024/2025) --- */
+:root {
+  --ll-red: #FA1832;
+  --ll-black: #000000;
+  --ll-carbon: #111111;
+  --ll-white: #FFFFFF;
+}
+
+.theme-laliga {
+  background: var(--ll-black) !important;
+  color: white !important;
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Background patterns for LaLiga (LL Monogram) */
+.theme-laliga::before {
+  content: "LL";
+  position: fixed;
+  top: 15%;
+  right: -5%;
+  font-size: 50vw;
+  font-weight: 900;
+  color: var(--ll-red);
+  opacity: 0.04;
+  line-height: 0.8;
+  pointer-events: none;
+  z-index: 0;
+  transform: rotate(-15deg);
+}
+
+.ll-ui-container {
+  background: var(--ll-black);
+  border-top: 2px solid var(--ll-red);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+}
+
+.ll-ui-header {
+  background: var(--ll-carbon);
+  color: white;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ll-header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.ll-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--ll-black);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.1s;
+}
+
+.ll-ui-row:hover {
+  background: var(--ll-carbon);
+}
+
+.ll-rank {
+  font-weight: 900;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  width: 24px;
+}
+
+.ll-row-leader .ll-rank {
+  color: var(--ll-red);
+}
+
+.ll-points {
+  font-weight: 900;
+  color: white;
+}
+
+.ll-table {
+  background: var(--ll-black) !important;
+  color: white !important;
+  border: 1px solid rgba(250, 24, 50, 0.2) !important;
+  border-top: 3px solid var(--ll-red) !important;
+  border-radius: 4px !important;
+}
+
+.ll-neon-glow {
+  box-shadow: 0 0 20px rgba(250, 24, 50, 0.2);
+}
+
+/* --- Serie A Theme (2024/2025) --- */
+:root {
+  --sa-blue: #0032A0;
+  --sa-deep: #001C80;
+  --sa-cyan: #00DBFF;
+  --sa-white: #FFFFFF;
+}
+
+.theme-seriea {
+  background: radial-gradient(circle at top right, var(--sa-blue), var(--sa-deep) 70%) !important;
+  color: white !important;
+  font-family: 'Rajdhani', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Background patterns for Serie A (A Monogram) */
+.theme-seriea::before {
+  content: "A";
+  position: fixed;
+  top: 10%;
+  left: -10%;
+  font-size: 60vw;
+  font-weight: 900;
+  color: var(--sa-cyan);
+  opacity: 0.03;
+  line-height: 0.8;
+  pointer-events: none;
+  z-index: 0;
+  font-style: italic;
+  transform: skewX(-15deg);
+}
+
+.sa-ui-container {
+  background: rgba(0, 50, 160, 0.15);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 219, 255, 0.2);
+  border-left: 4px solid var(--sa-cyan);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 30px rgba(0, 219, 255, 0.1);
+}
+
+.sa-ui-header {
+  background: linear-gradient(90deg, var(--sa-blue), transparent);
+  color: white;
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  clip-path: polygon(0 0, 95% 0, 100% 100%, 0% 100%);
+}
+
+.sa-header-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-style: italic;
+}
+
+.sa-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  background: rgba(0, 28, 128, 0.2);
+  border-bottom: 1px solid rgba(0, 219, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sa-ui-row:hover {
+  background: rgba(0, 219, 255, 0.1);
+  padding-left: 24px;
+}
+
+.sa-rank {
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--sa-cyan);
+  width: 30px;
+  font-style: italic;
+}
+
+.sa-points {
+  font-weight: 900;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.sa-table {
+  background: rgba(0, 28, 128, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(0, 219, 255, 0.2) !important;
+  border-radius: 4px !important;
+}
+
+.sa-neon-glow {
+  box-shadow: 0 0 25px rgba(0, 219, 255, 0.2);
+}
+
+.sa-btn-primary {
+  background: var(--sa-cyan);
+  color: var(--sa-deep);
+  font-weight: 800;
+  text-transform: uppercase;
+  font-style: italic;
+  padding: 8px 16px;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+}
+
+/* --- Ligue 1 McDonald's Theme (2024/2025) --- */
+:root {
+  --l1-blue: #0049FF;
+  --l1-yellow: #FACC15;
+  --l1-charcoal: #121212;
+  --l1-dark: #0a0a0a;
+}
+
+.theme-ligue1 {
+  background: var(--l1-charcoal) !important;
+  color: white !important;
+  font-family: 'Montserrat', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Background patterns for L1 */
+.theme-ligue1::before {
+  content: "L1";
+  position: fixed;
+  top: 10%;
+  left: 5%;
+  font-size: 40vw;
+  font-weight: 900;
+  color: var(--l1-blue);
+  opacity: 0.03;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.l1-ui-container {
+  background: var(--l1-charcoal);
+  border: 1px solid rgba(0, 73, 255, 0.3);
+  box-shadow: 0 0 30px rgba(0, 73, 255, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.l1-ui-header {
+  background: var(--l1-blue);
+  color: white;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid var(--l1-yellow);
+}
+
+.l1-header-title {
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.l1-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+  color: rgba(255,255,255,0.9);
+}
+
+.l1-ui-row:hover {
+  background: rgba(0, 73, 255, 0.1);
+  padding-left: 28px;
+}
+
+.l1-row-accent {
+  background: rgba(250, 204, 21, 0.05);
+  border-left: 4px solid var(--l1-yellow);
+}
+
+.l1-points {
+  color: var(--l1-yellow);
+  font-weight: 900;
+}
+
+.l1-table {
+  background: var(--l1-charcoal) !important;
+  color: white !important;
+  border: 1px solid rgba(0, 73, 255, 0.2) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 73, 255, 0.1) !important;
+}
+
+.l1-header-dark {
+  background: var(--l1-blue) !important;
+  color: white !important;
+}
+
+.l1-neon-glow {
+  box-shadow: 0 0 15px rgba(0, 73, 255, 0.4);
+}

@@ -521,8 +521,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/standings/:league", async (req, res) => {
     try {
       const leagueName = decodeURIComponent(req.params.league);
+      console.log(`[Standings] Request for league: "${leagueName}"`);
+      
       const espnCode = ESPNLEAGUES[leagueName];
       if (!espnCode) {
+        console.warn(`[Standings] No ESPN code for: "${leagueName}". Available:`, Object.keys(ESPNLEAGUES));
         return res.status(404).json({ error: `No standings available for "${leagueName}"` });
       }
 
@@ -538,14 +541,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!response.ok) {
+        console.error(`[Standings] ESPN API Error: ${response.status}`);
         return res.status(502).json({ error: `ESPN API error: ${response.status}` });
       }
 
       const espnData = await response.json();
+      console.log(`[Standings] ESPN data received for ${espnCode}`);
 
       // Parse ESPN standings format
       const standings: any[] = [];
       const groups = espnData?.children?.[0]?.standings?.entries || espnData?.standings?.entries || [];
+      console.log(`[Standings] Found ${groups.length} entries in ESPN response`);
 
       for (const entry of groups) {
         const team = entry.team;

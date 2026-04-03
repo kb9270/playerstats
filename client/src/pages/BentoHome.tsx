@@ -284,7 +284,7 @@ const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: 
 
 /* ─── League Widget Primitive ──────────────────────────── */
 function LeagueWidget({
-  name, logo, color, leader, points, topScorer, goals, onClick
+  name, logo, color, leader, points, topScorer, goals, onClick, standings = []
 }: {
   name: string;
   logo: string;
@@ -294,51 +294,240 @@ function LeagueWidget({
   topScorer?: string;
   goals?: number;
   onClick: () => void;
+  standings?: any[];
 }) {
   const isPL = name === "Premier League";
+  const isL1 = name === "Ligue 1";
+  const isLL = name === "La Liga";
+  const isSA = name === "Serie A";
 
-  if (isPL) {
+  if (isSA) {
+    const displayRows = standings.length > 0 ? standings : [
+      { rank: 1, team: "Inter Milan", points: 82 },
+      { rank: 2, team: "AC Milan", points: 68 },
+      { rank: 3, team: "Juventus", points: 62 },
+      { rank: 4, team: "Bologna", points: 58 },
+      { rank: 5, team: "AS Roma", points: 55 },
+    ];
+
     return (
-      <GlassCard
-        className="theme-premier-league"
-        onClick={onClick}
-        style={{
-          padding: 0,
-          display: "flex",
-          flexDirection: "column",
-          minHeight: 220,
-          borderRadius: 20,
-          overflow: "hidden",
-          border: "none",
-        }}
-      >
-        <div style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 2 }}>
-          <img src={logo} alt={name} style={{ width: 24, height: 24, objectFit: "contain", filter: "brightness(0) invert(1)" }} />
-          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", color: "white" }}>Premier League</span>
-        </div>
-        
-        <div style={{ flex: 1, padding: "0 12px 12px", position: "relative", zIndex: 2 }}>
-          <div style={{ background: "white", borderRadius: 10, overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,0.15)" }}>
-            <div style={{ background: "white", padding: "8px 12px", borderBottom: "1.5px solid #3d195b", display: "flex", justifyContent: "space-between", fontSize: 9, fontWeight: 800, color: "#3d195b", textTransform: "uppercase" }}>
-              <span>Pos / Club</span>
-              <span>Pts</span>
-            </div>
-            {[
-              { r: 1, t: "Arsenal", p: 18 },
-              { r: 2, t: "Man City", p: 17 },
-              { r: 3, t: "Liverpool", p: 17 },
-            ].map((row, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: i < 2 ? "1px solid rgba(61,25,91,0.06)" : "none", color: "#3d195b" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 10, fontWeight: 900, width: 10 }}>{row.r}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700 }}>{row.t}</span>
-                </div>
-                <span style={{ fontSize: 14, fontWeight: 900 }}>{row.p}</span>
-              </div>
-            ))}
+      <div className="sa-ui-container sheen-container" onClick={onClick} style={{ cursor: "pointer", height: "100%" }}>
+        <div className="sa-ui-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Serie A "A" Logo */}
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" 
+              alt="Serie A" 
+              style={{ height: 28, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+            />
+            <div className="sa-header-title">CLASSEMENT</div>
           </div>
+          <div style={{ background: "rgba(0, 219, 255, 0.2)", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: "#00DBFF" }}>LIVE</div>
         </div>
-      </GlassCard>
+
+        <motion.div 
+          className="sa-ui-body"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: {
+              transition: {
+                staggerChildren: 0.08
+              }
+            }
+          }}
+        >
+          {displayRows.map((row, i) => (
+            <motion.div 
+              key={i} 
+              variants={{
+                hidden: { opacity: 0, scale: 0.95, y: 5 },
+                show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 20 } }
+              }}
+              className="sa-ui-row"
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <span className="sa-rank">{row.rank || row.r}</span>
+                <span style={{ fontWeight: 700, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.05em", color: "white" }}>{row.team || row.t}</span>
+              </div>
+              <span className="sa-points">{row.points || row.p}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (isLL) {
+    const displayRows = standings.length > 0 ? standings : [
+      { rank: 1, team: "Real Madrid", points: 75 },
+      { rank: 2, team: "Barcelona", points: 67 },
+      { rank: 3, team: "Girona", points: 65 },
+      { rank: 4, team: "Atlético", points: 58 },
+      { rank: 5, team: "Athletic", points: 56 },
+    ];
+
+    return (
+      <div className="ll-ui-container sheen-container" onClick={onClick} style={{ cursor: "pointer", height: "100%" }}>
+        <div className="ll-ui-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* New LaLiga LL Monogram Logo */}
+            <img 
+              src="https://r2.thesportsdb.com/images/media/league/badge/ja4it51687628717.png" 
+              alt="LL" 
+              style={{ height: 28, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+            />
+            <div className="ll-header-title">CLASSEMENT</div>
+          </div>
+          <motion.div
+             animate={{ opacity: [0.4, 1, 0.4] }}
+             transition={{ duration: 2, repeat: Infinity }}
+             style={{ width: 6, height: 6, borderRadius: "50%", background: "#FA1832" }}
+          />
+        </div>
+
+        <motion.div 
+          className="ll-ui-body"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: {
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {displayRows.map((row, i) => (
+            <motion.div 
+              key={i} 
+              variants={{
+                hidden: { opacity: 0, x: -10 },
+                show: { opacity: 1, x: 0, transition: { type: "tween", duration: 0.2 } }
+              }}
+              className={`ll-ui-row ${i === 0 ? 'll-row-leader' : ''}`}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span className="ll-rank">{row.rank || row.r}</span>
+                <span style={{ fontWeight: 800, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.02em" }}>{row.team || row.t}</span>
+              </div>
+              <span className="ll-points">{row.points || row.p}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (isL1) {
+    const displayRows = standings.length > 0 ? standings : [
+      { rank: 1, team: "PSG", points: 59 },
+      { rank: 2, team: "Marseille", points: 50 },
+      { rank: 3, team: "Monaco", points: 49 },
+      { rank: 4, team: "Lille", points: 46 },
+      { rank: 5, team: "Lens", points: 45 },
+    ];
+
+    return (
+      <div className="l1-ui-container sheen-container" onClick={onClick} style={{ cursor: "pointer", height: "100%" }}>
+        <div className="l1-ui-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img 
+              src="https://r2.thesportsdb.com/images/media/league/badge/9f7z9d1742983155.png" 
+              alt="L1" 
+              style={{ height: 28, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+            />
+            <div className="l1-header-title">CLASSEMENT</div>
+          </div>
+          <Zap size={16} />
+        </div>
+
+        <motion.div 
+          className="l1-ui-body"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: {
+              transition: {
+                staggerChildren: 0.04
+              }
+            }
+          }}
+        >
+          {displayRows.map((row, i) => (
+            <motion.div 
+              key={i} 
+              variants={{
+                hidden: { opacity: 0, y: 15 },
+                show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 20 } }
+              }}
+              className={`l1-ui-row ${i === 0 ? 'l1-row-accent' : ''}`}
+            >
+              <div className="pl-team-info">
+                <span style={{ fontWeight: 900, color: i < 3 ? "var(--l1-yellow)" : "rgba(255,255,255,0.4)", width: 22, fontSize: 13 }}>{row.rank || row.r}</span>
+                <span style={{ fontWeight: 700, fontSize: 13, color: "white" }}>{row.team || row.t}</span>
+              </div>
+              <span className="l1-points">{row.points || row.p}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    );
+  }
+
+    if (isPL) {
+    const displayRows = standings.length > 0 ? standings : [
+      { rank: 1, team: "Liverpool", points: 67 },
+      { rank: 2, team: "Arsenal", points: 64 },
+      { rank: 3, team: "Man City", points: 63 },
+      { rank: 4, team: "Chelsea", points: 60 },
+      { rank: 5, team: "Aston Villa", points: 59 },
+    ];
+
+    return (
+      <div className="pl-ui-container sheen-container" onClick={onClick} style={{ cursor: "pointer", height: "100%" }}>
+        <div className="pl-ui-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img 
+              src="https://upload.wikimedia.org/wikipedia/en/f/f2/Premier_League_Logo.svg" 
+              alt="PL" 
+              style={{ height: 28, filter: "brightness(0) invert(1)" }} 
+            />
+            <div className="pl-header-title" data-text="CLASSEMENT">CLASSEMENT</div>
+          </div>
+          <div className="pl-header-icon"></div>
+        </div>
+
+        <motion.div 
+          className="pl-ui-body"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: {
+              transition: {
+                staggerChildren: 0.1
+              }
+            }
+          }}
+        >
+          {displayRows.map((row, i) => (
+            <motion.div 
+              key={i} 
+              variants={{
+                hidden: { opacity: 0, x: -20 },
+                show: { opacity: 1, x: 0 }
+              }}
+              className={`pl-ui-row ${i === 0 ? 'pl-row-accent' : ''}`}
+            >
+              <div className="pl-team-info">
+                <span className="pl-rank">{row.rank || row.r}</span>
+                <span className="pl-team-name">{row.team || row.t}</span>
+              </div>
+              <span className="pl-points">{row.points || row.p}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
     );
   }
 
@@ -771,6 +960,31 @@ export default function BentoHome() {
     queryKey: ["/api/news"],
     staleTime: 5 * 60_000,
   });
+
+  // --- Real PL Standings for the Widget ---
+  const { data: plData } = useQuery<any>({
+    queryKey: ["/api/standings/eng Premier League"],
+    staleTime: 5 * 60_000,
+  });
+  const plStandings = plData?.standings?.slice(0, 5) || [];
+
+  const { data: l1Data } = useQuery<any>({
+    queryKey: ["/api/standings/fr Ligue 1"],
+    staleTime: 5 * 60_000,
+  });
+  const l1Standings = l1Data?.standings?.slice(0, 5) || [];
+
+  const { data: llData } = useQuery<any>({
+    queryKey: ["/api/standings/esp La Liga"],
+    staleTime: 5 * 60_000,
+  });
+  const llStandings = llData?.standings?.slice(0, 5) || [];
+
+  const { data: saData } = useQuery<any>({
+    queryKey: ["/api/standings/it Serie A"],
+    staleTime: 5 * 60_000,
+  });
+  const saStandings = saData?.standings?.slice(0, 5) || [];
 
   const players = totwData?.players || [];
   const topPlayer = players[0];
@@ -1463,31 +1677,34 @@ export default function BentoHome() {
                   name="Premier League"
                   logo="https://a.espncdn.com/i/leaguelogos/soccer/500/23.png"
                   color="#3D195B"
-                  leader="Liverpool"
-                  points={67}
+                  leader={plStandings[0]?.team || "Liverpool"}
+                  points={plStandings[0]?.points || 67}
                   topScorer="M. Salah"
                   goals={18}
+                  standings={plStandings}
                   onClick={() => setLocation("/league/eng Premier League")}
                 />
                 <LeagueWidget
                   name="Ligue 1"
-                  logo="https://a.espncdn.com/i/leaguelogos/soccer/500/9.png"
+                  logo="https://r2.thesportsdb.com/images/media/league/badge/9f7z9d1742983155.png"
                   color="#DAE025"
-                  leader="PSG"
-                  points={59}
+                  leader={l1Standings[0]?.team || "PSG"}
+                  points={l1Standings[0]?.points || 59}
                   topScorer="B. Barcola"
                   goals={15}
+                  standings={l1Standings}
                   onClick={() => setLocation("/league/fr Ligue 1")}
                 />
                 <LeagueWidget
                   name="La Liga"
                   logo="https://a.espncdn.com/i/leaguelogos/soccer/500/15.png"
                   color="#EE1C23"
-                  leader="Barcelone"
-                  points={72}
+                  leader={llStandings[0]?.team || "Real Madrid"}
+                  points={llStandings[0]?.points || 75}
                   topScorer="R. Lewandowski"
                   goals={21}
-                  onClick={() => setLocation("/league/es La Liga")}
+                  standings={llStandings}
+                  onClick={() => setLocation("/league/esp La Liga")}
                 />
                 <LeagueWidget
                   name="Bundesliga"
@@ -1502,11 +1719,12 @@ export default function BentoHome() {
                 <LeagueWidget
                   name="Serie A"
                   logo="https://a.espncdn.com/i/leaguelogos/soccer/500/12.png"
-                  color="#00438C"
-                  leader="Inter Milan"
-                  points={70}
+                  color="#0032A0"
+                  leader={saStandings[0]?.team || "Inter Milan"}
+                  points={saStandings[0]?.points || 82}
                   topScorer="L. Martínez"
-                  goals={20}
+                  goals={23}
+                  standings={saStandings}
                   onClick={() => setLocation("/league/it Serie A")}
                 />
              </div>

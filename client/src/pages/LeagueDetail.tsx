@@ -38,24 +38,35 @@ function GlassCard({ children, style, className = "" }: any) {
   );
 }
 
-function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer, isPL }: any) {
+function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer, isPL, isL1 }: any) {
   return (
-    <GlassCard className={isPL ? "pl-table" : ""} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <GlassCard className={isPL ? "pl-table sheen-container" : isL1 ? "l1-table sheen-container" : ""} style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "20px 24px", borderBottom: isPL ? "1px solid rgba(61,25,91,0.1)" : "1px solid rgba(255,255,255,0.05)", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 32, height: 32, borderRadius: 8, background: isPL ? "rgba(61,25,91,0.08)" : `${color}20`, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon size={16} style={{ color: isPL ? "#3d195b" : color }} />
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0, color: isPL ? "#3d195b" : "white" }}>{title}</h3>
+        <h3 className={isPL ? "pl-header-text" : ""} style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0, color: isPL ? "#3d195b" : "white" }}>{title}</h3>
       </div>
-      <div style={{ flex: 1, padding: "8px 0" }}>
-        {data.slice(0, 5).map((row: any, i: number) => (
-          <div 
+      <motion.div 
+        style={{ flex: 1, padding: "8px 0" }}
+        initial="hidden"
+        animate="show"
+        variants={{
+          show: { transition: { staggerChildren: 0.05 } }
+        }}
+      >
+        {data.slice(0, 10).map((row: any, i: number) => (
+          <motion.div 
             key={row.name + i}
             onClick={() => onClickPlayer(row.name)}
+            variants={{
+              hidden: { opacity: 0, x: -15 },
+              show: { opacity: 1, x: 0 }
+            }}
             style={{ 
               display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", 
-              cursor: "pointer", transition: "background 0.2s",
-              borderBottom: (isPL && i < 4) ? "1px solid rgba(61,25,91,0.05)" : "none"
+              cursor: "pointer", transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              borderBottom: (isPL && i < data.slice(0, 10).length - 1) ? "1px solid rgba(61,25,91,0.05)" : "none"
             }}
             className={isPL ? "pl-row" : "hover-bg-white-05"}
           >
@@ -77,9 +88,9 @@ function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer
             <div style={{ textAlign: "right" }}>
               <span style={{ fontSize: 14, fontWeight: 900, color: isPL ? "#3d195b" : color }}>{row.value}<span style={{ fontSize: 10, opacity: 0.7, marginLeft: 2 }}>{unit}</span></span>
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </GlassCard>
   );
 }
@@ -93,6 +104,48 @@ export default function LeagueDetail() {
   const meta = getMeta(leagueName);
   const name = shortName(leagueName);
   const isPL = leagueName.toLowerCase().includes("premier league");
+  const isL1 = leagueName.toLowerCase().includes("ligue 1");
+  const isLL = leagueName.toLowerCase().includes("la liga");
+  const isSA = leagueName.toLowerCase().includes("serie a");
+
+  // Mock data as fallback if API is empty
+  const PL_MOCK = [
+    { rank: 1, team: "Liverpool", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/364.png", points: 67 },
+    { rank: 2, team: "Arsenal", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/359.png", points: 64 },
+    { rank: 3, team: "Man City", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/382.png", points: 63 },
+    { rank: 4, team: "Chelsea", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/363.png", points: 60 },
+    { rank: 5, team: "Aston Villa", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/362.png", points: 59 },
+    { rank: 6, team: "Tottenham", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/367.png", points: 56 },
+    { rank: 7, team: "Man United", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/360.png", points: 54 },
+    { rank: 8, team: "Newcastle", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/361.png", points: 52 },
+  ];
+
+  const L1_MOCK = [
+    { rank: 1, team: "PSG", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/160.png", points: 59 },
+    { rank: 2, team: "Marseille", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/176.png", points: 50 },
+    { rank: 3, team: "Monaco", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/174.png", points: 49 },
+    { rank: 4, team: "Lille", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/169.png", points: 46 },
+    { rank: 5, team: "Lens", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/172.png", points: 45 },
+    { rank: 6, team: "Nice", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/164.png", points: 42 },
+  ];
+
+  const LL_MOCK = [
+    { rank: 1, team: "Real Madrid", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/86.png", points: 75 },
+    { rank: 2, team: "Barcelona", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/83.png", points: 67 },
+    { rank: 3, team: "Girona", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/9812.png", points: 65 },
+    { rank: 4, team: "Atlético", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/1068.png", points: 58 },
+    { rank: 5, team: "Athletic", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/93.png", points: 56 },
+    { rank: 6, team: "Real Sociedad", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/89.png", points: 49 },
+  ];
+
+  const SA_MOCK = [
+    { rank: 1, team: "Inter Milan", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/110.png", points: 82 },
+    { rank: 2, team: "AC Milan", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/103.png", points: 68 },
+    { rank: 3, team: "Juventus", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/111.png", points: 62 },
+    { rank: 4, team: "Bologna", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/104.png", points: 58 },
+    { rank: 5, team: "AS Roma", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/106.png", points: 55 },
+    { rank: 6, team: "Atalanta", logo: "https://a.espncdn.com/i/teamlogos/soccer/500/102.png", points: 50 },
+  ];
 
   // Queries
   const { data: standingsData, isLoading: loadingSt } = useQuery<any>({
@@ -105,14 +158,26 @@ export default function LeagueDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const standings = standingsData?.standings || [];
+  let standings = standingsData?.standings || [];
+  if (isPL && standings.length === 0 && !loadingSt) {
+    standings = PL_MOCK;
+  } else if (isL1 && standings.length === 0 && !loadingSt) {
+    standings = L1_MOCK;
+  } else if (isLL && standings.length === 0 && !loadingSt) {
+    standings = LL_MOCK;
+  } else if (isSA && standings.length === 0 && !loadingSt) {
+    standings = SA_MOCK;
+  }
 
   return (
-    <div className={`min-h-screen ${isPL ? 'theme-premier-league' : 'bg-[#070708] text-white'} font-sans`} style={{ color: isPL ? '#3d195b' : 'white' }}>
+    <div 
+      className={`min-h-screen ${isPL ? 'theme-premier-league' : isL1 ? 'theme-ligue1' : isLL ? 'theme-laliga' : isSA ? 'theme-seriea' : 'bg-[#070708] text-white'} font-sans`} 
+      style={{ color: isPL ? '#3d195b' : (isL1 || isLL || isSA) ? '#fff' : 'white' }}
+    >
       {/* ── Navbar ── */}
       <div style={{ 
-        position: "sticky", top: 0, zIndex: 100, background: isPL ? "rgba(255,255,255,0.1)" : "rgba(7,7,8,0.8)", 
-        backdropFilter: "blur(20px)", borderBottom: isPL ? "1px solid rgba(61,25,91,0.2)" : "1px solid rgba(255,255,255,0.08)" 
+        position: "sticky", top: 0, zIndex: 100, background: isPL ? "rgba(255,255,255,0.1)" : (isL1 || isLL || isSA) ? "rgba(7,7,8,0.8)" : "rgba(7,7,8,0.8)", 
+        backdropFilter: "blur(20px)", borderBottom: isPL ? "1px solid rgba(61,25,91,0.2)" : (isL1 || isLL || isSA) ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(255,255,255,0.08)" 
       }}>
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -125,8 +190,44 @@ export default function LeagueDetail() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 24 }}>{meta.flag}</span>
               <div>
-                <h1 style={{ fontSize: 20, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", margin: 0, textTransform: "uppercase" }}>{name}</h1>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", margin: 0, letterSpacing: "0.05em" }}>{meta.country.toUpperCase()} • 2025/2026</p>
+                <h1 
+                  className={isPL ? "pl-header-title" : isL1 ? "l1-header-title" : isLL ? "ll-header-title" : isSA ? "sa-header-title" : ""} 
+                  data-text={isPL ? name : ""}
+                  style={{ 
+                    fontSize: isPL ? 32 : ((isL1 || isLL || isSA) ? 26 : 20), 
+                    fontWeight: 900, 
+                    fontFamily: "'Barlow Condensed', sans-serif", 
+                    margin: 0, 
+                    textTransform: "uppercase",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12
+                  }}
+                >
+                  {isL1 && (
+                    <img 
+                      src="https://r2.thesportsdb.com/images/media/league/badge/9f7z9d1742983155.png" 
+                      alt="L1" 
+                      style={{ height: 32, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+                    />
+                  )}
+                  {isLL && (
+                    <img 
+                      src="https://r2.thesportsdb.com/images/media/league/badge/ja4it51687628717.png" 
+                      alt="LL" 
+                      style={{ height: 32, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+                    />
+                  )}
+                  {isSA && (
+                    <img 
+                      src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" 
+                      alt="A" 
+                      style={{ height: 32, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+                    />
+                  )}
+                  {name}
+                </h1>
+                <p style={{ fontSize: 11, color: isPL ? "rgba(61,25,91,0.6)" : "rgba(255,255,255,0.5)", margin: 0, letterSpacing: "0.05em" }}>{meta.country.toUpperCase()} • 2025/2026</p>
               </div>
             </div>
           </div>
@@ -149,34 +250,61 @@ export default function LeagueDetail() {
         </div>
       </div>
 
-      <main style={{ maxWidth: 1400, margin: "0 auto", padding: isPL ? "32px 120px" : "32px 24px", position: "relative", zIndex: 1 }}>
+      <main style={{ maxWidth: 1400, margin: "0 auto", padding: isPL ? "32px 40px" : "32px 24px", position: "relative", zIndex: 1 }}>
         
         {activeTab === "overview" && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 24 }}>
             
             {/* ── Left Column: Standings Teaser ── */}
             <div style={{ gridColumn: "span 4" }}>
-              <GlassCard className={isPL ? "pl-table" : ""} style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <GlassCard className={isPL ? "pl-table sheen-container" : isL1 ? "l1-table sheen-container" : isLL ? "ll-table ll-neon-glow" : isSA ? "sa-table sa-neon-glow" : ""} style={{ padding: 0, overflow: "hidden", height: "100%" }}>
+                <div style={{ padding: "24px", borderBottom: isPL ? "1px solid rgba(61,25,91,0.1)" : "1px solid rgba(255,255,255,0.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                    <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0, color: isPL ? "#3d195b" : "white" }}>Classement</h3>
-                   <button onClick={() => setActiveTab("standings")} style={{ background: "none", border: "none", color: meta.color, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-                     Voir tout <ChevronRight size={14} />
+                   <button onClick={() => setActiveTab("standings")} style={{ background: "none", border: "none", color: isPL ? "#3d195b" : meta.color, opacity: 0.6, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                      Voir tout <ChevronRight size={14} />
                    </button>
                 </div>
-                <div style={{ paddingBottom: 16 }}>
+                <div style={{ padding: "8px 0" }}>
                   {loadingSt ? (
-                    <div style={{ padding: 40, textAlign: "center", color: "rgba(255,255,255,0.4)" }}>Chargement...</div>
+                    <div style={{ padding: 60, textAlign: "center", color: isPL ? "#3d195b" : "rgba(255,255,255,0.4)" }}>
+                      <div style={{ width: 32, height: 32, border: `3px solid ${isPL ? 'rgba(61,25,91,0.1)' : 'rgba(255,255,255,0.1)'}`, borderTopColor: isPL ? '#3d195b' : meta.color, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
+                      Chargement...
+                    </div>
+                  ) : standings.length === 0 ? (
+                    <div style={{ padding: 60, textAlign: "center", color: isPL ? "#3d195b" : "rgba(255,255,255,0.4)", fontSize: 13 }}>
+                      Données non disponibles pour le moment
+                    </div>
                   ) : (
-                    standings.slice(0, 10).map((row: any, i: number) => (
-                      <div key={row.team} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }} className={i < 3 ? (isPL ? "bg-pl-light" : "bg-white-02") : ""}>
-                        <span style={{ width: 18, fontSize: 12, fontWeight: 800, color: isPL ? "#3d195b" : (i < 4 ? meta.color : "rgba(255,255,255,0.3)") }}>{row.rank}</span>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-                          <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isPL ? "#3d195b" : "white" }}>{row.team}</span>
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 900, color: isPL ? "#3d195b" : "white" }}>{row.points}</span>
-                      </div>
-                    ))
+                    <motion.div 
+                      key="standings-list"
+                      initial="hidden"
+                      animate="show"
+                      variants={{
+                        show: { transition: { staggerChildren: 0.05 } }
+                      }}
+                    >
+                      {standings.slice(0, 10).map((row: any, i: number) => (
+                        <motion.div 
+                          key={row.team + i} 
+                          variants={{
+                            hidden: { opacity: 0, x: -15 },
+                            show: { opacity: 1, x: 0 }
+                          }}
+                          style={{ 
+                            display: "flex", alignItems: "center", gap: 12, padding: "10px 24px",
+                            borderBottom: i < 9 ? (isPL ? "1px solid rgba(61,25,91,0.05)" : "1px solid rgba(255,255,255,0.02)") : "none"
+                          }} 
+                          className={i < 3 && (isPL || isL1) ? (isPL ? "bg-pl-light" : "l1-row-accent") : ""}
+                        >
+                          <span style={{ width: 22, fontSize: 12, fontWeight: 800, color: isPL ? (i < 4 ? "#3d195b" : "rgba(61,25,91,0.4)") : isL1 ? (i < 3 ? "var(--l1-yellow)" : "rgba(255,255,255,0.4)") : (i < 4 ? meta.color : "rgba(255,255,255,0.3)") }}>{row.rank}</span>
+                          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
+                            <TeamLogo logo={row.logo} teamName={row.abbr || row.team} size="sm" />
+                            <span style={{ fontSize: 14, fontWeight: 700, color: isPL ? "#3d195b" : "white" }}>{row.team}</span>
+                          </div>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: isPL ? "#3d195b" : "white" }}>{row.points}</span>
+                        </motion.div>
+                      ))}
+                    </motion.div>
                   )}
                 </div>
               </GlassCard>
@@ -197,6 +325,7 @@ export default function LeagueDetail() {
                     color="#f97316" 
                     unit="buts"
                     isPL={isPL}
+                    isL1={isL1}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -206,6 +335,7 @@ export default function LeagueDetail() {
                     color="#3b82f6" 
                     unit="PD"
                     isPL={isPL}
+                    isL1={isL1}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -215,6 +345,7 @@ export default function LeagueDetail() {
                     color="#eab308" 
                     unit="/10"
                     isPL={isPL}
+                    isL1={isL1}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -224,6 +355,7 @@ export default function LeagueDetail() {
                     color="#a855f7" 
                     unit="/10"
                     isPL={isPL}
+                    isL1={isL1}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                   <RankingBoard 
@@ -233,6 +365,7 @@ export default function LeagueDetail() {
                     color="#22c55e" 
                     unit="CS"
                     isPL={isPL}
+                    isL1={isL1}
                     onClickPlayer={(n: string) => setLocation(`/joueur/${encodeURIComponent(n)}`)}
                   />
                 </>
@@ -254,10 +387,38 @@ export default function LeagueDetail() {
                 />
               </div>
             )}
-            <GlassCard className={isPL ? "pl-table" : ""} style={{ padding: 0, overflow: "hidden" }}>
-              {!isPL && (
+            {isLL && (
+              <div style={{ padding: 40, textAlign: "center", opacity: 0.12 }}>
+                <img 
+                  src="https://r2.thesportsdb.com/images/media/league/badge/ja4it51687628717.png" 
+                  alt="LL" 
+                  style={{ height: 120, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+                />
+              </div>
+            )}
+            {isSA && (
+              <div style={{ padding: 40, textAlign: "center", opacity: 0.12 }}>
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" 
+                  alt="A" 
+                  style={{ height: 120, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+                />
+              </div>
+            )}
+            <GlassCard className={isPL ? "pl-table" : isL1 ? "l1-table" : isLL ? "ll-table ll-neon-glow" : isSA ? "sa-table sa-neon-glow" : ""} style={{ padding: 0, overflow: "hidden" }}>
+              {!isPL && !isLL && !isSA && (
                 <div style={{ padding: "24px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                   <h3 style={{ fontSize: 18, fontWeight: 900, fontFamily: "'Barlow Condensed', sans-serif", textTransform: "uppercase", margin: 0 }}>Classement Complet</h3>
+                </div>
+              )}
+              {isSA && (
+                <div style={{ padding: "24px", borderBottom: "1px solid rgba(0, 219, 255, 0.2)", display: "flex", justifyContent: "center" }}>
+                   <div className="sa-header-title" style={{ fontSize: 16 }}>Calcio / Standings</div>
+                </div>
+              )}
+              {isLL && (
+                <div style={{ padding: "24px", borderBottom: "1px solid rgba(250, 24, 50, 0.2)", display: "flex", justifyContent: "center" }}>
+                   <div className="ll-header-title" style={{ fontSize: 16 }}>The Force / Standings</div>
                 </div>
               )}
               <div style={{ overflowX: "auto" }}>
