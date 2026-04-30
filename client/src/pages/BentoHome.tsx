@@ -2,14 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-
-
-import {
-  Search, Trophy, Zap, BarChart3, Users, Activity,
-  TrendingUp, ArrowUpRight, Globe, ChevronRight,
-  Star, Target, Crosshair, Clock, Newspaper, Menu, X
-} from "lucide-react";
+import { ArrowUpRight, Search, X, Play, Clock, Star, TrendingUp, Shield, BarChart3, ChevronRight, Menu, Zap, Trophy, Users, Activity, Newspaper, Target, Crosshair, Globe } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
+import NavBar from "@/components/NavBar";
 
 /* ─── Framer Motion variants ────────────────────────────── */
 const containerVariants = {
@@ -579,156 +574,6 @@ function LeagueWidget({
   );
 }
 
-/* ─── Nav ───────────────────────────────────────────────── */
-function BentoNav() {
-  const [location] = useLocation();
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", h, { passive: true });
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-
-  const nav = [
-    { href: "/", label: "Joueurs" },
-    { href: "/comparison", label: "Comparaison" },
-    { href: "/ldc", label: "🏆 LDC" },
-    { href: "/matches-live", label: "Direct" },
-  ];
-
-  return (
-    <motion.header
-      initial={{ y: -20, opacity: 0, x: "-50%" }}
-      animate={{ y: 0, opacity: 1, x: "-50%" }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      style={{
-        position: "fixed",
-        top: 16, left: "50%",
-        zIndex: 100,
-        width: "calc(100% - 48px)",
-        maxWidth: 1232,
-        background: scrolled ? "rgba(10,10,10,0.85)" : "rgba(10,10,10,0.5)",
-        backdropFilter: "blur(24px) saturate(1.8)",
-        WebkitBackdropFilter: "blur(24px) saturate(1.8)",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 16,
-        padding: "0 20px",
-        transition: "background 0.4s ease",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
-        {/* Logo */}
-        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            background: "linear-gradient(135deg, #E8344A, #c9253d)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 900,
-            fontSize: 13, color: "#fff", boxShadow: "0 4px 12px rgba(232,52,74,0.4)",
-          }}>PS</div>
-          <span style={{
-            fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800,
-            fontSize: 16, letterSpacing: "0.04em", color: "#fff", textTransform: "uppercase",
-          }}>
-            Player<span style={{ color: "#E8344A" }}>Stats</span>
-          </span>
-        </Link>
-
-        {/* Desktop nav */}
-        <nav style={{ display: "flex", gap: 6 }} className="hidden-mobile">
-          {nav.map(item => {
-            const active = item.href === "/" ? location === "/" : location.startsWith(item.href);
-            return (
-              <Link key={item.href} href={item.href} style={{ textDecoration: "none" }}>
-                <div style={{
-                  padding: "6px 14px",
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 700,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
-                  background: active ? "rgba(255,255,255,0.1)" : "transparent",
-                  transition: "all 0.2s ease",
-                }}>
-                  {item.label}
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Live button */}
-        <Link href="/matches-live" style={{ textDecoration: "none" }} className="hidden-mobile">
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "7px 16px",
-              background: "rgba(232,52,74,0.15)",
-              border: "1px solid rgba(232,52,74,0.35)",
-              borderRadius: 10,
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontWeight: 700, fontSize: 12,
-              color: "#E8344A",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-            }}
-          >
-            <span style={{
-              width: 6, height: 6, borderRadius: "50%",
-              background: "#E8344A",
-              boxShadow: "0 0 8px rgba(232,52,74,0.8)",
-              animation: "pulse-dot 1s ease-in-out infinite",
-            }} />
-            Live
-          </motion.div>
-        </Link>
-
-        {/* Mobile hamburger */}
-        <button
-          className="show-mobile"
-          onClick={() => setOpen(!open)}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.7)", cursor: "pointer", padding: 6 }}
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            style={{ overflow: "hidden", borderTop: "1px solid rgba(255,255,255,0.07)", paddingBottom: 12 }}
-          >
-            {nav.map(item => (
-              <Link key={item.href} href={item.href} onClick={() => setOpen(false)} style={{ textDecoration: "none" }}>
-                <div style={{
-                  padding: "12px 4px",
-                  borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 700, fontSize: 15, letterSpacing: "0.08em",
-                  textTransform: "uppercase", color: "rgba(255,255,255,0.7)",
-                }}>{item.label}</div>
-              </Link>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <style>{`
-        @media (max-width: 768px) { .hidden-mobile { display: none !important; } .show-mobile { display: flex !important; } }
-        @media (min-width: 769px) { .show-mobile { display: none !important; } }
-      `}</style>
-    </motion.header>
-  );
-}
 
 /* ─── Search modal ──────────────────────────────────────── */
 function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -1038,7 +883,7 @@ export default function BentoHome() {
         `,
       }} />
 
-      <BentoNav />
+      <NavBar />
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* ── Page content ────────────────────────────── */}

@@ -807,6 +807,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── ALL PLAYERS for Moneyball Scatter Plot ─────────────────────────────
+  app.get("/api/csv-direct/players/all", async (req, res) => {
+    try {
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      const filtered = allPlayers
+        .filter((p: any) => (Number(p.Min) || 0) > 0 && p.Player)
+        .map((p: any) => ({
+          Player: p.Player,
+          Squad: p.Squad,
+          Comp: p.Comp,
+          Pos: p.Pos,
+          Age: Number(p.Age) || 0,
+          Gls: Number(p.Gls) || 0,
+          Ast: Number(p.Ast) || 0,
+          xG: Number(p.xG) || 0,
+          xAG: Number(p.xAG) || 0,
+          Min: Number(p.Min) || 0,
+          MP: Number(p.MP) || 0,
+          Sh: Number(p.Sh) || 0,
+        }));
+      return res.json(filtered);
+    } catch (error) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Get News
   app.get("/api/news", async (req, res) => {
     try {

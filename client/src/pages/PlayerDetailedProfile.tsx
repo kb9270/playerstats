@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, User, TrendingUp, Shield, BarChart3, Flag, Map } from "lucide-react";
+import { TrendingUp, Shield, BarChart3, Flag, Map } from "lucide-react";
 import PlayerAvatar, { TeamLogo } from "@/components/PlayerAvatar";
+import NavBar from "@/components/NavBar";
 import { motion, AnimatePresence } from "framer-motion";
+import DataInsights from "@/components/DataInsights";
+import ShowYourWork from "@/components/ShowYourWork";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const fmt = (v: any, dec = 1) => (v == null || v === "" || isNaN(Number(v)) || Number(v) === 0) ? "—" : Number(v).toFixed(dec);
@@ -268,15 +271,8 @@ export default function PlayerDetailedProfile() {
 
   return (
     <div className="min-h-screen text-white relative pb-16">
-      
+      <NavBar />
       <div className="max-w-5xl mx-auto px-4 pt-6 space-y-6 animate-fade-in relative z-10">
-        
-        {/* ── Top Navigation ── */}
-        <div className="flex items-center">
-          <button onClick={() => setLocation("/")} className="btn-ghost !px-3 !h-10 text-xs text-gray-400">
-            <ArrowLeft className="w-4 h-4 mr-2" /> ACCUEIL
-          </button>
-        </div>
 
         {/* ── Player Hero Block (FIFA 26™ Edition) ── */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-10 pb-8 pt-4">
@@ -394,11 +390,15 @@ export default function PlayerDetailedProfile() {
                   <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">INDICE D'IMPACT : ÉLITE</div>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">NOTES LIVE</div>
-                  <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
-                    {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}
-                  </div>
-                  <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">COTE SOFASCORE</div>
+                  <ShowYourWork statLabel="RATING" statValue={p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}>
+                    <div>
+                      <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">NOTES LIVE</div>
+                      <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
+                        {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}
+                      </div>
+                      <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">COTE SOFASCORE</div>
+                    </div>
+                  </ShowYourWork>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">PRÉCISION RÉUSSIE</div>
@@ -415,16 +415,24 @@ export default function PlayerDetailedProfile() {
                 
                 {/* Secondary Row */}
                 <div className="space-y-1">
-                  <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">EXPECTED GOALS (xG)</div>
-                  <div className="text-3xl font-['Barlow_Condensed'] font-black text-white">
-                    {fmt(Number(p.xG)||0)}
-                  </div>
+                  <ShowYourWork statLabel="xG" statValue={fmt(Number(p.xG)||0)}>
+                    <div>
+                      <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">EXPECTED GOALS (xG)</div>
+                      <div className="text-3xl font-['Barlow_Condensed'] font-black text-white">
+                        {fmt(Number(p.xG)||0)}
+                      </div>
+                    </div>
+                  </ShowYourWork>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">EXPECTED ASSISTS (xA)</div>
-                  <div className="text-3xl font-['Barlow_Condensed'] font-black text-white">
-                    {fmt(Number(p.xAG) || Number(p.xG)*0.4 || 0)}
-                  </div>
+                  <ShowYourWork statLabel="xAG" statValue={fmt(Number(p.xAG) || Number(p.xG)*0.4 || 0)}>
+                    <div>
+                      <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">EXPECTED ASSISTS (xA)</div>
+                      <div className="text-3xl font-['Barlow_Condensed'] font-black text-white">
+                        {fmt(Number(p.xAG) || Number(p.xG)*0.4 || 0)}
+                      </div>
+                    </div>
+                  </ShowYourWork>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">TIRS (CADRÉS)</div>
@@ -570,8 +578,83 @@ export default function PlayerDetailedProfile() {
           </div>
         </div>
 
+        {/* ─── RADAR CHART SAISON ─── */}
+        {p.scoutingRadar?.length >= 4 && (() => {
+          const radar = p.scoutingRadar.slice(0, 8);
+          const N = radar.length;
+          const CX = 180, CY = 180, R = 130;
+          const angles = radar.map((_: any, i: number) => (i / N) * 2 * Math.PI - Math.PI / 2);
+          const CAT_CLR: Record<string,string> = { ATTAQUE:"#ef4444", CRÉATION:"#3b82f6", DÉFENSE:"#f59e0b", STYLE:"#22c55e" };
+          return (
+            <div className="mt-8 bg-black/20 border border-white/5 rounded-3xl p-6 backdrop-blur-sm">
+              <h3 className="text-xl font-['Rajdhani'] font-bold text-white uppercase tracking-widest mb-1">Radar des Performances</h3>
+              <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest mb-4">
+                {radar.length} MÉTRIQUES · PERCENTILE PAR POSTE · TOP 5 EU
+              </div>
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <svg width="360" height="360" viewBox="0 0 360 360" style={{ display: "block", flexShrink: 0 }}>
+                  {[0.25,0.5,0.75,1].map((lvl: number) => (
+                    <polygon key={lvl}
+                      points={angles.map((a: number) => `${CX+R*lvl*Math.cos(a)},${CY+R*lvl*Math.sin(a)}`).join(" ")}
+                      fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={1}
+                    />
+                  ))}
+                  {angles.map((a: number, i: number) => (
+                    <line key={i} x1={CX} y1={CY} x2={CX+R*Math.cos(a)} y2={CY+R*Math.sin(a)}
+                      stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+                  ))}
+                  <polygon
+                    points={radar.map((m: any, i: number) => {
+                      const v = Math.min(m.percentile/100, 1);
+                      return `${CX+R*v*Math.cos(angles[i])},${CY+R*v*Math.sin(angles[i])}`;
+                    }).join(" ")}
+                    fill="rgba(232,52,74,0.15)" stroke="#e8344a" strokeWidth={2}
+                  />
+                  {radar.map((m: any, i: number) => {
+                    const v = Math.min(m.percentile/100, 1);
+                    const px = CX+R*v*Math.cos(angles[i]);
+                    const py = CY+R*v*Math.sin(angles[i]);
+                    const lx = CX+(R+24)*Math.cos(angles[i]);
+                    const ly = CY+(R+24)*Math.sin(angles[i]);
+                    return (
+                      <g key={i}>
+                        <circle cx={px} cy={py} r={4} fill="#e8344a" />
+                        <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                          fill={CAT_CLR[m.category] || "#94a3b8"} fontSize={9}
+                          fontFamily="'Barlow Condensed',sans-serif" fontWeight={700}>
+                          {m.label.length > 12 ? m.label.slice(0,12)+"…" : m.label}
+                        </text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                {/* Metric list */}
+                <div className="flex-1 space-y-2 w-full">
+                  {radar.map((m: any, i: number) => (
+                    <div key={i}>
+                      <div className="flex justify-between text-[10px] mb-1">
+                        <span className="font-bold uppercase tracking-wider" style={{ color: CAT_CLR[m.category] || "#fff" }}>{m.label}</span>
+                        <span className="font-black" style={{ color: "#e8344a", fontFamily: "monospace" }}>{m.percentile}e</span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div initial={{ width: 0 }} animate={{ width: `${m.percentile}%` }}
+                          transition={{ duration: 0.7, delay: i * 0.06 }}
+                          className="h-full rounded-full"
+                          style={{ background: `${CAT_CLR[m.category] || "#e8344a"}`, boxShadow: `0 0 6px ${CAT_CLR[m.category] || "#e8344a"}60` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[9px] text-white/20 pt-2 italic">Percentile = meilleur que X% des joueurs au même poste (Top 5 EU, 200+ min)</p>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ─── HEATMAP DE SAISON (Canvas) ─── */}
         {p._sofaHeatmap?.points?.length > 0 && (
+
           <div className="mt-12 bg-black/20 border border-white/5 rounded-3xl overflow-hidden backdrop-blur-sm">
             <div className="p-6 md:p-8 border-b border-white/5">
               <h3 className="text-xl font-['Rajdhani'] font-bold text-white uppercase tracking-widest">Heatmap de Saison</h3>
@@ -653,6 +736,9 @@ export default function PlayerDetailedProfile() {
             </table>
           </div>
         </div>
+
+        {/* ── Data Insights ── */}
+        <DataInsights player={p} />
 
         {/* ── Similar Players ── */}
         {similar.length > 0 && (

@@ -18,6 +18,8 @@ import BallonDor from "@/pages/BallonDor";
 import MatchDetail from "@/pages/MatchDetail";
 import ChampionsLeague from "@/pages/ChampionsLeague";
 import TakeOver from "@/pages/TakeOver";
+import ScoutMoneyball from "@/pages/ScoutMoneyball";
+import DataPipeline from "@/pages/DataPipeline";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -40,6 +42,8 @@ function Router() {
       <Route path="/ldc" component={ChampionsLeague} />
       <Route path="/champions-league" component={ChampionsLeague} />
       <Route path="/takeover" component={TakeOver} />
+      <Route path="/scout" component={ScoutMoneyball} />
+      <Route path="/pipeline" component={DataPipeline} />
       <Route component={NotFound} />
     </Switch>
   );
