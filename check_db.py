@@ -1,0 +1,10 @@
+import sqlite3
+conn = sqlite3.connect('players_data.sqlite')
+c = conn.cursor()
+c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+print("Tables:", c.fetchall())
+c.execute("SELECT * FROM players LIMIT 1")
+print("Columns:", [d[0] for d in c.description])
+c.execute("SELECT COUNT(*) FROM players")
+print("Total rows:", c.fetchone()[0])
+conn.close()

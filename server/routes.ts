@@ -353,63 +353,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
            const cp = csvPlayer as any;
            const ss = sofaStats as any;
            const radar: any[] = [];
+           const pos = (cp.Pos || '').toUpperCase();
+           const isGK = pos.includes('GK');
+           const isDef = !isGK && (pos.startsWith('DF') || pos.startsWith('D,') || pos === 'D');
+           const isMid = !isGK && !isDef && (pos.startsWith('MF') || pos.startsWith('M'));
            
-           // Helper to add metric only when we have REAL data
            const addMetric = (label: string, percentile: number, category: string) => {
-             if (percentile >= 0) { // -1 means no data
+             if (percentile >= 0) {
                radar.push({ label, percentile: Math.max(1, Math.min(99, Math.round(percentile))), category });
              }
            };
-           
-           // ─── 1. ATTACKING ─── (using CSV columns that EXIST: Gls, Sh, SoT, SoT%, G/Sh, PK + SofaScore xG)
-           addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
-           addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
-           addMetric('TOTAL TIRS', computeRealPercentile(Number(cp.Sh) || 0, 'Sh', true), 'ATTAQUE');
-           addMetric('TIRS CADRÉS (%)', computeRealPercentile(Number(cp['SoT%']) || 0, 'SoT%', false), 'ATTAQUE');
-           const gsh = Number(cp['G/Sh']);
-           if (gsh > 0) addMetric('EFFICACITÉ (G/TIR)', computeRealPercentile(gsh, 'G/Sh', false), 'ATTAQUE');
-           addMetric('PENALTIES', computeRealPercentile(Number(cp.PK) || 0, 'PK', false), 'ATTAQUE');
 
-           // ─── 2. CREATION ─── (Ast, xAG from SofaScore, Crs from CSV, Cmp% from SofaScore or historical)
-           addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
-           addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
-           const cmpPct = Number(cp['Cmp%']);
-           if (cmpPct > 0) addMetric('RÉUSSITE PASSES (%)', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
-           const prgp = Number(cp.PrgP);
-           if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
-           const crs = Number(cp.Crs);
-           if (crs > 0) addMetric('CENTRES', computeRealPercentile(crs, 'Crs', true), 'CRÉATION');
-           // SofaScore key passes
-           if (ss?.keyPasses > 0) addMetric('PASSES CLÉS', Math.min(99, Math.round(ss.keyPasses * 8)), 'CRÉATION');
+           if (isGK) {
+             // ── GARDIEN ─────────────────────────────────────────────────
+             addMetric('ARRÊTS', computeRealPercentile(Number(cp.Saves) || 0, 'Saves', true), 'DÉFENSE');
+             addMetric('% ARRÊTS', computeRealPercentile(Number(cp['Save%'] || cp.SavePct) || 0, 'SavePct', false), 'DÉFENSE');
+             addMetric('CLEAN SHEETS', computeRealPercentile(Number(cp.CS) || 0, 'CS', true), 'DÉFENSE');
+             const sota = Number(cp.SoTA) || 0;
+             if (sota > 0) addMetric('SOLIDITÉ (vs TIRS SUBIS)', 100 - computeRealPercentile(sota, 'SoTA', true), 'DÉFENSE');
+             if (ss?.savedShotsFromInsideTheBox > 0) addMetric('ARRÊTS SURFACE', Math.min(99, ss.savedShotsFromInsideTheBox * 12), 'DÉFENSE');
+             if (ss?.totalKeeperSweeper > 0) addMetric('SORTIES', Math.min(99, ss.totalKeeperSweeper * 20), 'STYLE');
+             const cmpPct = Number(cp['Cmp%']);
+             if (cmpPct > 0) addMetric('PASSES PRÉCISES', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
+             const prgp = Number(cp.PrgP);
+             if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
 
-           // ─── 3. DEFENSIVE ─── (TklW and Int exist in CSV 25/26, plus SofaScore data)
-           const tklw = Number(cp.TklW) || Number(cp.Tkl) || 0;
-           addMetric('TACLES', computeRealPercentile(tklw, 'TklW', true), 'DÉFENSE');
-           addMetric('INTERCEPTIONS', computeRealPercentile(Number(cp.Int) || 0, 'Int', true), 'DÉFENSE');
-           // SofaScore additional defensive stats
-           if (ss?.totalClearance > 0) addMetric('DÉGAGEMENTS', Math.min(99, Math.round(ss.totalClearance * 6)), 'DÉFENSE');
-           if (ss?.blockedScoringAttempt > 0) addMetric('TIRS BLOQUÉS', Math.min(99, Math.round(ss.blockedScoringAttempt * 15)), 'DÉFENSE');
-           if (ss?.duelWon !== undefined && ss?.duelLost !== undefined) {
-             const duelPct = (ss.duelWon + ss.duelLost) > 0 ? (ss.duelWon / (ss.duelWon + ss.duelLost) * 100) : 0;
-             addMetric('DUELS GAGNÉS (%)', Math.min(99, Math.round(duelPct)), 'DÉFENSE');
+           } else if (isDef) {
+             // ── DÉFENSEUR ───────────────────────────────────────────
+             const tklw = Number(cp.TklW) || Number(cp.Tkl) || 0;
+             addMetric('TACLES RÉUSSIS', computeRealPercentile(tklw, 'TklW', true), 'DÉFENSE');
+             addMetric('INTERCEPTIONS', computeRealPercentile(Number(cp.Int) || 0, 'Int', true), 'DÉFENSE');
+             const blocks = Number(cp.Blocks) || 0;
+             if (blocks > 0) addMetric('TIRS BLOQUÉS', computeRealPercentile(blocks, 'Blocks', true), 'DÉFENSE');
+             if (ss?.totalClearance > 0) addMetric('DÉGAGEMENTS', Math.min(99, Math.round(ss.totalClearance * 6)), 'DÉFENSE');
+             if (ss?.duelWon !== undefined && ss?.duelLost !== undefined) {
+               const duelPct = (ss.duelWon + ss.duelLost) > 0 ? (ss.duelWon / (ss.duelWon + ss.duelLost) * 100) : 0;
+               addMetric('DUELS GAGNÉS (%)', Math.min(99, Math.round(duelPct)), 'DÉFENSE');
+             }
+             const cmpPct = Number(cp['Cmp%']);
+             if (cmpPct > 0) addMetric('RÉUSSITE PASSES', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
+             const prgp = Number(cp.PrgP);
+             if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
+             addMetric('PASSES DÉC.', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+
+           } else if (isMid) {
+             // ── MILIEU ──────────────────────────────────────────────
+             addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
+             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
+             const cmpPct = Number(cp['Cmp%']);
+             if (cmpPct > 0) addMetric('RÉUSSITE PASSES (%)', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
+             const prgp = Number(cp.PrgP);
+             if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
+             if (ss?.keyPasses > 0) addMetric('PASSES CLÉS', Math.min(99, Math.round(ss.keyPasses * 8)), 'CRÉATION');
+             const tklw = Number(cp.TklW) || Number(cp.Tkl) || 0;
+             addMetric('TACLES', computeRealPercentile(tklw, 'TklW', true), 'DÉFENSE');
+             addMetric('INTERCEPTIONS', computeRealPercentile(Number(cp.Int) || 0, 'Int', true), 'DÉFENSE');
+             addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+             const prgc = Number(cp.PrgC);
+             if (prgc > 0) addMetric('PORTÉES PROGRESSIVES', computeRealPercentile(prgc, 'PrgC', true), 'STYLE');
+             const succPct = Number(cp['Succ%']);
+             if (succPct > 0) addMetric('DRIBBLES RÉUSSIS (%)', computeRealPercentile(succPct, 'Succ%', false), 'STYLE');
+
+           } else {
+             // ── ATTAQUANT (défaut) ─────────────────────────────────
+             addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+             addMetric('TOTAL TIRS', computeRealPercentile(Number(cp.Sh) || 0, 'Sh', true), 'ATTAQUE');
+             addMetric('TIRS CADRÉS (%)', computeRealPercentile(Number(cp['SoT%']) || 0, 'SoT%', false), 'ATTAQUE');
+             const gsh = Number(cp['G/Sh']);
+             if (gsh > 0) addMetric('EFFICACITÉ (G/TIR)', computeRealPercentile(gsh, 'G/Sh', false), 'ATTAQUE');
+             addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
+             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
+             if (ss?.keyPasses > 0) addMetric('PASSES CLÉS', Math.min(99, Math.round(ss.keyPasses * 8)), 'CRÉATION');
+             const succPct = Number(cp['Succ%']);
+             if (succPct > 0) addMetric('DRIBBLES RÉUSSIS (%)', computeRealPercentile(succPct, 'Succ%', false), 'STYLE');
+             const prgc = Number(cp.PrgC);
+             if (prgc > 0) addMetric('PORTÉES PROGRESSIVES', computeRealPercentile(prgc, 'PrgC', true), 'STYLE');
+             const fld = Number(cp.Fld) || 0;
+             if (fld > 0) addMetric('FAUTES SUBIES', computeRealPercentile(fld, 'Fld', true), 'STYLE');
            }
 
-           // ─── 4. STYLE ─── (Fld from CSV, SofaScore dribbles, PrgC/PrgR from historical merge)
-           const fld = Number(cp.Fld) || 0;
-           if (fld > 0) addMetric('FAUTES SUBIES', computeRealPercentile(fld, 'Fld', true), 'STYLE');
-           const succPct = Number(cp['Succ%']);
-           if (succPct > 0) addMetric('DRIBBLES RÉUSSIS (%)', computeRealPercentile(succPct, 'Succ%', false), 'STYLE');
-           const prgc = Number(cp.PrgC);
-           if (prgc > 0) addMetric('PORTÉES PROGRESSIVES', computeRealPercentile(prgc, 'PrgC', true), 'STYLE');
-           const prgr = Number(cp.PrgR);
-           if (prgr > 0) addMetric('RÉCEPTIONS PROGRESSIVES', computeRealPercentile(prgr, 'PrgR', true), 'STYLE');
-           // SofaScore possession
-           if (ss?.touches > 0) addMetric('TOUCHES', Math.min(99, Math.round(ss.touches / 0.7)), 'STYLE');
-           if (ss?.possessionLostCtrl !== undefined) addMetric('CONSERVATION', Math.max(1, 99 - Math.round(ss.possessionLostCtrl * 4)), 'STYLE');
-
-           // Log data quality
-           console.log(`[Scouting] ${cp.Player}: ${radar.length} metrics (CSV: Gls=${cp.Gls}, Sh=${cp.Sh}, TklW=${tklw}, Int=${cp.Int}, Fld=${fld} | SofaScore: ${ss ? 'YES' : 'NO'})`);
-           
+           console.log(`[Scouting] ${cp.Player} (${pos}) => poste détecté: ${isGK ? 'GK' : isDef ? 'DF' : isMid ? 'MF' : 'FW'} — ${radar.length} métriques`);
            return radar;
         })()
       };
@@ -826,6 +852,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Min: Number(p.Min) || 0,
           MP: Number(p.MP) || 0,
           Sh: Number(p.Sh) || 0,
+          SoT: Number(p.SoT) || 0,
+          Crs: Number(p.Crs) || 0,
+          TklW: Number(p.TklW) || 0,
+          Int: Number(p.Int) || 0,
+          Saves: Number(p.Saves) || 0,
+          SavePct: Number(p["Save%"]) || 0,
+          SoTA: Number(p.SoTA) || 0,
+          CS: Number(p.CS) || 0,
+          PrgP: Number(p.PrgP) || 0,
+          PrgC: Number(p.PrgC) || 0,
+          CmpPct: Number(p["Cmp%"]) || 0,
+          SuccPct: Number(p["Succ%"]) || 0,
+          Succ: Number(p.Succ) || 0,
+          Att: Number(p.Att) || 0,
+          Tkl: Number(p.Tkl) || 0,
+          TklW: Number(p.TklW) || 0,
+          Blocks: Number(p.Blocks) || 0,
+          CarryDist: Number(p.TotDist_stats_possession) || 0,
+          PrgCarryDist: Number(p.PrgDist_stats_possession) || 0,
+          AerWon: Number(p.Won) || 0,
+          AerLost: Number(p.Lost_stats_misc) || 0,
         }));
       return res.json(filtered);
     } catch (error) {

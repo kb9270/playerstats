@@ -172,7 +172,8 @@ export class CSVDirectAnalyzer {
       // Stats à récupérer si absentes (0 ou null) dans le fichier light 2025/26
       const advancedStats = [
         'Cmp%', 'PrgP', 'PrgC', 'Succ%', 'Int', 'Blocks', 'Tkl',
-        'xG', 'xAG', 'Height', 'Weight', 'Foot'
+        'xG', 'xAG', 'Height', 'Weight', 'Foot', 'Succ', 'Att',
+        'TotDist_stats_possession', 'PrgDist_stats_possession', 'Won', 'Lost_stats_misc'
       ];
 
       const merged = { ...p };
@@ -180,10 +181,16 @@ export class CSVDirectAnalyzer {
         const val = merged[stat];
         if (val === undefined || val === null || val === 0 || val === '') {
           // Chercher dans l'historique avec les noms possibles (avec suffixes)
-          const fallbackVal = hMatch[stat] ?? 
+          let fallbackVal;
+          if (stat === 'Att' || stat === 'Succ') {
+             // Forcer la priorité sur les dribbles (possession)
+             fallbackVal = hMatch[`${stat}_stats_possession`] ?? hMatch[stat];
+          } else {
+             fallbackVal = hMatch[stat] ?? 
                              hMatch[`${stat}_stats_passing`] ?? 
                              hMatch[`${stat}_stats_possession`] ?? 
                              hMatch[`${stat}_stats_defense`];
+          }
           
           if (fallbackVal !== undefined && fallbackVal !== null) {
             (merged as any)[stat] = fallbackVal;

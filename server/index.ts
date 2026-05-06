@@ -8,7 +8,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Initialize Backend Workflows (Stats, News RSS, Ballon d'Or)
-automationWorkflows.startScheduledJobs();
+// automationWorkflows.startScheduledJobs(); // DISABLED: Crashes server on startup due to Axios socket hangup
 
 app.use((req, res, next) => {
   const start = Date.now();
