@@ -37,9 +37,9 @@ function getLeagueFlag(comp: string) {
   return comp;
 }
 
-const formatMarketValue = (val: number | string) => {
+const formatMarketValue = (val: number | string, isReal = false) => {
   if (!val) return "—";
-  const suffix = (typeof val === 'number') ? " (EST.)" : "";
+  const suffix = (typeof val === 'number' && !isReal) ? " (EST.)" : "";
   const cleanVal = val;
   
   if (typeof cleanVal === 'string') return cleanVal.toUpperCase();
@@ -97,17 +97,18 @@ function HeatmapCanvas({ points }: { points: Array<{x: number, y: number, count?
     const maxCount = Math.max(...points.map(p => p.count || 1));
     
     for (const pt of points) {
-      // Map SofaScore coordinates to canvas pixels
+      // SofaScore coord system: pt.x = touchline axis (0-100), pt.y = goal-to-goal (0-100)
+      // On our horizontal canvas: horizontal = goal-to-goal (pt.y), vertical = touchline (pt.x)
       const cx = m + (pt.y / 100) * pW;
       const cy = m + (pt.x / 100) * pH;
       const count = pt.count || 1;
-      const normCount = count / maxCount;
-      const radius = 22 + normCount * 28;
-      const intensity = 0.12 + normCount * 0.35;
+      const normCount = Math.min(1, count / (maxCount * 0.4));
+      const radius = 18 + normCount * 30;
+      const intensity = 0.15 + normCount * 0.4;
       
       const gradient = hCtx.createRadialGradient(cx, cy, 0, cx, cy, radius);
       gradient.addColorStop(0, `rgba(255,255,255,${intensity})`);
-      gradient.addColorStop(0.5, `rgba(255,255,255,${intensity * 0.4})`);
+      gradient.addColorStop(0.5, `rgba(255,255,255,${intensity * 0.3})`);
       gradient.addColorStop(1, 'rgba(255,255,255,0)');
       hCtx.fillStyle = gradient;
       hCtx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
@@ -175,7 +176,8 @@ function AllSeasonMatches({ sofaId }: { sofaId: number }) {
   const [, setLocation] = useLocation();
   const { data, isLoading } = useQuery<any>({
     queryKey: [`/api/sofa/player/${sofaId}/matches`],
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   if (isLoading) return (
@@ -221,7 +223,8 @@ export default function PlayerDetailedProfile() {
   const { data, isLoading, error } = useQuery<{ player: any; similar: any[] }>({
     queryKey: [`/api/csv-direct/player/${encodeURIComponent(playerName)}/full`],
     enabled: !!playerName,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   if (isLoading) {
@@ -261,7 +264,7 @@ export default function PlayerDetailedProfile() {
   const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : p.Player;
   
   const positionStr = getPos(p);
-  const marketValueDisplay = formatMarketValue(p.marketValue);
+  const marketValueDisplay = formatMarketValue(p.marketValue, p.isRealValue);
   const contractEnd = "JUIN 2027"; // Pro-rated for 2026/27 season
   const preferredFoot = (p.foot || "DROIT").toUpperCase();
   const heightDisplay = p.height > 100 ? `${(p.height/100).toFixed(2)}M` : (p.height ? `${p.height}M` : "—");
@@ -390,15 +393,15 @@ export default function PlayerDetailedProfile() {
                   <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">INDICE D'IMPACT : ÉLITE</div>
                 </div>
                 <div className="space-y-1">
-                  <ShowYourWork statLabel="RATING" statValue={p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}>
-                    <div>
-                      <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">NOTES LIVE</div>
-                      <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
-                        {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : "—"}
-                      </div>
-                      <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">COTE SOFASCORE</div>
-                    </div>
-                  </ShowYourWork>
+                  <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">
+                    {p.sofaStats?.rating ? "NOTE SOFASCORE" : "NOTES LIVE"}
+                  </div>
+                  <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
+                    {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : (p.overallRating ? fmt(p.overallRating/10) : "—")}
+                  </div>
+                  <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">
+                    {p.sofaStats?.rating ? "SAISON 25/26 RÉELLE" : "INDICE DE PERFORMANCE"}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">PRÉCISION RÉUSSIE</div>

@@ -60,8 +60,14 @@ export class AutomationWorkflows {
       await this.workflowTeamOfTheWeek();
     });
 
-    // Exécution immédiate au démarrage (pour voir si ça marche en test)
-    this.testAllWorkflows();
+    // Exécution immédiate au démarrage avec un délai pour éviter de bloquer le thread principal
+    // et capture des erreurs pour éviter un crash serveur.
+    setTimeout(() => {
+      console.log("🧪 [WORKFLOWS] Lancement des tests initiaux...");
+      this.testAllWorkflows().catch(err => {
+        console.error("❌ [WORKFLOWS] Erreur lors des tests initiaux:", err.message);
+      });
+    }, 15000); // 15 secondes de délai
   }
 
   /**

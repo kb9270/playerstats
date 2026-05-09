@@ -29,6 +29,8 @@ class SofaScoreService {
   }
 
   private loadCacheFromDisk() {
+    // Disabled to prevent "stats resetting" issue reported by user
+    /*
     try {
       if (fs.existsSync(this.cacheFilePath)) {
         const data = fs.readFileSync(this.cacheFilePath, 'utf-8');
@@ -41,6 +43,7 @@ class SofaScoreService {
     } catch (e) {
       console.error('Failed to load sofascore_cache.json:', e);
     }
+    */
   }
 
   private saveCacheToDisk() {
@@ -53,11 +56,16 @@ class SofaScoreService {
   }
 
   public axiosInstance = axios.create({
-    baseURL: "https://www.sofascore.com/api/v1",
+    baseURL: "https://api.sofascore.app/api/v1",
     headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "User-Agent": "SofaScore/6.44.1 (iPhone; iOS 17.4.1; Scale/3.00)",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
+      "X-OS": "iOS",
+      "X-Client-Id": Math.random().toString(36).substring(7),
       "Origin": "https://www.sofascore.com",
-      "Referer": "https://www.sofascore.com/"
+      "Referer": "https://www.sofascore.com/",
+      "Connection": "keep-alive"
     }
   });
 
@@ -346,48 +354,39 @@ class SofaScoreService {
     }
   }
 
-  async getPlayerHeatmap(sofaId: number, tournamentId?: number) {
+  async getPlayerHeatmap(sofaId: number, tournamentId: number, seasonId: number) {
     try {
-      // SEASON HEATMAP: /player/{id}/unique-tournament/{tid}/season/{sid}/heatmap/overall
-      const tid = tournamentId || 35;
-      const sid = await this.getLatestSeasonId(tid);
-      const resp = await this.axiosInstance.get(`/player/${sofaId}/unique-tournament/${tid}/season/${sid}/heatmap/overall`);
-      const points = resp.data.points || [];
-      console.log(`🗺️ [SofaScore] Season heatmap: ${points.length} points`);
-      return { points, type: 'season' };
-    } catch {
-      // Fallback: try last match heatmap
-      try {
-        const events = await this.getPlayerLastEvents(sofaId);
-        if (events.length > 0) {
-          const lastEvent = events[events.length - 1];
-          const resp = await this.axiosInstance.get(`/event/${lastEvent.id}/player/${sofaId}/heatmap`);
-          return { points: resp.data.heatmap || [], type: 'match', match: `${lastEvent.homeTeam?.name} vs ${lastEvent.awayTeam?.name}` };
-        }
-      } catch {}
+      // Try multiple variants for the heatmap endpoint
+      const variants = [
+        `/player/${sofaId}/unique-tournament/${tournamentId}/season/${seasonId}/heatmap`,
+        `/player/${sofaId}/unique-tournament/${tournamentId}/season/${seasonId}/heatmap/overall`
+      ];
+
+      for (const url of variants) {
+        try {
+          const resp = await this.axiosInstance.get(url);
+          const points = resp.data.points || [];
+          if (points.length > 0) {
+            console.log(`🗺️ [SofaScore] Real Season heatmap: ${points.length} points (via ${url})`);
+            return { points, type: 'season' };
+          }
+        } catch (e) {}
+      }
+      return null;
+    } catch (err: any) {
+      console.warn(`[SofaScore] Heatmap fetch failed for ${sofaId}: ${err.message}`);
       return null;
     }
   }
 
-  async getPlayerStatistics(sofaId: number, tournamentId?: number, seasonId?: number) {
+  async getPlayerStatistics(sofaId: number, tournamentId: number, seasonId: number) {
     try {
-      // If tournamentId is not provided, we try to fetch it if we don't have it
-      // but usually the caller should provide it from getPlayerDetails
-      let tid = tournamentId || 7; // Default PL
-      let sid = seasonId;
-      
-      if (!sid) {
-        // Fetch latest season for this tournament if not provided
-        sid = await this.getLatestSeasonId(tid);
-      }
-
-      console.log(`📊 [SofaScore] Fetching stats for player ${sofaId} (T:${tid} S:${sid})`);
-      const url = `/player/${sofaId}/unique-tournament/${tid}/season/${sid}/statistics/overall`;
+      console.log(`📊 [SofaScore] Fetching stats for player ${sofaId} (T:${tournamentId} S:${seasonId})`);
+      const url = `/player/${sofaId}/unique-tournament/${tournamentId}/season/${seasonId}/statistics/overall`;
       const resp = await this.axiosInstance.get(url);
       
       const stats = resp.data.statistics || null;
       if (stats) {
-        // Map the new API's variable 'appearances' to 'matches' which the frontend expects
         stats.matches = stats.appearances;
       }
       return stats;

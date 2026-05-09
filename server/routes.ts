@@ -1112,13 +1112,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
       // Filter Champions League players from CSV
+      const uclClubs = [
+        'Real Madrid', 'Manchester City', 'Arsenal', 'Liverpool', 'Aston Villa',
+        'Barcelona', 'Atlético Madrid', 'Girona', 'Bayern Munich', 'Leverkusen',
+        'Dortmund', 'RB Leipzig', 'PSG', 'Lille', 'Monaco', 'Brest',
+        'Inter', 'Milan', 'Juventus', 'Atalanta', 'Bologna',
+        'Benfica', 'Sporting CP', 'Porto', 'PSV', 'Feyenoord'
+      ];
+
       const uclPlayers = allPlayers.filter((p: any) => {
         const comp = (p.Comp || "").toLowerCase();
-        return comp.includes("champion") || comp.includes("ucl") || comp.includes("cl");
+        const team = p.Squad || "";
+        const isUclComp = comp.includes("champion") || comp.includes("ucl") || comp.includes("cl");
+        const isUclTeam = uclClubs.some(c => team.includes(c));
+        return isUclComp || isUclTeam;
       });
 
-      // Fallback: if no UCL-specific data, use top players from all competitions
-      const pool = uclPlayers.length > 10 ? uclPlayers : allPlayers;
+      // Fallback: if no UCL-specific data found, use top players from all competitions
+      const pool = uclPlayers.length > 5 ? uclPlayers : allPlayers;
 
       // Top Scorers
       const scorers = pool

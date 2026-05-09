@@ -4,11 +4,21 @@ import { Link } from 'wouter';
 import MatchCard, { MatchCardProps } from './MatchCard';
 
 export default function LiveMatchesWidget() {
-  const { data: matches, isLoading, error } = useQuery<MatchCardProps[]>({
-    queryKey: ['/api/live-matches'],
-    refetchInterval: 5000,
+  const { data, isLoading, error } = useQuery<{ success: boolean; matches: any[] }>({
+    queryKey: ['/api/live/matches'],
+    refetchInterval: 10000,
     staleTime: 0,
   });
+
+  const matches: MatchCardProps[] = (data?.matches || []).map((m: any) => ({
+    id: parseInt(m.id) || 0,
+    homeTeam: { id: 0, name: m.homeTeam.name, logo: m.homeTeam.logo },
+    awayTeam: { id: 0, name: m.awayTeam.name, logo: m.awayTeam.logo },
+    score: { home: parseInt(m.homeTeam.score) || 0, away: parseInt(m.awayTeam.score) || 0 },
+    status: m.status.type.state === 'in' ? 'LIVE' : m.status.type.state === 'post' ? 'FINISHED' : 'UPCOMING',
+    minute: m.status.type.state === 'in' ? (parseInt(m.status.displayClock) || null) : null,
+    startTime: m.date
+  }));
 
   return (
     <div className="widget animate-fade-up" style={{ height: "100%" }}>
