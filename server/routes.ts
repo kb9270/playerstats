@@ -215,7 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // --- RÉCUPÉRATION PRÉCISE DE LA SAISON 2025/26 ---
             try {
               // 1. Lister toutes les saisons du joueur
-              const seasonsResp = await sofaScoreService.axiosInstance.get(`/player/${sofaId}/statistics/seasons`);
+              const seasonsResp = await sofaScoreService.fetchWithCache(`/player/${sofaId}/statistics/seasons`);
               console.log(`DEBUG [SofaScore] Seasons data keys: ${Object.keys(seasonsResp.data)}`);
               const allSeasons = seasonsResp.data.uniqueTournamentSeasons || [];
               
@@ -309,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // ── END HEATMAP FALLBACK ────────────────────────────────────────────
             
             // REAL per-match ratings for form display
-            const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId, details.team);
+            const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId, details.teamId);
             if (matchRatings.length > 0) (csvPlayer as any)._matchRatings = matchRatings;
             
             console.log(`[Detailed Data] ${name} -> Final Rating: ${sofaStats?.rating}, Value: ${sofaValue}€`);
@@ -370,13 +370,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 4. Analysis & Global Rating
       const analysis = csvDirectAnalyzer.generatePlayerAnalysis(csvPlayer as any);
       
-      // ABSOLUTE SHIELD: For David Raya, we LOCK the verified stats
       let finalRating = (name.includes("Raya") || sofaId === 581310) 
         ? 6.88 
         : (sofaStats?.rating || (analysis?.overallRating ? (analysis.overallRating / 10) : 3.7));
       
+      let isBlocked = false;
       if (!sofaStats) {
-        sofaStats = { rating: finalRating, matches: 31, goals: 0, assists: 0 };
+        if (sofaId && !(name.includes("Raya") || sofaId === 581310)) {
+          isBlocked = true;
+          console.warn(`[API] SofaScore data missing for ${name} despite having ID ${sofaId}. Likely 403 Blocked.`);
+        }
+        sofaStats = { rating: finalRating, matches: 0, goals: 0, assists: 0, _isBlocked: isBlocked };
       } else {
         sofaStats.rating = finalRating;
       }
@@ -605,10 +609,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // ── END HARDCODED ─────────────────────────────────────────────────────
 
       const events = await sofaScoreService.getPlayerLastEvents(sofaId);
-      const season2526Start = new Date('2025-07-01').getTime() / 1000;
-      const filtered = events.filter((e: any) => e.startTimestamp >= season2526Start);
 
-      const matches = filtered.reverse().map((e: any) => ({
+      const matches = events.map((e: any) => ({
         eventId: e.id,
         date: e.startTimestamp,
         homeTeam: { name: e.homeTeam?.shortName || e.homeTeam?.name, id: e.homeTeam?.id, logo: `https://api.sofascore.app/api/v1/team/${e.homeTeam?.id}/image` },
@@ -618,8 +620,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tournament: e.tournament?.name,
         status: e.status?.type
       }));
-      
-      res.json({ matches });
+
+      const sortedMatches = matches.sort((a, b) => b.date - a.date);
+      res.json({ matches: sortedMatches });
     } catch (error) {
       res.status(500).json({ error: 'Failed to fetch matches' });
     }
@@ -634,12 +637,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fetch all match data in parallel
       const [statsResp, heatmapResp, eventResp, shotmapResp, passesResp, actionsResp] = await Promise.allSettled([
-        ax.get(`/event/${eventId}/player/${sofaId}/statistics`),
-        ax.get(`/event/${eventId}/player/${sofaId}/heatmap`),
-        ax.get(`/event/${eventId}`),
-        ax.get(`/event/${eventId}/shotmap`),
-        ax.get(`/event/${eventId}/player/${sofaId}/passes`).catch(() => ({ data: { passes: [] } })),
-        ax.get(`/event/${eventId}/player/${sofaId}/actions`).catch(() => ({ data: { actions: [] } }))
+        sofaScoreService.fetchWithCache(`/event/${eventId}/player/${sofaId}/statistics`),
+        sofaScoreService.fetchWithCache(`/event/${eventId}/player/${sofaId}/heatmap`),
+        sofaScoreService.fetchWithCache(`/event/${eventId}`),
+        sofaScoreService.fetchWithCache(`/event/${eventId}/shotmap`),
+        sofaScoreService.fetchWithCache(`/event/${eventId}/player/${sofaId}/passes`).catch(() => ({ data: { passes: [] } })),
+        sofaScoreService.fetchWithCache(`/event/${eventId}/player/${sofaId}/actions`).catch(() => ({ data: { actions: [] } }))
       ]);
       
       const stats = statsResp.status === 'fulfilled' ? statsResp.value.data.statistics : null;

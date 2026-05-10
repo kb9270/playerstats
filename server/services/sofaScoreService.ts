@@ -21,53 +21,79 @@ export interface SofaPlayer {
 }
 
 class SofaScoreService {
-  private cacheFilePath = path.join(process.cwd(), 'sofascore_cache.json');
-  private searchCache = new Map<string, any[]>();
+  private dailyCacheFilePath = path.join(process.cwd(), 'sofascore_daily_cache.json');
+  private dailyCache = new Map<string, { timestamp: number, data: any }>();
 
   constructor() {
     this.loadCacheFromDisk();
   }
 
   private loadCacheFromDisk() {
-    // Disabled to prevent "stats resetting" issue reported by user
-    /*
     try {
-      if (fs.existsSync(this.cacheFilePath)) {
-        const data = fs.readFileSync(this.cacheFilePath, 'utf-8');
+      if (fs.existsSync(this.dailyCacheFilePath)) {
+        const data = fs.readFileSync(this.dailyCacheFilePath, 'utf-8');
         const parsed = JSON.parse(data);
-        for (const [key, value] of Object.entries(parsed)) {
-          this.searchCache.set(key, value as any[]);
+        const now = Date.now();
+        for (const [key, value] of Object.entries(parsed) as [string, any][]) {
+          // Keep cache valid for 24 hours (86400000 ms)
+          if (now - value.timestamp < 86400000) {
+            this.dailyCache.set(key, value);
+          }
         }
-        console.log(`✅ [SofaScore] Loaded ${this.searchCache.size} search cache entries from disk.`);
+        console.log(`✅ [SofaScore] Loaded ${this.dailyCache.size} fresh daily cache entries from disk.`);
       }
     } catch (e) {
-      console.error('Failed to load sofascore_cache.json:', e);
+      console.error('Failed to load sofascore_daily_cache.json:', e);
     }
-    */
   }
 
   private saveCacheToDisk() {
     try {
-      const obj = Object.fromEntries(this.searchCache);
-      fs.writeFileSync(this.cacheFilePath, JSON.stringify(obj, null, 2), 'utf-8');
+      const obj = Object.fromEntries(this.dailyCache);
+      fs.writeFileSync(this.dailyCacheFilePath, JSON.stringify(obj, null, 2), 'utf-8');
     } catch (e) {
-      console.error('Failed to write sofascore_cache.json:', e);
+      console.error('Failed to write sofascore_daily_cache.json:', e);
     }
   }
 
   public axiosInstance = axios.create({
-    baseURL: "https://api.sofascore.app/api/v1",
     headers: {
-      "User-Agent": "SofaScore/6.44.1 (iPhone; iOS 17.4.1; Scale/3.00)",
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       "Accept": "application/json, text/plain, */*",
       "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7",
-      "X-OS": "iOS",
-      "X-Client-Id": Math.random().toString(36).substring(7),
+      "Cache-Control": "max-age=0",
+      "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      "Sec-Ch-Ua-Mobile": "?0",
+      "Sec-Ch-Ua-Platform": '"macOS"',
+      "Sec-Fetch-Dest": "empty",
+      "Sec-Fetch-Mode": "cors",
+      "Sec-Fetch-Site": "same-site",
       "Origin": "https://www.sofascore.com",
       "Referer": "https://www.sofascore.com/",
       "Connection": "keep-alive"
-    }
+    },
+    timeout: 4000 // 4 seconds max to avoid hanging the UI
   });
+
+  public async fetchWithCache(path: string) {
+    if (this.dailyCache.has(path)) {
+      const cached = this.dailyCache.get(path);
+      if (cached && (Date.now() - cached.timestamp < 86400000)) {
+        console.log(`⚡ [SofaScore Cache] HIT: ${path}`);
+        return { data: cached.data };
+      }
+    }
+    
+    // Cache miss or expired
+    console.log(`🌐 [SofaScore Net] FETCH via Proxy: ${path}`);
+    const fullUrl = `https://api.sofascore.com/api/v1${path}`;
+    const proxyUrl = `http://localhost:8001/?url=${encodeURIComponent(fullUrl)}`;
+    
+    const response = await this.axiosInstance.get(proxyUrl);
+    this.dailyCache.set(path, { timestamp: Date.now(), data: response.data });
+    this.saveCacheToDisk();
+    return response;
+  }
 
   private leagues = [
     { id: 17, name: "Premier League", weight: 1.1 },
@@ -93,7 +119,7 @@ class SofaScoreService {
 
   async getLatestSeasonId(tournamentId: number): Promise<number> {
     try {
-      const resp = await this.axiosInstance.get(`/unique-tournament/${tournamentId}/seasons`);
+      const resp = await this.fetchWithCache(`/unique-tournament/${tournamentId}/seasons`);
       return resp.data.seasons[0]?.id || 61627;
     } catch {
       return 61627;
@@ -207,7 +233,7 @@ class SofaScoreService {
       const leagueId = 7; // Champions League
       const seasonId = await this.getLatestSeasonId(leagueId);
       
-      const periodsResp = await this.axiosInstance.get(`/unique-tournament/${leagueId}/season/${seasonId}/team-of-the-week/periods`);
+      const periodsResp = await this.fetchWithCache(`/unique-tournament/${leagueId}/season/${seasonId}/team-of-the-week/periods`);
       const periods = periodsResp.data?.periods || [];
       
       if (periods.length === 0) return [];
@@ -255,7 +281,7 @@ class SofaScoreService {
       
       try {
         console.log(`🔍 [SofaScore] Searching for "${query}"...`);
-        const resp = await this.axiosInstance.get(`/search/all?q=${encodeURIComponent(query)}`);
+        const resp = await this.fetchWithCache(`/search/all?q=${encodeURIComponent(query)}`);
         const results = (resp.data.results || []).filter((r: any) => r.type === 'player');
         
         if (results.length > 0) {
@@ -276,7 +302,7 @@ class SofaScoreService {
 
   async getPlayerDetails(sofaId: number) {
     try {
-      const resp = await this.axiosInstance.get(`/player/${sofaId}`);
+      const resp = await this.fetchWithCache(`/player/${sofaId}`);
       const info = resp.data.player;
       
       const team = info.team;
@@ -295,6 +321,7 @@ class SofaScoreService {
         country: info.country?.name,
         dateOfBirth: info.dateOfBirthTimestamp ? new Date(info.dateOfBirthTimestamp * 1000).toISOString() : null,
         team: team?.name,
+        teamId: team?.id,
         league: tournament?.name,
         tournamentId: tournament?.id,
         // Calculate seasonId: for 2025/26 it's often around 61627, 
@@ -308,45 +335,51 @@ class SofaScoreService {
 
   async getPlayerLastEvents(sofaId: number) {
      try {
-       const resp = await this.axiosInstance.get(`/player/${sofaId}/events/last/0`);
+       const resp = await this.fetchWithCache(`/player/${sofaId}/events/last/0`);
        return resp.data.events || [];
      } catch {
        return [];
      }
   }
 
-  async getPlayerMatchRatings(sofaId: number, playerTeamName?: string) {
+  async getPlayerMatchRatings(sofaId: number, playerTeamId?: number) {
     try {
       const events = await this.getPlayerLastEvents(sofaId);
       if (!events || events.length === 0) return [];
       
-      const ratings: any[] = [];
-      // Take 7 most recent to guarantee we get 5 with valid ratings 
-      const recentMatches = events.slice(-7).reverse();
-      for (const e of recentMatches) {
-        if (ratings.length >= 5) break;
+      // Look back at 20 matches to find 5 with valid ratings
+      const recentMatches = events.slice(-20).reverse();
+      
+      const ratingPromises = recentMatches.map(async (e) => {
         try {
-          const resp = await this.axiosInstance.get(`/event/${e.id}/player/${sofaId}/statistics`);
-          const rating = resp.data.statistics?.rating;
-          if (rating) {
-            // Determine opponent
-            const homeTeam = e.homeTeam;
-            const awayTeam = e.awayTeam;
-            const isHome = playerTeamName ? homeTeam?.name?.includes(playerTeamName) : true;
-            const opponent = isHome ? awayTeam : homeTeam;
-            
-            ratings.push({
-              rating: parseFloat(rating),
-              date: e.startTimestamp,
-              tournament: e.tournament?.name || 'Match',
-              match: `${homeTeam?.shortName || '?'} ${e.homeScore?.current ?? ''}-${e.awayScore?.current ?? ''} ${awayTeam?.shortName || '?'}`,
-              opponentName: opponent?.shortName || opponent?.name || '?',
-              opponentLogo: `https://api.sofascore.app/api/v1/team/${opponent?.id}/image`,
-              opponentId: opponent?.id
-            });
-          }
-        } catch {}
-      }
+          const resp = await this.fetchWithCache(`/event/${e.id}/player/${sofaId}/statistics`);
+          if (!resp || !resp.data || !resp.data.statistics?.rating) return null;
+          
+          const rating = resp.data.statistics.rating;
+          const homeTeam = e.homeTeam;
+          const awayTeam = e.awayTeam;
+          const playerMatchTeamId = resp.data.team?.id;
+          
+          // Absolute precision: compare the team the player played for in this match
+          const isHome = (homeTeam?.id === playerMatchTeamId);
+          const opponent = isHome ? awayTeam : homeTeam;
+          
+          return {
+            rating: parseFloat(rating),
+            date: e.startTimestamp,
+            tournament: e.tournament?.name || 'Match',
+            match: `${homeTeam?.shortName || '?'} ${e.homeScore?.current ?? ''}-${e.awayScore?.current ?? ''} ${awayTeam?.shortName || '?'}`,
+            opponentName: opponent?.shortName || opponent?.name || '?',
+            opponentLogo: `https://api.sofascore.app/api/v1/team/${opponent?.id}/image`,
+            opponentId: opponent?.id
+          };
+        } catch {
+          return null;
+        }
+      });
+
+      const results = await Promise.all(ratingPromises);
+      const ratings = results.filter(r => r !== null).slice(0, 5);
       console.log(`⭐ [SofaScore] Got ${ratings.length} real match ratings for player ${sofaId}`);
       return ratings;
     } catch {
@@ -364,7 +397,7 @@ class SofaScoreService {
 
       for (const url of variants) {
         try {
-          const resp = await this.axiosInstance.get(url);
+          const resp = await this.fetchWithCache(url);
           const points = resp.data.points || [];
           if (points.length > 0) {
             console.log(`🗺️ [SofaScore] Real Season heatmap: ${points.length} points (via ${url})`);
@@ -383,7 +416,7 @@ class SofaScoreService {
     try {
       console.log(`📊 [SofaScore] Fetching stats for player ${sofaId} (T:${tournamentId} S:${seasonId})`);
       const url = `/player/${sofaId}/unique-tournament/${tournamentId}/season/${seasonId}/statistics/overall`;
-      const resp = await this.axiosInstance.get(url);
+      const resp = await this.fetchWithCache(url);
       
       const stats = resp.data.statistics || null;
       if (stats) {
@@ -399,7 +432,7 @@ class SofaScoreService {
   async getFullSeasonStatistics(sofaId: number) {
     try {
       // 1. Get all seasons/competitions for this player
-      const seasonsResp = await this.axiosInstance.get(`/player/${sofaId}/statistics-seasons`);
+      const seasonsResp = await this.fetchWithCache(`/player/${sofaId}/statistics-seasons`);
       const allSeasons = seasonsResp.data.uniqueTournamentSeasons || [];
       
       // 2. Filter for 25/26 competitions

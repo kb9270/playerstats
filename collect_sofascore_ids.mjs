@@ -32,11 +32,13 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ── HTTP avec décompression automatique ──────────────────────
 
-function httpsGet(url, headers) {
+import http from 'http';
+
+function httpGet(url, headers) {
   return new Promise((resolve, reject) => {
     const u = new URL(url);
-    const opts = { hostname: u.hostname, path: u.pathname + u.search, method: 'GET', headers, timeout: 12000 };
-    const req = https.request(opts, res => {
+    const opts = { hostname: u.hostname, port: u.port, path: u.pathname + u.search, method: 'GET', headers, timeout: 5000 };
+    const req = http.request(opts, res => {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => resolve({ status: res.statusCode, buf: Buffer.concat(chunks) }));
@@ -67,59 +69,67 @@ function getHeaders() {
 let consecutiveErrors = 0;
 
 async function searchSofaScoreId(playerName, squadName) {
-  const query = encodeURIComponent(playerName);
-  const url = `https://www.sofascore.com/api/v1/search/all?q=${query}`;
+  const normTarget = normalizeName(playerName);
+  const normSquad  = normalizeName(squadName || '');
+  const lastName = normTarget.split(' ').pop();
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const { status, buf } = await httpsGet(url, getHeaders());
+  const searchAttempts = [
+    playerName,
+    lastName, // Try only last name if full name fails
+  ];
 
-      if (status === 429 || status === 403) {
-        consecutiveErrors++;
-        const wait = Math.min(10000 * consecutiveErrors, 60000); // Wait up to 60s
-        process.stdout.write(`  ⏳ ${status} → pause ${wait}ms\n`);
-        await sleep(wait);
-        continue;
-      }
+  for (const query of searchAttempts) {
+    if (!query || query.length < 3) continue;
 
-      if (status !== 200 || buf.length === 0) return null;
+    const q = encodeURIComponent(query);
+    const targetUrl = `https://www.sofascore.com/api/v1/search/all?q=${q}`;
+    const url = `http://localhost:8001/?url=${encodeURIComponent(targetUrl)}`;
 
-      consecutiveErrors = Math.max(0, consecutiveErrors - 1);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { status, buf } = await httpGet(url, { 'Accept': 'application/json' });
 
-      const data = JSON.parse(buf.toString());
-      const players = (data.results || []).filter(r => r.type === 'player');
-      if (!players.length) return null;
-
-      const normTarget = normalizeName(playerName);
-      const normSquad  = normalizeName(squadName || '');
-
-      // Priorité 1 : nom + équipe
-      for (const r of players) {
-        const n = normalizeName(r.entity?.name || '');
-        const t = normalizeName(r.entity?.team?.name || '');
-        if (n === normTarget && normSquad && t && t.includes(normSquad.split(' ')[0])) {
-          return r.entity.id;
+        if (status === 429 || status === 403 || status === 500) {
+          consecutiveErrors++;
+          const wait = Math.min(5000 * consecutiveErrors, 15000);
+          process.stdout.write(`  ⏳ Proxy ${status} → pause ${wait}ms\n`);
+          await sleep(wait);
+          continue;
         }
-      }
 
-      // Priorité 2 : nom exact
-      for (const r of players) {
-        if (normalizeName(r.entity?.name || '') === normTarget) return r.entity.id;
-      }
+        if (status !== 200 || buf.length === 0) break; // Next search attempt
 
-      // Priorité 3 : nom partiel (dernier prénom correspond)
-      const lastName = normTarget.split(' ').pop();
-      if (lastName && lastName.length > 3) {
+        consecutiveErrors = 0;
+
+        const data = JSON.parse(buf.toString());
+        const players = (data.results || []).filter(r => r.type === 'player');
+        if (!players.length) break; // Next search attempt
+
+        // Priorité 1 : nom complet (ou last name) + équipe
         for (const r of players) {
-          if (normalizeName(r.entity?.name || '').endsWith(lastName)) return r.entity.id;
+          const n = normalizeName(r.entity?.name || '');
+          const t = normalizeName(r.entity?.team?.name || '');
+          if ((n.includes(lastName) || n === normTarget) && normSquad && t && t.includes(normSquad.split(' ')[0])) {
+            return r.entity.id;
+          }
         }
-      }
 
-      return null;
-    } catch (e) {
-      consecutiveErrors++;
-      if (attempt < 2) { await sleep(5000); continue; }
-      return null;
+        // Priorité 2 : nom exact (si la requête est le nom complet)
+        if (query === playerName) {
+          for (const r of players) {
+            if (normalizeName(r.entity?.name || '') === normTarget) return r.entity.id;
+          }
+        }
+
+        // Priorité 3 : nom se termine par last name AND équipe correspond (déjà couvert par prio 1)
+        
+        // If we reach here, we didn't find a high confidence match. We continue to next query.
+        break; 
+      } catch (e) {
+        consecutiveErrors++;
+        if (attempt < 1) { await sleep(2000); continue; }
+        break;
+      }
     }
   }
   return null;

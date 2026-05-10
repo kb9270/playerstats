@@ -394,13 +394,17 @@ export default function PlayerDetailedProfile() {
                 </div>
                 <div className="space-y-1">
                   <div className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">
-                    {p.sofaStats?.rating ? "NOTE SOFASCORE" : "NOTES LIVE"}
+                    {p.sofaStats?.rating && !p.sofaStats?._isBlocked ? "NOTE SOFASCORE" : "NOTES LIVE"}
                   </div>
                   <div className="text-6xl font-['Barlow_Condensed'] font-black text-[var(--c-accent)] leading-none">
-                    {p.sofaStats?.rating ? fmt(p.sofaStats.rating) : (p.overallRating ? fmt(p.overallRating/10) : "—")}
+                    {p.sofaStats?._isBlocked ? (
+                      <span className="text-4xl text-orange-500">API 403</span>
+                    ) : (
+                      p.sofaStats?.rating ? fmt(p.sofaStats.rating) : (p.overallRating ? fmt(p.overallRating/10) : "—")
+                    )}
                   </div>
                   <div className="text-[10px] text-[var(--c-accent)] font-bold uppercase tracking-widest">
-                    {p.sofaStats?.rating ? "SAISON 25/26 RÉELLE" : "INDICE DE PERFORMANCE"}
+                    {p.sofaStats?._isBlocked ? "CONNEXION BLOQUÉE" : (p.sofaStats?.rating && !p.sofaStats?._isBlocked ? "SAISON 25/26 RÉELLE" : "INDICE DE PERFORMANCE")}
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -468,35 +472,35 @@ export default function PlayerDetailedProfile() {
               </div>
               
               <div className="flex gap-4 flex-wrap justify-start">
-                {(p.recentForm?.length > 0) ? (
-                  p.recentForm.slice(0, 5).map((f: any, i: number) => {
-                    const r = typeof f === 'object' ? f.rating : f;
-                    const color = r >= 7.5 ? 'bg-[var(--c-accent)]' : r >= 6.8 ? 'bg-blue-500' : 'bg-orange-500';
+                {[...Array(5)].map((_, i) => {
+                  const f = p.recentForm?.[i];
+                  if (!f) {
                     return (
-                      <div key={i} className="flex flex-col items-center gap-2">
-                        <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-xl text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)]`}>
-                          {r.toFixed(1)}
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="text-[8px] text-white/40 font-bold uppercase">vs</div>
-                          {f.opponentLogo && (
-                            <img src={f.opponentLogo} alt={f.opponentName || ''} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                          )}
-                          <div className="text-[7px] text-white/50 font-bold text-center leading-tight uppercase">
-                            {f.opponentName || '—'}
-                          </div>
-                        </div>
+                      <div key={i} className="flex flex-col items-center gap-2 opacity-40">
+                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black font-['Rajdhani'] text-xl text-white/20">—</div>
+                        <div className="text-[8px] text-white/20 uppercase font-bold tracking-tighter">—</div>
                       </div>
                     );
-                  })
-                ) : (
-                  [...Array(5)].map((_, i) => (
+                  }
+                  const r = typeof f === 'object' ? f.rating : f;
+                  const color = r >= 7.5 ? 'bg-[var(--c-accent)]' : r >= 6.8 ? 'bg-blue-500' : 'bg-orange-500';
+                  return (
                     <div key={i} className="flex flex-col items-center gap-2">
-                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-black font-['Rajdhani'] text-xl text-white/20">—</div>
-                      <div className="text-[8px] text-white/20">—</div>
+                      <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-xl text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)]`}>
+                        {r.toFixed(1)}
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="text-[8px] text-white/40 font-bold uppercase">vs</div>
+                        {f.opponentLogo && (
+                          <img src={f.opponentLogo} alt={f.opponentName || ''} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        )}
+                        <div className="text-[7px] text-white/50 font-bold text-center leading-tight uppercase">
+                          {f.opponentName || '—'}
+                        </div>
+                      </div>
                     </div>
-                  ))
-                )}
+                  );
+                })}
 
                 {/* VOIR PLUS button */}
                 {p.sofaId && (

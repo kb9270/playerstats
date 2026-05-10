@@ -124,8 +124,11 @@ export class CSVDirectAnalyzer {
       return [];
     }
 
+    const sofaIdIndex = headers.indexOf('sofascore_id');
+    
     return lines.slice(1).filter(line => line.trim()).map((line, idx) => {
-      const values = this.parseCSVLine(line);
+      const cleanLine = line.replace(/\r$/, '');
+      const values = this.parseCSVLine(cleanLine);
       const player: any = {};
 
       headers.forEach((header, index) => {
@@ -139,6 +142,18 @@ export class CSVDirectAnalyzer {
         }
         player[header.trim()] = value;
       });
+
+      // Fix for lines with quoted fields like "MF,FW": parseCSVLine produces
+      // fewer fields than expected because the internal comma is consumed.
+      // In that case, sofascore_id is missing. Extract it from the raw last field.
+      if (sofaIdIndex >= 0 && (player.sofascore_id === null || player.sofascore_id === undefined)) {
+        const rawFields = cleanLine.split(',');
+        const lastRaw = rawFields[rawFields.length - 1]?.trim();
+        if (lastRaw && !isNaN(Number(lastRaw)) && Number(lastRaw) > 100) {
+          player.sofascore_id = Number(lastRaw);
+        }
+      }
+
       return player as PlayerData;
     });
   }
