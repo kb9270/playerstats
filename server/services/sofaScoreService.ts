@@ -365,6 +365,7 @@ class SofaScoreService {
           const opponent = isHome ? awayTeam : homeTeam;
           
           return {
+            eventId: e.id,
             rating: parseFloat(rating),
             date: e.startTimestamp,
             tournament: e.tournament?.name || 'Match',
@@ -500,6 +501,67 @@ class SofaScoreService {
 
     } catch (err) {
       console.warn(`[SofaScore] Global aggregation failed for ${sofaId}`);
+      return null;
+    }
+  }
+  async getEvent(eventId: number) {
+    return this.fetchWithCache(`/event/${eventId}`);
+  }
+
+  async getEventPlayerStatistics(eventId: number, sofaId: number) {
+    return this.fetchWithCache(`/event/${eventId}/player/${sofaId}/statistics`);
+  }
+
+  async getEventPlayerHeatmap(eventId: number, sofaId: number) {
+    return this.fetchWithCache(`/event/${eventId}/player/${sofaId}/heatmap`);
+  }
+
+  async getMatchPlayerDetails(eventId: number, sofaId: number) {
+    try {
+      const [eventResp, statsResp, heatmapResp] = await Promise.allSettled([
+        this.getEvent(eventId),
+        this.getEventPlayerStatistics(eventId, sofaId),
+        this.getEventPlayerHeatmap(eventId, sofaId)
+      ]);
+
+      const event = eventResp.status === 'fulfilled' ? eventResp.value.data.event : null;
+      const playerStats = statsResp.status === 'fulfilled' ? statsResp.value.data.statistics : null;
+      const heatmap = heatmapResp.status === 'fulfilled' ? heatmapResp.value.data.points : [];
+
+      // Optional: Shotmap
+      let shotmap = [];
+      try {
+        const shotResp = await this.fetchWithCache(`/event/${eventId}/player/${sofaId}/shotmap`);
+        shotmap = shotResp.data.shotmap || [];
+      } catch (e) {}
+
+      return {
+        event: event ? {
+          id: event.id,
+          homeTeam: {
+            name: event.homeTeam.name,
+            shortName: event.homeTeam.shortName,
+            id: event.homeTeam.id,
+            logo: `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`
+          },
+          awayTeam: {
+            name: event.awayTeam.name,
+            shortName: event.awayTeam.shortName,
+            id: event.awayTeam.id,
+            logo: `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`
+          },
+          homeScore: event.homeScore?.current,
+          awayScore: event.awayScore?.current,
+          tournament: event.tournament?.name,
+          date: event.startTimestamp,
+          venue: event.venue?.name
+        } : null,
+        playerStats,
+        heatmap,
+        shotmap
+      };
+    } catch (err) {
+      console.error(`❌ [SofaScore] Erreur détails match ${eventId} pour joueur ${sofaId}:`, err);
       return null;
     }
   }

@@ -485,8 +485,12 @@ export default function PlayerDetailedProfile() {
                   const r = typeof f === 'object' ? f.rating : f;
                   const color = r >= 7.5 ? 'bg-[var(--c-accent)]' : r >= 6.8 ? 'bg-blue-500' : 'bg-orange-500';
                   return (
-                    <div key={i} className="flex flex-col items-center gap-2">
-                      <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-xl text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)]`}>
+                    <div 
+                      key={i} 
+                      className="flex flex-col items-center gap-2 cursor-pointer group/match transition-transform hover:scale-105 active:scale-95"
+                      onClick={() => setLocation(`/match/${f.eventId}/${p.sofaId}`)}
+                    >
+                      <div className={`w-14 h-14 rounded-2xl ${color} flex items-center justify-center font-black font-['Rajdhani'] text-xl text-black shadow-[0_8px_20px_rgba(0,0,0,0.4)] group-hover/match:shadow-[0_0_20px_var(--c-accent)] transition-all`}>
                         {r.toFixed(1)}
                       </div>
                       <div className="flex flex-col items-center gap-1">
@@ -494,7 +498,7 @@ export default function PlayerDetailedProfile() {
                         {f.opponentLogo && (
                           <img src={f.opponentLogo} alt={f.opponentName || ''} className="w-6 h-6 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                         )}
-                        <div className="text-[7px] text-white/50 font-bold text-center leading-tight uppercase">
+                        <div className="text-[7px] text-white/50 font-bold text-center leading-tight uppercase group-hover/match:text-[var(--c-accent)] transition-colors">
                           {f.opponentName || '—'}
                         </div>
                       </div>
