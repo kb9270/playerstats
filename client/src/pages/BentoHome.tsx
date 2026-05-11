@@ -222,12 +222,12 @@ const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: 
       {/* The Hexagon Shield with Neon Gradient Border */}
       <div style={{
         position: "relative",
-        width: 72, height: 86,
-        padding: "2.2px",
+        width: 68, height: 82,
+        padding: "2.1px",
         background: "linear-gradient(45deg, #A855F7, #06B6D4)", 
         clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "0 12px 28px rgba(0,0,0,0.8)",
+        boxShadow: "0 10px 24px rgba(0,0,0,0.8)",
       }}>
         <div style={{
           width: "100%", height: "100%",
@@ -817,16 +817,30 @@ export default function BentoHome() {
   const l1Standings = l1Data?.standings?.slice(0, 5) || [];
 
   const { data: llData } = useQuery<any>({
-    queryKey: ["/api/standings/esp La Liga"],
+    queryKey: ["/api/standings/es La Liga"],
     staleTime: 5 * 60_000,
   });
   const llStandings = llData?.standings?.slice(0, 5) || [];
+
+  const { data: blData } = useQuery<any>({
+    queryKey: ["/api/standings/de Bundesliga"],
+    staleTime: 5 * 60_000,
+  });
+  const blStandings = blData?.standings?.slice(0, 5) || [];
 
   const { data: saData } = useQuery<any>({
     queryKey: ["/api/standings/it Serie A"],
     staleTime: 5 * 60_000,
   });
   const saStandings = saData?.standings?.slice(0, 5) || [];
+
+  const { data: ldcData } = useQuery<any>({
+    queryKey: ["/api/standings/uefa Champions League"],
+    staleTime: 5 * 60_000,
+  });
+  const ldcStandings = ldcData?.standings?.slice(0, 8) || [];
+
+
 
   const players = totwData?.players || [];
   const topPlayer = players[0];
@@ -1405,7 +1419,7 @@ export default function BentoHome() {
                   <rect x="25" y="85" width="50" height="15" stroke="#fff" strokeWidth="0.5" fill="none" />
                 </svg>
 
-                {/* Professional Player Rendering */}
+                {/* Professional Player Rendering (4-4-2) */}
                 {(() => {
                   const all = players.slice(0, 11);
                   if (all.length === 0) return (
@@ -1413,53 +1427,58 @@ export default function BentoHome() {
                       Chargement des données SofaScore...
                     </div>
                   );
-                  const isYamal = (p: any) => p.Player?.toLowerCase().includes("yamal");
-                  const attackers = all.filter(p => isYamal(p) || ["F", "FW", "W", "S", "A", "ATT"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 3);
-                  const defenders = all.filter(p => !attackers.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
-                  const goalies = all.filter(p => !attackers.includes(p) && !defenders.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
-                  const mid = all.filter(p => !attackers.includes(p) && !defenders.includes(p) && !goalies.includes(p));
+                  
+                  // Specific logic for 4-4-2 with Dembele and Kane
+                  const findByName = (name: string) => all.find(p => p.Player?.toLowerCase().includes(name.toLowerCase()));
+                  
+                  const dembele = findByName("Dembélé");
+                  const kane = findByName("Kane");
+                  
+                  const attackers = [dembele, kane].filter(Boolean);
+                  const goalies = all.filter(p => !attackers.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
+                  const defenders = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
+                  const mid = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && !defenders.includes(p));
 
                   const finalFw = [...attackers];
                   const finalDf = [...defenders];
                   const finalGk = goalies[0] || null;
-                  const finalMf = [...mid.slice(0, 3)];
+                  const finalMf = [...mid.slice(0, 4)];
 
                   const usedIdx = new Set([...finalFw, ...finalMf, ...finalDf, finalGk].filter(Boolean).map(p => all.indexOf(p)));
                   const remaining = all.filter((_, i) => !usedIdx.has(i));
 
-                  while (finalFw.length < 3 && remaining.length > 0) finalFw.push(remaining.shift());
-                  while (finalMf.length < 3 && remaining.length > 0) finalMf.push(remaining.shift());
+                  while (finalFw.length < 2 && remaining.length > 0) finalFw.push(remaining.shift());
+                  while (finalMf.length < 4 && remaining.length > 0) finalMf.push(remaining.shift());
                   while (finalDf.length < 4 && remaining.length > 0) finalDf.push(remaining.shift());
                   const safeGk = finalGk || remaining.shift() || all[0];
 
-                  const yamalIdx = finalFw.findIndex(p => isYamal(p));
-                  if (yamalIdx !== -1 && yamalIdx !== 2) {
-                    const temp = finalFw[2];
-                    finalFw[2] = finalFw[yamalIdx];
-                    finalFw[yamalIdx] = temp;
-                  }
-
                   return (
                     <div style={{ position: "absolute", inset: 0 }}>
-                      <UCLPlayerCard player={finalFw[0]} top="12%" left="15%" />
-                      <UCLPlayerCard player={finalFw[1]} top="7%" left="45%" />
-                      <UCLPlayerCard player={finalFw[2]} top="12%" left="75%" />
+                      {/* Forwards (2) */}
+                      <UCLPlayerCard player={finalFw[0]} top="6%" left="33%" />
+                      <UCLPlayerCard player={finalFw[1]} top="6%" left="67%" />
 
-                      <UCLPlayerCard player={finalMf[0]} top="39%" left="20%" />
-                      <UCLPlayerCard player={finalMf[1]} top="34%" left="45%" />
-                      <UCLPlayerCard player={finalMf[2]} top="39%" left="70%" />
+                      {/* Midfielders (4) */}
+                      <UCLPlayerCard player={finalMf[0]} top="30%" left="18%" />
+                      <UCLPlayerCard player={finalMf[1]} top="30%" left="39%" />
+                      <UCLPlayerCard player={finalMf[2]} top="30%" left="61%" />
+                      <UCLPlayerCard player={finalMf[3]} top="30%" left="82%" />
 
-                      <UCLPlayerCard player={finalDf[0]} top="65%" left="10%" />
-                      <UCLPlayerCard player={finalDf[1]} top="61%" left="33%" />
-                      <UCLPlayerCard player={finalDf[2]} top="61%" left="57%" />
-                      <UCLPlayerCard player={finalDf[3]} top="65%" left="80%" />
+                      {/* Defenders (4) */}
+                      <UCLPlayerCard player={finalDf[0]} top="54%" left="15%" />
+                      <UCLPlayerCard player={finalDf[1]} top="54%" left="38%" />
+                      <UCLPlayerCard player={finalDf[2]} top="54%" left="62%" />
+                      <UCLPlayerCard player={finalDf[3]} top="54%" left="85%" />
 
-                      <UCLPlayerCard player={safeGk} top="81%" left="45%" />
+                      {/* Goalkeeper (1) */}
+                      <UCLPlayerCard player={safeGk} top="78%" left="45%" />
                     </div>
                   );
                 })()}
               </div>
             </div>
+
+
           </GlassCard>
 
 
@@ -1561,16 +1580,17 @@ export default function BentoHome() {
                   topScorer="R. Lewandowski"
                   goals={21}
                   standings={llStandings}
-                  onClick={() => setLocation("/league/esp La Liga")}
+                  onClick={() => setLocation("/league/es La Liga")}
                 />
                 <LeagueWidget
                   name="Bundesliga"
                   logo="https://a.espncdn.com/i/leaguelogos/soccer/500/10.png"
                   color="#D3010C"
-                  leader="Bayer Leverkusen"
-                  points={63}
+                  leader={blStandings[0]?.team || "Bayer Leverkusen"}
+                  points={blStandings[0]?.points || 63}
                   topScorer="H. Kane"
                   goals={24}
+                  standings={blStandings}
                   onClick={() => setLocation("/league/de Bundesliga")}
                 />
                 <LeagueWidget

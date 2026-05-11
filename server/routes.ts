@@ -690,6 +690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "de Bundesliga":     "ger.1",
     "nl Eredivisie":     "ned.1",
     "pt Primeira Liga":  "por.1",
+    "uefa Champions League": "uefa.champions",
   };
 
   // Simple in-process cache: { key -> { data, ts } }
@@ -1113,75 +1114,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ── UCL Stats: Scorers / Assisters / Young Players ─────────────────
   app.get("/api/ucl/stats", async (req, res) => {
     try {
-      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
-      // Filter Champions League players from CSV
-      const uclClubs = [
-        'Real Madrid', 'Manchester City', 'Arsenal', 'Liverpool', 'Aston Villa',
-        'Barcelona', 'Atlético Madrid', 'Girona', 'Bayern Munich', 'Leverkusen',
-        'Dortmund', 'RB Leipzig', 'PSG', 'Lille', 'Monaco', 'Brest',
-        'Inter', 'Milan', 'Juventus', 'Atalanta', 'Bologna',
-        'Benfica', 'Sporting CP', 'Porto', 'PSV', 'Feyenoord'
-      ];
-
-      const uclPlayers = allPlayers.filter((p: any) => {
-        const comp = (p.Comp || "").toLowerCase();
-        const team = p.Squad || "";
-        const isUclComp = comp.includes("champion") || comp.includes("ucl") || comp.includes("cl");
-        const isUclTeam = uclClubs.some(c => team.includes(c));
-        return isUclComp || isUclTeam;
-      });
-
-      // Fallback: if no UCL-specific data found, use top players from all competitions
-      const pool = uclPlayers.length > 5 ? uclPlayers : allPlayers;
-
-      // Top Scorers
-      const scorers = pool
-        .filter((p: any) => Number(p.Gls) > 0)
-        .sort((a: any, b: any) => Number(b.Gls) - Number(a.Gls))
-        .slice(0, 10)
-        .map((p: any) => ({
-          name: p.Player,
-          team: p.Squad,
-          goals: Number(p.Gls) || 0,
-          nation: p.Nation,
-          logo: espnImageService.getTeamLogo(p.Squad),
-        }));
-
-      // Top Assisters
-      const assisters = pool
-        .filter((p: any) => Number(p.Ast) > 0)
-        .sort((a: any, b: any) => Number(b.Ast) - Number(a.Ast))
-        .slice(0, 10)
-        .map((p: any) => ({
-          name: p.Player,
-          team: p.Squad,
-          assists: Number(p.Ast) || 0,
-          nation: p.Nation,
-          logo: espnImageService.getTeamLogo(p.Squad),
-        }));
-
-      // Young Players (U23, ranked by goals + assists combined)
-      const young = pool
-        .filter((p: any) => {
-          const age = Number(p.Age);
-          return age > 0 && age <= 23;
-        })
-        .map((p: any) => ({
-          name:    p.Player,
-          team:    p.Squad,
-          age:     Number(p.Age),
-          goals:   Number(p.Gls) || 0,
-          assists: Number(p.Ast) || 0,
-          rating:  Number(p.displayRating || p.rating) || (Number(p.Gls) * 0.4 + Number(p.Ast) * 0.3 + 6.5),
-          logo:    espnImageService.getTeamLogo(p.Squad),
-        }))
-        .sort((a: any, b: any) => b.rating - a.rating)
-        .slice(0, 10);
-
-      res.json({ success: true, scorers, assisters, young });
+      const stats = await sofaScoreService.fetchUCLTopStats();
+      res.json({ success: true, ...stats });
     } catch (error: any) {
-      console.error("UCL stats error:", error.message);
-      // Return empty (frontend uses seed data as fallback)
+      console.error("❌ [UCL Stats] Error:", error.message);
       res.json({ success: false, scorers: [], assisters: [], young: [] });
     }
   });

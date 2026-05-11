@@ -82,43 +82,90 @@ function UCLField() {
 }
 
 // ─── Player Token (Pitch) ────────────────────────────────
-function PitchPlayer({ player, top, left, delay = 0, onClick }: { player: any; top: string; left: string; delay?: number; onClick?: () => void; }) {
+const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: string; left: string; onClick?: () => void }) => {
   if (!player) return null;
+  const teamId = player.teamId || 0;
+  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.6 }}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, duration: 0.5, ease: "easeOut" }}
-      whileHover={{ scale: 1.15, zIndex: 50, filter: `drop-shadow(0 0 12px ${UCL_CYAN})` }}
+      whileHover={{ scale: 1.15, zIndex: 100 }}
       onClick={onClick}
-      style={{ position: "absolute", top, left, transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", zIndex: 10 }}
+      style={{
+        position: "absolute", top, left, transform: "translate(-50%, -50%)",
+        display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10,
+        cursor: "pointer"
+      }}
     >
+      {/* Club Logo Badge - 10 o'clock angle */}
+      {teamLogo && (
+        <div style={{
+          position: "absolute", top: -8, left: -26,
+          width: 32, height: 32,
+          background: "white",
+          borderRadius: "50%",
+          padding: 2,
+          boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
+          zIndex: 30,
+          border: "1.5px solid #0043ff"
+        }}>
+          <img src={teamLogo} alt={player.Squad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+
+      {/* The Hexagon Shield with Neon Gradient Border */}
       <div style={{
-        width: 58, height: 68,
-        background: "rgba(0, 11, 41, 0.6)",
-        backdropFilter: "blur(8px)",
-        border: "1px solid rgba(0, 229, 255, 0.4)",
-        borderRadius: "8px",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
         position: "relative",
-        boxShadow: `inset 0 0 10px rgba(0, 229, 255, 0.1), 0 4px 12px rgba(0,0,0,0.5)`,
+        width: 68, height: 82,
+        padding: "2.1px",
+        background: "linear-gradient(45deg, #A855F7, #06B6D4)", 
+        clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 10px 24px rgba(0,0,0,0.8)",
       }}>
-        <span style={{ position: "absolute", top: 4, left: 5, fontSize: 8, fontWeight: 700, color: UCL_CYAN, fontFamily: "'Inter', sans-serif" }}>{player.Pos?.substring(0,2)}</span>
-        <span style={{ position: "absolute", top: 3, right: 4, fontSize: 9, fontWeight: 800, color: "#fff", fontFamily: "'Rajdhani', sans-serif" }}>{player.rating?.toFixed(1)}</span>
-        <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", marginTop: 8, border: "2px solid rgba(255,255,255,0.8)" }}>
-          <PlayerAvatar playerName={player.Player} teamName={player.Squad} sofaId={player.sofaId} size="md" className="w-full h-full object-cover" />
+        <div style={{
+          width: "100%", height: "100%",
+          background: "linear-gradient(180deg, #0043FF 0%, #001A4D 100%)",
+          clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden"
+        }}>
+          <div style={{ width: "100%", height: "100%", transform: "scale(1.18) translateY(4%)" }}>
+            <PlayerAvatar
+              playerName={player.Player || ""}
+              teamName={player.Squad}
+              sofaId={player.sofaId}
+              size="md"
+              className="w-full h-full object-cover object-[center_top] bg-transparent border-none opacity-98"
+            />
+          </div>
         </div>
       </div>
+
+      {/* Name Label - Elevated white box with bold Condensed Font */}
       <div style={{
-        marginTop: 4, background: "rgba(0,11,41,0.8)", border: "1px solid rgba(0,229,255,0.3)",
-        padding: "2px 8px", borderRadius: 4, fontSize: 10, fontFamily: "'Inter', sans-serif", fontWeight: 600, color: "#fff",
-        whiteSpace: "nowrap", boxShadow: "0 2px 8px rgba(0,0,0,0.5)"
+        marginTop: -16,
+        background: "white",
+        color: "#000B29",
+        width: 82,
+        height: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 11,
+        fontWeight: 900,
+        textTransform: "uppercase",
+        boxShadow: "0 8px 18px rgba(0,0,0,0.6)",
+        zIndex: 20,
+        border: "1.2px solid #0043ff",
+        fontFamily: "'Saira Extra Condensed', sans-serif",
+        letterSpacing: "0.02em"
       }}>
-        {player.Player?.split(" ").pop()}
+        {player.Player?.split(" ").pop() || "NAME"}
       </div>
     </motion.div>
   );
-}
+};
 
 // ─── Ranking Row ──────────────────────────────────────────
 function RankRow({ rank, name, team, value, valueLabel, sofaId, delay = 0, onClick }: { rank: number; name: string; team: string; value: number; valueLabel: string; sofaId?: number; delay?: number; onClick?: () => void; }) {
@@ -161,15 +208,35 @@ export default function ChampionsLeague() {
   const { data: uclData } = useQuery<any>({ queryKey: ["/api/ucl/stats"], staleTime: 10 * 60_000 });
   const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({ queryKey: ["/api/live/top-players"], staleTime: 5 * 60_000 });
 
-  const totwPlayers = (totwData?.players && totwData.players.length >= 11) ? totwData.players : UCL_TOTW_2526;
+  const totwPlayers = (totwData?.players && totwData.players.length >= 5) ? totwData.players : UCL_TOTW_2526;
   const scorers   = uclData?.scorers?.length > 0 ? uclData.scorers : UCL_SCORERS_SEED;
   const assisters = uclData?.assisters?.length > 0 ? uclData.assisters : UCL_ASSISTERS_SEED;
   const young     = uclData?.young?.length > 0 ? uclData.young : UCL_YOUNG_SEED;
 
-  const gk  = totwPlayers.find((p: any) => p.Pos?.includes("GK")) || totwPlayers[0];
-  const dfs = totwPlayers.filter((p: any) => p.Pos?.includes("DF")).slice(0, 4);
-  const mfs = totwPlayers.filter((p: any) => p.Pos?.includes("MF")).slice(0, 3);
-  const fws = totwPlayers.filter((p: any) => p.Pos?.includes("FW")).slice(0, 3);
+  // 4-4-2 Formation logic (same as BentoHome)
+  const all = totwPlayers.slice(0, 11);
+  const findByName = (name: string) => all.find(p => p.Player?.toLowerCase().includes(name.toLowerCase()));
+  
+  const dembele = findByName("Dembélé");
+  const kane = findByName("Kane");
+  
+  const attackers = [dembele, kane].filter(Boolean);
+  const goalies = all.filter(p => !attackers.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
+  const defenders = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
+  const mid = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && !defenders.includes(p));
+
+  const finalFw = [...attackers];
+  const finalDf = [...defenders];
+  const finalGk = goalies[0] || null;
+  const finalMf = [...mid.slice(0, 4)];
+
+  const usedIdx = new Set([...finalFw, ...finalMf, ...finalDf, finalGk].filter(Boolean).map(p => all.indexOf(p)));
+  const remaining = all.filter((_, i) => !usedIdx.has(i));
+
+  while (finalFw.length < 2 && remaining.length > 0) finalFw.push(remaining.shift());
+  while (finalMf.length < 4 && remaining.length > 0) finalMf.push(remaining.shift());
+  while (finalDf.length < 4 && remaining.length > 0) finalDf.push(remaining.shift());
+  const safeGk = finalGk || remaining.shift() || all[0];
 
   const tabs = [
     { id: "totw",     label: "ÉQUIPE DU TOUR", icon: <Star size={16}/> },
@@ -285,25 +352,28 @@ export default function ChampionsLeague() {
                 }} />
                 <UCLField />
                 
-                {/* Players */}
-                <PitchPlayer player={fws[0]} top="15%" left="25%" delay={0.1} onClick={() => fws[0] && setLocation(`/joueur/${encodeURIComponent(fws[0].Player)}`)} />
-                <PitchPlayer player={fws[1]} top="10%" left="50%" delay={0.15} onClick={() => fws[1] && setLocation(`/joueur/${encodeURIComponent(fws[1].Player)}`)} />
-                <PitchPlayer player={fws[2]} top="15%" left="75%" delay={0.1} onClick={() => fws[2] && setLocation(`/joueur/${encodeURIComponent(fws[2].Player)}`)} />
-                <PitchPlayer player={mfs[0]} top="40%" left="25%" delay={0.2} onClick={() => mfs[0] && setLocation(`/joueur/${encodeURIComponent(mfs[0].Player)}`)} />
-                <PitchPlayer player={mfs[1]} top="37%" left="50%" delay={0.25} onClick={() => mfs[1] && setLocation(`/joueur/${encodeURIComponent(mfs[1].Player)}`)} />
-                <PitchPlayer player={mfs[2]} top="40%" left="75%" delay={0.2} onClick={() => mfs[2] && setLocation(`/joueur/${encodeURIComponent(mfs[2].Player)}`)} />
-                <PitchPlayer player={dfs[0]} top="65%" left="15%" delay={0.3} onClick={() => dfs[0] && setLocation(`/joueur/${encodeURIComponent(dfs[0].Player)}`)} />
-                <PitchPlayer player={dfs[1]} top="62%" left="38%" delay={0.33} onClick={() => dfs[1] && setLocation(`/joueur/${encodeURIComponent(dfs[1].Player)}`)} />
-                <PitchPlayer player={dfs[2]} top="62%" left="62%" delay={0.33} onClick={() => dfs[2] && setLocation(`/joueur/${encodeURIComponent(dfs[2].Player)}`)} />
-                <PitchPlayer player={dfs[3]} top="65%" left="85%" delay={0.3} onClick={() => dfs[3] && setLocation(`/joueur/${encodeURIComponent(dfs[3].Player)}`)} />
-                <PitchPlayer player={gk}     top="85%" left="50%" delay={0.4} onClick={() => gk && setLocation(`/joueur/${encodeURIComponent(gk.Player)}`)} />
+                {/* Players (4-4-2) */}
+                <UCLPlayerCard player={finalFw[0]} top="6%" left="33%" onClick={() => finalFw[0] && setLocation(`/joueur/${encodeURIComponent(finalFw[0].Player)}`)} />
+                <UCLPlayerCard player={finalFw[1]} top="6%" left="67%" onClick={() => finalFw[1] && setLocation(`/joueur/${encodeURIComponent(finalFw[1].Player)}`)} />
+
+                <UCLPlayerCard player={finalMf[0]} top="30%" left="18%" onClick={() => finalMf[0] && setLocation(`/joueur/${encodeURIComponent(finalMf[0].Player)}`)} />
+                <UCLPlayerCard player={finalMf[1]} top="30%" left="39%" onClick={() => finalMf[1] && setLocation(`/joueur/${encodeURIComponent(finalMf[1].Player)}`)} />
+                <UCLPlayerCard player={finalMf[2]} top="30%" left="61%" onClick={() => finalMf[2] && setLocation(`/joueur/${encodeURIComponent(finalMf[2].Player)}`)} />
+                <UCLPlayerCard player={finalMf[3]} top="30%" left="82%" onClick={() => finalMf[3] && setLocation(`/joueur/${encodeURIComponent(finalMf[3].Player)}`)} />
+
+                <UCLPlayerCard player={finalDf[0]} top="54%" left="15%" onClick={() => finalDf[0] && setLocation(`/joueur/${encodeURIComponent(finalDf[0].Player)}`)} />
+                <UCLPlayerCard player={finalDf[1]} top="54%" left="38%" onClick={() => finalDf[1] && setLocation(`/joueur/${encodeURIComponent(finalDf[1].Player)}`)} />
+                <UCLPlayerCard player={finalDf[2]} top="54%" left="62%" onClick={() => finalDf[2] && setLocation(`/joueur/${encodeURIComponent(finalDf[2].Player)}`)} />
+                <UCLPlayerCard player={finalDf[3]} top="54%" left="85%" onClick={() => finalDf[3] && setLocation(`/joueur/${encodeURIComponent(finalDf[3].Player)}`)} />
+                
+                <UCLPlayerCard player={safeGk}     top="78%" left="45%" onClick={() => safeGk && setLocation(`/joueur/${encodeURIComponent(safeGk.Player)}`)} />
               </div>
 
               {/* Sidebar List */}
               <div className="glass-panel" style={{ borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
                   <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 24, fontWeight: 700, margin: 0, color: "#fff" }}>STARTING XI</h2>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: UCL_CYAN, marginTop: 4 }}>Formation: 4-3-3</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, color: UCL_CYAN, marginTop: 4 }}>Formation: 4-4-2</div>
                 </div>
                 <div style={{ overflowY: "auto", flex: 1, padding: "12px 0" }}>
                   {totwPlayers.map((p: any, i: number) => (

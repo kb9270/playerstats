@@ -256,28 +256,30 @@ export class CSVDirectAnalyzer {
 
   async searchPlayers(query: string): Promise<PlayerData[]> {
     await this.loadData();
-    const searchTerm = query.toLowerCase();
+    const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+    const searchTerm = normalize(query);
 
     return this.playersData.filter(player => 
-      player.Player?.toLowerCase().includes(searchTerm) ||
-      player.Squad?.toLowerCase().includes(searchTerm)
+      normalize(player.Player).includes(searchTerm) ||
+      normalize(player.Squad).includes(searchTerm)
     ).slice(0, 20);
   }
 
   async getPlayerByName(name: string): Promise<PlayerData | null> {
     await this.loadData();
-    const searchName = decodeURIComponent(name).trim().toLowerCase();
+    const normalize = (str: string) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : '';
+    const searchName = normalize(decodeURIComponent(name).trim());
     
     // Recherche exacte d'abord
     let player = this.playersData.find(player => 
-      player.Player?.trim().toLowerCase() === searchName
+      normalize(player.Player?.trim()) === searchName
     );
     
     // Si pas trouvé, recherche partielle
     if (!player) {
       player = this.playersData.find(player => 
-        player.Player?.trim().toLowerCase().includes(searchName) ||
-        searchName.includes(player.Player?.trim().toLowerCase() || '')
+        normalize(player.Player?.trim()).includes(searchName) ||
+        searchName.includes(normalize(player.Player?.trim()))
       );
     }
     
@@ -285,7 +287,7 @@ export class CSVDirectAnalyzer {
     if (!player) {
       const searchWords = searchName.split(' ').filter(word => word.length > 2);
       player = this.playersData.find(player => {
-        const playerName = player.Player?.trim().toLowerCase() || '';
+        const playerName = normalize(player.Player?.trim());
         return searchWords.every(word => playerName.includes(word));
       });
     }
