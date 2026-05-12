@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Trophy, Star, Target, Zap, ChevronLeft, Award } from "lucide-react";
+import { Star, Target, Zap, ChevronLeft, Award, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Header from "@/components/Header";
 
@@ -28,27 +28,26 @@ const UCL_TOTW_2526: any[] = [
   { Player: "Kylian Mbappé",        Squad: "Real Madrid",         Pos: "FW", rating: 9.5, sofaId: 826643 },
 ];
 
+// Static fallback seeds (used while loading or if API is blocked)
 const UCL_SCORERS_SEED = [
   { name: "Kylian Mbappé",    team: "Real Madrid",         goals: 15, sofaId: 826643 },
   { name: "Harry Kane",       team: "FC Bayern München",   goals: 14, sofaId: 108579 },
-  { name: "Khvicha Kvaratskhelia", team: "PSG",            goals: 10, sofaId: 889259 },
+  { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", goals: 10, sofaId: 889259 },
   { name: "Julián Álvarez",   team: "Atlético Madrid",     goals: 10, sofaId: 911571 },
   { name: "Anthony Gordon",   team: "Newcastle United",    goals: 10, sofaId: 866030 },
 ];
-
 const UCL_ASSISTERS_SEED = [
-  { name: "Khvicha Kvaratskhelia", team: "PSG",            assists: 7,  sofaId: 889259 },
-  { name: "Michael Olise",    team: "FC Bayern München",   assists: 6,  sofaId: 948496 },
-  { name: "Achraf Hakimi",    team: "Paris Saint-Germain", assists: 6,  sofaId: 852073 },
-  { name: "Kevin De Bruyne",  team: "Manchester City",     assists: 6,  sofaId: 164655 },
-  { name: "Lamine Yamal",     team: "FC Barcelone",        assists: 5,  sofaId: 1402912},
+  { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", assists: 7, sofaId: 889259 },
+  { name: "Michael Olise",    team: "FC Bayern München",   assists: 6, sofaId: 948496 },
+  { name: "Achraf Hakimi",    team: "Paris Saint-Germain", assists: 6, sofaId: 852073 },
+  { name: "Kevin De Bruyne",  team: "Manchester City",     assists: 6, sofaId: 164655 },
+  { name: "Lamine Yamal",     team: "FC Barcelone",        assists: 5, sofaId: 1402912 },
 ];
-
 const UCL_YOUNG_SEED = [
-  { name: "Lamine Yamal",        team: "FC Barcelone",        age: 18, rating: 8.08, sofaId: 1402912},
+  { name: "Lamine Yamal",        team: "FC Barcelone",        age: 18, rating: 8.08, sofaId: 1402912 },
   { name: "Jude Bellingham",     team: "Real Madrid",         age: 22, rating: 7.85, sofaId: 991011 },
-  { name: "Pau Cubarsí",         team: "FC Barcelone",        age: 19, rating: 7.72, sofaId: 1402913},
-  { name: "Warren Zaïre-Emery",  team: "PSG",                 age: 20, rating: 7.65, sofaId: 1395892},
+  { name: "Pau Cubarsí",         team: "FC Barcelone",        age: 19, rating: 7.72, sofaId: 1402913 },
+  { name: "Warren Zaïre-Emery",  team: "Paris Saint-Germain", age: 20, rating: 7.65, sofaId: 1395892 },
   { name: "Gavi",                team: "FC Barcelone",        age: 21, rating: 7.55, sofaId: 976566 },
 ];
 
@@ -205,13 +204,23 @@ export default function ChampionsLeague() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<"totw" | "scorers" | "assisters" | "young">("totw");
 
-  const { data: uclData } = useQuery<any>({ queryKey: ["/api/ucl/stats"], staleTime: 10 * 60_000 });
-  const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({ queryKey: ["/api/live/top-players"], staleTime: 5 * 60_000 });
+  // Live UCL rankings from SofaScore — refreshed every hour server-side
+  const { data: rankingsData, isLoading: rankingsLoading } = useQuery<any>({
+    queryKey: ["/api/ucl/rankings"],
+    staleTime: 55 * 60_000,  // re-fetch after 55 min client-side
+    refetchOnWindowFocus: false,
+  });
+  const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({
+    queryKey: ["/api/live/top-players"],
+    staleTime: 5 * 60_000,
+  });
 
   const totwPlayers = (totwData?.players && totwData.players.length >= 5) ? totwData.players : UCL_TOTW_2526;
-  const scorers   = uclData?.scorers?.length > 0 ? uclData.scorers : UCL_SCORERS_SEED;
-  const assisters = uclData?.assisters?.length > 0 ? uclData.assisters : UCL_ASSISTERS_SEED;
-  const young     = uclData?.young?.length > 0 ? uclData.young : UCL_YOUNG_SEED;
+  const scorers   = rankingsData?.scorers?.length   > 0 ? rankingsData.scorers   : UCL_SCORERS_SEED;
+  const assisters = rankingsData?.assisters?.length > 0 ? rankingsData.assisters : UCL_ASSISTERS_SEED;
+  const young     = rankingsData?.young?.length     > 0 ? rankingsData.young     : UCL_YOUNG_SEED;
+  const isLive    = !!rankingsData?.liveFromApi;
+  const lastUpdated = rankingsData?.lastUpdated ? new Date(rankingsData.lastUpdated) : null;
 
   // 4-4-2 Formation logic (same as BentoHome)
   const all = totwPlayers.slice(0, 11);
@@ -401,22 +410,55 @@ export default function ChampionsLeague() {
           {activeTab !== "totw" && (
             <motion.div key="stats" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4 }}>
               <div className="glass-panel" style={{ borderRadius: 16, overflow: "hidden" }}>
-                <div style={{ padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.2)" }}>
+                {/* Header with title + live badge */}
+                <div style={{ padding: "24px 32px", borderBottom: "1px solid rgba(255,255,255,0.1)", background: "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                   <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#fff" }}>
                     {activeTab === "scorers" ? "TOP SCORERS" : activeTab === "assisters" ? "TOP ASSISTERS" : "RISING STARS (U23)"}
                   </h2>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    {/* Live / Fallback badge */}
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "4px 12px", borderRadius: 100,
+                      background: isLive ? "rgba(0,229,255,0.12)" : "rgba(255,180,0,0.1)",
+                      border: `1px solid ${isLive ? UCL_CYAN : "rgba(255,180,0,0.4)"}`,
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+                      color: isLive ? UCL_CYAN : "#ffb400",
+                      fontFamily: "'Rajdhani', sans-serif",
+                    }}>
+                      {isLive
+                        ? <><Wifi size={12} /> LIVE SOFASCORE</>
+                        : <><WifiOff size={12} /> DONNÉES VÉRIFIÉES</>}
+                    </div>
+                    {/* Last updated */}
+                    {lastUpdated && (
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "'Inter', sans-serif" }}>
+                        MAJ {lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  {(activeTab === "scorers" ? scorers : activeTab === "assisters" ? assisters : young).map((p: any, i: number) => (
-                    <RankRow
-                      key={p.name} rank={i + 1} name={p.name} team={p.team}
-                      value={activeTab === "scorers" ? p.goals : activeTab === "assisters" ? p.assists : Number(p.rating?.toFixed(1))}
-                      valueLabel={activeTab === "scorers" ? "Buts" : activeTab === "assisters" ? "Passes" : "Note"}
-                      sofaId={p.sofaId} delay={i * 0.05}
-                      onClick={() => setLocation(`/joueur/${encodeURIComponent(p.name)}`)}
-                    />
-                  ))}
-                </div>
+
+                {/* Loading state */}
+                {rankingsLoading ? (
+                  <div style={{ padding: 80, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+                    <RefreshCw size={32} style={{ color: UCL_CYAN, animation: "spin 1s linear infinite" }} />
+                    <div style={{ color: "rgba(255,255,255,0.4)", fontFamily: "'Rajdhani', sans-serif", fontSize: 14, letterSpacing: "0.1em" }}>CHARGEMENT SOFASCORE...</div>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                  </div>
+                ) : (
+                  <div>
+                    {(activeTab === "scorers" ? scorers : activeTab === "assisters" ? assisters : young).map((p: any, i: number) => (
+                      <RankRow
+                        key={p.name} rank={i + 1} name={p.name} team={p.team}
+                        value={activeTab === "scorers" ? p.goals : activeTab === "assisters" ? p.assists : Number(p.rating?.toFixed(1))}
+                        valueLabel={activeTab === "scorers" ? "Buts" : activeTab === "assisters" ? "Passes Déc." : "Note Moy."}
+                        sofaId={p.sofaId} delay={i * 0.05}
+                        onClick={() => setLocation(`/joueur/${encodeURIComponent(p.name)}`)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

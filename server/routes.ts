@@ -904,6 +904,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ── UCL Live Rankings from SofaScore ──────────────────────────────────
+  // Returns top scorers, assisters, and young talents (≤23) for the current
+  // Champions League season, fetched live from SofaScore and cached 1h.
+  // Photos use verified sofaIds from the local CSV database.
+  let uclRankingsCache: { data: any; ts: number } | null = null;
+  const UCL_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+  /** Normalize a name for fuzzy matching: remove accents, lowercase, trim */
+  function normalizeName(name: string): string {
+    return (name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+
+  /**
+   * Given a player name from SofaScore, look up the verified sofascore_id
+   * stored in our local CSV database. Falls back to the API-provided id if
+   * no CSV match is found.
+   */
+  async function resolveSofaId(
+    playerName: string,
+    apiSofaId: number,
+    allCsvPlayers: any[]
+  ): Promise<number> {
+    const normalized = normalizeName(playerName);
+    const lastName   = normalized.split(" ").pop() || "";
+
+    const match = allCsvPlayers.find((p) => {
+      const pNorm     = normalizeName(p.Player || "");
+      const pLastName = pNorm.split(" ").pop() || "";
+      // Exact normalized match or shared last name (>3 chars)
+      return (
+        pNorm === normalized ||
+        pNorm.includes(normalized) ||
+        normalized.includes(pNorm) ||
+        (lastName.length > 3 && pLastName === lastName)
+      );
+    });
+
+    const csvId = match?.sofascore_id;
+    if (csvId && Number(csvId) > 1000) {
+      return Number(csvId);
+    }
+    return apiSofaId;
+  }
+
+  app.get("/api/ucl/rankings", async (_req, res) => {
+    try {
+      // Serve from cache if still fresh
+      if (uclRankingsCache && Date.now() - uclRankingsCache.ts < UCL_CACHE_TTL) {
+        console.log("⚡ [UCL Rankings] Served from cache");
+        return res.json(uclRankingsCache.data);
+      }
+
+      console.log("🌐 [UCL Rankings] Fetching fresh data from SofaScore...");
+
+      // Load local CSV players once to resolve sofaIds
+      const allCsvPlayers = await csvDirectAnalyzer.getAllPlayers();
+
+      const { scorers, assisters, young, liveFromApi } = await sofaScoreService.fetchUCLTopStats();
+
+      // ── Enrich each list: resolve sofaId from CSV, fetch UCL-specific stats ──
+      const UCL_TOURNAMENT_ID = 7;
+      const uclSeasonId = await sofaScoreService.getLatestSeasonId(UCL_TOURNAMENT_ID);
+
+      async function enrichPlayer(p: any, statKey: "goals" | "assists" | "rating"): Promise<any> {
+        // 1. Resolve photo ID from CSV
+        const resolvedSofaId = await resolveSofaId(p.name, p.sofaId, allCsvPlayers);
+
+        // 2. Fetch UCL-specific stats to get the correct per-competition value
+        let uclValue = p[statKey] ?? 0;
+        try {
+          const uclStats = await sofaScoreService.getPlayerStatistics(
+            resolvedSofaId,
+            UCL_TOURNAMENT_ID,
+            uclSeasonId
+          );
+          if (uclStats) {
+            if (statKey === "goals"   && uclStats.goals   != null) uclValue = uclStats.goals;
+            if (statKey === "assists" && uclStats.assists  != null) uclValue = uclStats.assists;
+            if (statKey === "rating"  && uclStats.rating   != null) uclValue = parseFloat(uclStats.rating.toFixed(2));
+          }
+        } catch {
+          // Keep original value from top-players API
+        }
+
+        return { ...p, sofaId: resolvedSofaId, [statKey]: uclValue };
+      }
+
+      const [enrichedScorers, enrichedAssisters, enrichedYoung] = await Promise.all([
+        Promise.all(scorers.map((p: any)   => enrichPlayer(p, "goals"))),
+        Promise.all(assisters.map((p: any) => enrichPlayer(p, "assists"))),
+        Promise.all(young.map((p: any)     => enrichPlayer(p, "rating"))),
+      ]);
+
+      // Re-sort after UCL-specific stats update
+      enrichedScorers.sort(  (a: any, b: any) => b.goals   - a.goals);
+      enrichedAssisters.sort((a: any, b: any) => b.assists - a.assists);
+      enrichedYoung.sort(    (a: any, b: any) => b.rating  - a.rating);
+
+      const result = {
+        scorers:   enrichedScorers,
+        assisters: enrichedAssisters,
+        young:     enrichedYoung,
+        liveFromApi,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      uclRankingsCache = { data: result, ts: Date.now() };
+      return res.json(result);
+    } catch (error: any) {
+      console.error("[UCL Rankings] Error:", error.message);
+      res.status(500).json({ error: "Failed to fetch UCL rankings" });
+    }
+  });
+
+  // Force-refresh UCL rankings cache (admin/debug)
+  app.post("/api/ucl/rankings/refresh", async (_req, res) => {
+    try {
+      uclRankingsCache = null;
+      // Invalidate and immediately rebuild
+      const response = await fetch(`http://localhost:${process.env.PORT || 5002}/api/ucl/rankings`);
+      const data = await response.json();
+      return res.json({ success: true, ...data });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // ── CSV League Players ─────────────────────────────────────────────────
   app.get("/api/csv/leagues/:name/players", async (req, res) => {
     try {
