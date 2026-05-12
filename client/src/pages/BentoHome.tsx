@@ -236,13 +236,13 @@ const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: 
           display: "flex", alignItems: "center", justifyContent: "center",
           overflow: "hidden"
         }}>
-          <div style={{ width: "100%", height: "100%", transform: "scale(1.18) translateY(4%)" }}>
+          <div style={{ width: "100%", height: "100%" }}>
             <PlayerAvatar
               playerName={player.Player || ""}
               teamName={player.Squad}
               sofaId={player.sofaId}
               size="md"
-              className="w-full h-full object-cover object-[center_top] bg-transparent border-none opacity-98"
+              className="w-full h-full object-cover bg-transparent border-none opacity-98"
             />
           </div>
         </div>

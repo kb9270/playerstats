@@ -15,41 +15,41 @@ const UCL_GLOW  = "rgba(0, 229, 255, 0.3)";
 
 // ─── Seed Data ──────────────────────────────────────────────
 const UCL_TOTW_2526: any[] = [
-  { Player: "Gianluigi Donnarumma", Squad: "Paris Saint-Germain", Pos: "GK", rating: 8.4, sofaId: 215998 },
+  { Player: "Gianluigi Donnarumma", Squad: "Paris Saint-Germain", Pos: "GK", rating: 8.4, sofaId: 838742 },
   { Player: "Achraf Hakimi",        Squad: "Paris Saint-Germain", Pos: "DF", rating: 8.1, sofaId: 852073 },
   { Player: "Virgil van Dijk",      Squad: "Liverpool",           Pos: "DF", rating: 8.3, sofaId: 80077  },
-  { Player: "Antonio Rüdiger",      Squad: "Real Madrid",         Pos: "DF", rating: 7.9, sofaId: 136939 },
+  { Player: "Antonio Rüdiger",      Squad: "Real Madrid",         Pos: "DF", rating: 7.9, sofaId: 216734 },
   { Player: "Alphonso Davies",      Squad: "Real Madrid",         Pos: "DF", rating: 7.8, sofaId: 875692 },
-  { Player: "Lamine Yamal",         Squad: "Barcelona",           Pos: "FW", rating: 9.2, sofaId: 1157638},
-  { Player: "Pedri",                Squad: "Barcelona",           Pos: "MF", rating: 8.5, sofaId: 977777 },
-  { Player: "Jude Bellingham",      Squad: "Real Madrid",         Pos: "MF", rating: 8.8, sofaId: 1157656},
-  { Player: "Vinícius Júnior",      Squad: "Real Madrid",         Pos: "FW", rating: 9.0, sofaId: 948666 },
-  { Player: "Erling Haaland",       Squad: "Manchester City",     Pos: "FW", rating: 9.1, sofaId: 839956 },
-  { Player: "Rafael Leão",          Squad: "AC Milan",            Pos: "FW", rating: 8.6, sofaId: 910948 },
+  { Player: "Lamine Yamal",         Squad: "FC Barcelone",        Pos: "FW", rating: 9.2, sofaId: 1402912},
+  { Player: "Jude Bellingham",      Squad: "Real Madrid",         Pos: "MF", rating: 8.8, sofaId: 991011 },
+  { Player: "Ousmane Dembélé",      Squad: "Paris Saint-Germain", Pos: "FW", rating: 8.7, sofaId: 825126 },
+  { Player: "Vinícius Júnior",      Squad: "Real Madrid",         Pos: "FW", rating: 9.0, sofaId: 868812 },
+  { Player: "Harry Kane",           Squad: "Bayern Munich",       Pos: "FW", rating: 9.3, sofaId: 108579 },
+  { Player: "Kylian Mbappé",        Squad: "Real Madrid",         Pos: "FW", rating: 9.5, sofaId: 826643 },
 ];
 
 const UCL_SCORERS_SEED = [
-  { name: "Erling Haaland",   team: "Manchester City",     goals: 14, sofaId: 839956 },
-  { name: "Kylian Mbappé",    team: "Real Madrid",         goals: 12, sofaId: 1403848},
-  { name: "Vinícius Júnior",  team: "Real Madrid",         goals: 11, sofaId: 948666 },
-  { name: "Lamine Yamal",     team: "Barcelona",           goals: 9,  sofaId: 1157638},
-  { name: "Jude Bellingham",  team: "Real Madrid",         goals: 8,  sofaId: 1157656},
+  { name: "Kylian Mbappé",    team: "Real Madrid",         goals: 15, sofaId: 826643 },
+  { name: "Harry Kane",       team: "FC Bayern München",   goals: 14, sofaId: 108579 },
+  { name: "Khvicha Kvaratskhelia", team: "PSG",            goals: 10, sofaId: 889259 },
+  { name: "Julián Álvarez",   team: "Atlético Madrid",     goals: 10, sofaId: 911571 },
+  { name: "Anthony Gordon",   team: "Newcastle United",    goals: 10, sofaId: 866030 },
 ];
 
 const UCL_ASSISTERS_SEED = [
-  { name: "Lamine Yamal",     team: "Barcelona",           assists: 9,  sofaId: 1157638},
-  { name: "Kevin De Bruyne",  team: "Manchester City",     assists: 8,  sofaId: 164655 },
-  { name: "Vinícius Júnior",  team: "Real Madrid",         assists: 7,  sofaId: 948666 },
-  { name: "Erling Haaland",   team: "Manchester City",     assists: 6,  sofaId: 839956 },
+  { name: "Khvicha Kvaratskhelia", team: "PSG",            assists: 7,  sofaId: 889259 },
+  { name: "Michael Olise",    team: "FC Bayern München",   assists: 6,  sofaId: 948496 },
   { name: "Achraf Hakimi",    team: "Paris Saint-Germain", assists: 6,  sofaId: 852073 },
+  { name: "Kevin De Bruyne",  team: "Manchester City",     assists: 6,  sofaId: 164655 },
+  { name: "Lamine Yamal",     team: "FC Barcelone",        assists: 5,  sofaId: 1402912},
 ];
 
 const UCL_YOUNG_SEED = [
-  { name: "Lamine Yamal",        team: "Barcelona",           age: 17, rating: 9.2, sofaId: 1157638},
-  { name: "Jude Bellingham",     team: "Real Madrid",         age: 21, rating: 8.8, sofaId: 1157656},
-  { name: "Pedri",               team: "Barcelona",           age: 22, rating: 8.5, sofaId: 977777 },
-  { name: "Alphonso Davies",     team: "Real Madrid",         age: 24, rating: 7.8, sofaId: 875692 },
-  { name: "Gavi",                team: "Barcelona",           age: 20, rating: 7.7, sofaId: 976566 },
+  { name: "Lamine Yamal",        team: "FC Barcelone",        age: 18, rating: 8.08, sofaId: 1402912},
+  { name: "Jude Bellingham",     team: "Real Madrid",         age: 22, rating: 7.85, sofaId: 991011 },
+  { name: "Pau Cubarsí",         team: "FC Barcelone",        age: 19, rating: 7.72, sofaId: 1402913},
+  { name: "Warren Zaïre-Emery",  team: "PSG",                 age: 20, rating: 7.65, sofaId: 1395892},
+  { name: "Gavi",                team: "FC Barcelone",        age: 21, rating: 7.55, sofaId: 976566 },
 ];
 
 // ─── Starball SVG watermark ──────────────────────────────
@@ -132,13 +132,13 @@ const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: strin
           display: "flex", alignItems: "center", justifyContent: "center",
           overflow: "hidden"
         }}>
-          <div style={{ width: "100%", height: "100%", transform: "scale(1.18) translateY(4%)" }}>
+          <div style={{ width: "100%", height: "100%" }}>
             <PlayerAvatar
               playerName={player.Player || ""}
               teamName={player.Squad}
               sofaId={player.sofaId}
               size="md"
-              className="w-full h-full object-cover object-[center_top] bg-transparent border-none opacity-98"
+              className="w-full h-full object-cover bg-transparent border-none opacity-98"
             />
           </div>
         </div>

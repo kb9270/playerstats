@@ -113,12 +113,12 @@ export default function PlayerAvatar({
   const shapeClass = isCircle ? "rounded-full" : "rounded-xl";
 
   return (
-    <div className={`relative shrink-0 ${s.avatar} ${className}`}>
+    <div className={`relative shrink-0 ${s.avatar} ${className} overflow-hidden`}>
       {headshot ? (
         <img
           src={headshot}
           alt={playerName}
-          className={`w-full h-full ${shapeClass} object-cover object-[center_top] bg-gray-800 border border-gray-700/50 block`}
+          className={`w-full h-full ${shapeClass} object-cover object-[center_12%] bg-gray-800 border border-gray-700/50 block scale-[1.15] translate-y-[5%]`}
           onError={(e) => {
             // Fallback to silhouette on broken image
             const el = e.target as HTMLImageElement;
