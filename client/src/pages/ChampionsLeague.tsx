@@ -207,7 +207,8 @@ export default function ChampionsLeague() {
   // Live UCL rankings from SofaScore — refreshed every hour server-side
   const { data: rankingsData, isLoading: rankingsLoading } = useQuery<any>({
     queryKey: ["/api/ucl/rankings"],
-    staleTime: 55 * 60_000,  // re-fetch after 55 min client-side
+    staleTime: 0,         // Always re-fetch from server (server caches for 1h)
+    gcTime: 0,            // Don't persist stale data in memory
     refetchOnWindowFocus: false,
   });
   const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({
@@ -215,7 +216,7 @@ export default function ChampionsLeague() {
     staleTime: 5 * 60_000,
   });
 
-  const totwPlayers = (totwData?.players && totwData.players.length >= 5) ? totwData.players : UCL_TOTW_2526;
+  const totwPlayers = UCL_TOTW_2526;
   const scorers   = rankingsData?.scorers?.length   > 0 ? rankingsData.scorers   : UCL_SCORERS_SEED;
   const assisters = rankingsData?.assisters?.length > 0 ? rankingsData.assisters : UCL_ASSISTERS_SEED;
   const young     = rankingsData?.young?.length     > 0 ? rankingsData.young     : UCL_YOUNG_SEED;
