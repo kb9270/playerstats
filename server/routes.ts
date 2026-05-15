@@ -962,6 +962,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allCsvPlayers = await csvDirectAnalyzer.getAllPlayers();
 
       const { scorers, assisters, young, liveFromApi } = await sofaScoreService.fetchUCLTopStats();
+      const totwRaw = await sofaScoreService.fetchUCLTeamOfTheWeek();
+
 
       // ── Enrich each list: resolve sofaId from CSV, fetch UCL-specific stats ──
       const UCL_TOURNAMENT_ID = 7;
@@ -991,11 +993,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return { ...p, sofaId: resolvedSofaId, [statKey]: uclValue };
       }
 
-      const [enrichedScorers, enrichedAssisters, enrichedYoung] = await Promise.all([
-        Promise.all(scorers.map((p: any)   => enrichPlayer(p, "goals"))),
-        Promise.all(assisters.map((p: any) => enrichPlayer(p, "assists"))),
-        Promise.all(young.map((p: any)     => enrichPlayer(p, "rating"))),
-      ]);
+      const enrichedScorers = [];
+      for (const p of scorers) {
+        enrichedScorers.push(await enrichPlayer(p, "goals"));
+      }
+
+      const enrichedAssisters = [];
+      for (const p of assisters) {
+        enrichedAssisters.push(await enrichPlayer(p, "assists"));
+      }
+
+      const enrichedYoung = [];
+      for (const p of young) {
+        enrichedYoung.push(await enrichPlayer(p, "rating"));
+      }
+
+      const enrichedTotw = [];
+      for (const p of totwRaw) {
+        // For TOTW, we just resolve the ID for photos, we don't need competition-specific enrichment 
+        // as the TOTW already comes from the correct period.
+        const resolvedId = await resolveSofaId(p.Player, p.sofaId, allCsvPlayers);
+        enrichedTotw.push({ ...p, sofaId: resolvedId });
+      }
+
 
       // Re-sort after UCL-specific stats update
       enrichedScorers.sort(  (a: any, b: any) => b.goals   - a.goals);
@@ -1006,9 +1026,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         scorers:   enrichedScorers,
         assisters: enrichedAssisters,
         young:     enrichedYoung,
+        totw:      enrichedTotw,
         liveFromApi,
         lastUpdated: new Date().toISOString(),
       };
+
 
       uclRankingsCache = { data: result, ts: Date.now() };
       return res.json(result);

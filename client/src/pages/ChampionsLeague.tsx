@@ -14,18 +14,18 @@ const UCL_WHITE = "#FFFFFF";
 const UCL_GLOW  = "rgba(0, 229, 255, 0.3)";
 
 // ─── Seed Data ──────────────────────────────────────────────
-const UCL_TOTW_2526: any[] = [
-  { Player: "Gianluigi Donnarumma", Squad: "Paris Saint-Germain", Pos: "GK", rating: 8.4, sofaId: 838742 },
-  { Player: "Achraf Hakimi",        Squad: "Paris Saint-Germain", Pos: "DF", rating: 8.1, sofaId: 852073 },
-  { Player: "Virgil van Dijk",      Squad: "Liverpool",           Pos: "DF", rating: 8.3, sofaId: 80077  },
-  { Player: "Antonio Rüdiger",      Squad: "Real Madrid",         Pos: "DF", rating: 7.9, sofaId: 216734 },
-  { Player: "Alphonso Davies",      Squad: "Real Madrid",         Pos: "DF", rating: 7.8, sofaId: 875692 },
-  { Player: "Lamine Yamal",         Squad: "FC Barcelone",        Pos: "FW", rating: 9.2, sofaId: 1402912},
-  { Player: "Jude Bellingham",      Squad: "Real Madrid",         Pos: "MF", rating: 8.8, sofaId: 991011 },
-  { Player: "Ousmane Dembélé",      Squad: "Paris Saint-Germain", Pos: "FW", rating: 8.7, sofaId: 825126 },
-  { Player: "Vinícius Júnior",      Squad: "Real Madrid",         Pos: "FW", rating: 9.0, sofaId: 868812 },
-  { Player: "Harry Kane",           Squad: "Bayern Munich",       Pos: "FW", rating: 9.3, sofaId: 108579 },
-  { Player: "Kylian Mbappé",        Squad: "Real Madrid",         Pos: "FW", rating: 9.5, sofaId: 826643 },
+const UCL_TOTW_2526 = [
+  { Player: "Manuel Neuer", Squad: "Bayern Munich", Pos: "GK", rating: 8.8, sofaId: 8959 },
+  { Player: "Ben White", Squad: "Arsenal", Pos: "DF", rating: 7.1, sofaId: 846036 },
+  { Player: "William Saliba", Squad: "Arsenal", Pos: "DF", rating: 7.1, sofaId: 941168 },
+  { Player: "Willian Pacho", Squad: "PSG", Pos: "DF", rating: 7.1, sofaId: 979480 },
+  { Player: "Alphonso Davies", Squad: "Bayern Munich", Pos: "DF", rating: 7.6, sofaId: 843665 },
+  { Player: "Declan Rice", Squad: "Arsenal", Pos: "MF", rating: 7.8, sofaId: 856714 },
+  { Player: "Luis Díaz", Squad: "Bayern Munich", Pos: "MF", rating: 7.8, sofaId: 883537 },
+  { Player: "Khvicha Kvaratskhelia", Squad: "PSG", Pos: "FW", rating: 7.9, sofaId: 889259 },
+  { Player: "Leandro Trossard", Squad: "Arsenal", Pos: "FW", rating: 7.5, sofaId: 135666 },
+  { Player: "Ousmane Dembélé", Squad: "PSG", Pos: "FW", rating: 7.5, sofaId: 818244 },
+  { Player: "Harry Kane", Squad: "Bayern Munich", Pos: "FW", rating: 7.8, sofaId: 108579 },
 ];
 
 // Static fallback seeds (used while loading or if API is blocked)
@@ -160,7 +160,7 @@ const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: strin
         fontFamily: "'Saira Extra Condensed', sans-serif",
         letterSpacing: "0.02em"
       }}>
-        {player.Player?.split(" ").pop() || "NAME"}
+        {String(player?.Player || player?.name || "NAME").split(" ").pop()}
       </div>
     </motion.div>
   );
@@ -211,42 +211,34 @@ export default function ChampionsLeague() {
     gcTime: 0,            // Don't persist stale data in memory
     refetchOnWindowFocus: false,
   });
-  const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({
-    queryKey: ["/api/live/top-players"],
-    staleTime: 5 * 60_000,
-  });
-
-  const totwPlayers = UCL_TOTW_2526;
+  const totwPlayers = (rankingsData?.totw?.length >= 5) ? rankingsData.totw : UCL_TOTW_2526;
   const scorers   = rankingsData?.scorers?.length   > 0 ? rankingsData.scorers   : UCL_SCORERS_SEED;
   const assisters = rankingsData?.assisters?.length > 0 ? rankingsData.assisters : UCL_ASSISTERS_SEED;
   const young     = rankingsData?.young?.length     > 0 ? rankingsData.young     : UCL_YOUNG_SEED;
   const isLive    = !!rankingsData?.liveFromApi;
   const lastUpdated = rankingsData?.lastUpdated ? new Date(rankingsData.lastUpdated) : null;
 
-  // 4-4-2 Formation logic (same as BentoHome)
+  // 4-4-2 Formation logic (Manual distribution as requested)
   const all = totwPlayers.slice(0, 11);
-  const findByName = (name: string) => all.find(p => p.Player?.toLowerCase().includes(name.toLowerCase()));
   
-  const dembele = findByName("Dembélé");
-  const kane = findByName("Kane");
+  const attackers = all.filter(p => ["FW", "F", "ST", "ATT"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+  const goalies = all.filter(p => ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+  const defenders = all.filter(p => ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+
+  const finalGk = all.find(p => p.Player?.includes("Neuer")) || goalies[0] || all[0];
   
-  const attackers = [dembele, kane].filter(Boolean);
-  const goalies = all.filter(p => !attackers.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
-  const defenders = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
-  const mid = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && !defenders.includes(p));
+  const lb = all.find(p => p.Player?.includes("Davies")) || defenders[0];
+  const cb1 = all.find(p => p.Player?.includes("Saliba")) || defenders[1];
+  const cb2 = all.find(p => p.Player?.includes("Pacho")) || defenders[2];
+  const rb = all.find(p => p.Player?.includes("White")) || defenders[3];
+  const finalDf = [lb, cb1, cb2, rb];
 
-  const finalFw = [...attackers];
-  const finalDf = [...defenders];
-  const finalGk = goalies[0] || null;
-  const finalMf = [...mid.slice(0, 4)];
+  const fwLeft = all.find(p => p?.Player?.includes("Dembélé")) || attackers[0];
+  const fwRight = all.find(p => p?.Player?.includes("Kane")) || attackers[1];
+  const finalFw = [fwLeft, fwRight].filter(Boolean);
 
-  const usedIdx = new Set([...finalFw, ...finalMf, ...finalDf, finalGk].filter(Boolean).map(p => all.indexOf(p)));
-  const remaining = all.filter((_, i) => !usedIdx.has(i));
-
-  while (finalFw.length < 2 && remaining.length > 0) finalFw.push(remaining.shift());
-  while (finalMf.length < 4 && remaining.length > 0) finalMf.push(remaining.shift());
-  while (finalDf.length < 4 && remaining.length > 0) finalDf.push(remaining.shift());
-  const safeGk = finalGk || remaining.shift() || all[0];
+  const usedIds = new Set([finalGk, ...finalDf, ...finalFw].filter(Boolean).map(p => p?.Player || ""));
+  const finalMf = all.filter(p => p && !usedIds.has(p.Player || "")).slice(0, 4);
 
   const tabs = [
     { id: "totw",     label: "ÉQUIPE DU TOUR", icon: <Star size={16}/> },
@@ -363,20 +355,21 @@ export default function ChampionsLeague() {
                 <UCLField />
                 
                 {/* Players (4-4-2) */}
-                <UCLPlayerCard player={finalFw[0]} top="6%" left="33%" onClick={() => finalFw[0] && setLocation(`/joueur/${encodeURIComponent(finalFw[0].Player)}`)} />
-                <UCLPlayerCard player={finalFw[1]} top="6%" left="67%" onClick={() => finalFw[1] && setLocation(`/joueur/${encodeURIComponent(finalFw[1].Player)}`)} />
+                {/* Players (4-4-2) */}
+                <UCLPlayerCard player={finalFw[0]} top="6%" left="30%" onClick={() => finalFw[0] && setLocation(`/joueur/${encodeURIComponent(finalFw[0].Player)}`)} />
+                <UCLPlayerCard player={finalFw[1]} top="6%" left="60%" onClick={() => finalFw[1] && setLocation(`/joueur/${encodeURIComponent(finalFw[1].Player)}`)} />
 
-                <UCLPlayerCard player={finalMf[0]} top="30%" left="18%" onClick={() => finalMf[0] && setLocation(`/joueur/${encodeURIComponent(finalMf[0].Player)}`)} />
-                <UCLPlayerCard player={finalMf[1]} top="30%" left="39%" onClick={() => finalMf[1] && setLocation(`/joueur/${encodeURIComponent(finalMf[1].Player)}`)} />
-                <UCLPlayerCard player={finalMf[2]} top="30%" left="61%" onClick={() => finalMf[2] && setLocation(`/joueur/${encodeURIComponent(finalMf[2].Player)}`)} />
-                <UCLPlayerCard player={finalMf[3]} top="30%" left="82%" onClick={() => finalMf[3] && setLocation(`/joueur/${encodeURIComponent(finalMf[3].Player)}`)} />
+                <UCLPlayerCard player={finalMf[0]} top="26%" left="13%" onClick={() => finalMf[0] && setLocation(`/joueur/${encodeURIComponent(finalMf[0].Player)}`)} />
+                <UCLPlayerCard player={finalMf[1]} top="26%" left="34%" onClick={() => finalMf[1] && setLocation(`/joueur/${encodeURIComponent(finalMf[1].Player)}`)} />
+                <UCLPlayerCard player={finalMf[2]} top="26%" left="56%" onClick={() => finalMf[2] && setLocation(`/joueur/${encodeURIComponent(finalMf[2].Player)}`)} />
+                <UCLPlayerCard player={finalMf[3]} top="26%" left="77%" onClick={() => finalMf[3] && setLocation(`/joueur/${encodeURIComponent(finalMf[3].Player)}`)} />
 
-                <UCLPlayerCard player={finalDf[0]} top="54%" left="15%" onClick={() => finalDf[0] && setLocation(`/joueur/${encodeURIComponent(finalDf[0].Player)}`)} />
-                <UCLPlayerCard player={finalDf[1]} top="54%" left="38%" onClick={() => finalDf[1] && setLocation(`/joueur/${encodeURIComponent(finalDf[1].Player)}`)} />
-                <UCLPlayerCard player={finalDf[2]} top="54%" left="62%" onClick={() => finalDf[2] && setLocation(`/joueur/${encodeURIComponent(finalDf[2].Player)}`)} />
-                <UCLPlayerCard player={finalDf[3]} top="54%" left="85%" onClick={() => finalDf[3] && setLocation(`/joueur/${encodeURIComponent(finalDf[3].Player)}`)} />
+                <UCLPlayerCard player={finalDf[0]} top="52%" left="10%" onClick={() => finalDf[0] && setLocation(`/joueur/${encodeURIComponent(finalDf[0].Player)}`)} />
+                <UCLPlayerCard player={finalDf[1]} top="52%" left="33%" onClick={() => finalDf[1] && setLocation(`/joueur/${encodeURIComponent(finalDf[1].Player)}`)} />
+                <UCLPlayerCard player={finalDf[2]} top="52%" left="57%" onClick={() => finalDf[2] && setLocation(`/joueur/${encodeURIComponent(finalDf[2].Player)}`)} />
+                <UCLPlayerCard player={finalDf[3]} top="52%" left="80%" onClick={() => finalDf[3] && setLocation(`/joueur/${encodeURIComponent(finalDf[3].Player)}`)} />
                 
-                <UCLPlayerCard player={safeGk}     top="78%" left="45%" onClick={() => safeGk && setLocation(`/joueur/${encodeURIComponent(safeGk.Player)}`)} />
+                <UCLPlayerCard player={finalGk}    top="76%" left="45%" onClick={() => finalGk && setLocation(`/joueur/${encodeURIComponent(finalGk.Player)}`)} />
               </div>
 
               {/* Sidebar List */}

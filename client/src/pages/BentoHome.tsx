@@ -7,6 +7,108 @@ import PlayerAvatar from "@/components/PlayerAvatar";
 import NavBar from "@/components/NavBar";
 
 /* ─── Framer Motion variants ────────────────────────────── */
+const UCL_TOTW_2526 = [
+  { Player: "Manuel Neuer", Squad: "Bayern Munich", Pos: "GK", rating: 8.8, sofaId: 8959 },
+  { Player: "Ben White", Squad: "Arsenal", Pos: "DF", rating: 7.1, sofaId: 846036 },
+  { Player: "William Saliba", Squad: "Arsenal", Pos: "DF", rating: 7.1, sofaId: 941168 },
+  { Player: "Willian Pacho", Squad: "PSG", Pos: "DF", rating: 7.1, sofaId: 979480 },
+  { Player: "Alphonso Davies", Squad: "Bayern Munich", Pos: "DF", rating: 7.6, sofaId: 843665 },
+  { Player: "Declan Rice", Squad: "Arsenal", Pos: "MF", rating: 7.8, sofaId: 856714 },
+  { Player: "Luis Díaz", Squad: "Bayern Munich", Pos: "MF", rating: 7.8, sofaId: 883537 },
+  { Player: "Khvicha Kvaratskhelia", Squad: "PSG", Pos: "FW", rating: 7.9, sofaId: 889259 },
+  { Player: "Leandro Trossard", Squad: "Arsenal", Pos: "FW", rating: 7.5, sofaId: 135666 },
+  { Player: "Ousmane Dembélé", Squad: "PSG", Pos: "FW", rating: 7.5, sofaId: 818244 },
+  { Player: "Harry Kane", Squad: "Bayern Munich", Pos: "FW", rating: 7.8, sofaId: 108579 },
+];
+
+const UCL_CYAN  = "#00E5FF";
+
+// ─── Player Token (Pitch) ────────────────────────────────
+const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: string; left: string; onClick?: () => void }) => {
+  if (!player) return null;
+  const teamId = player.teamId || 0;
+  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.15, zIndex: 100 }}
+      onClick={onClick}
+      style={{
+        position: "absolute", top, left, transform: "translate(-50%, -50%)",
+        display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10,
+        cursor: "pointer"
+      }}
+    >
+      {/* Club Logo Badge */}
+      {teamLogo && (
+        <div style={{
+          position: "absolute", top: -8, left: -26,
+          width: 32, height: 32,
+          background: "white",
+          borderRadius: "50%",
+          padding: 2,
+          boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
+          zIndex: 30,
+          border: "1.5px solid #0043ff"
+        }}>
+          <img src={teamLogo} alt={player.Squad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+        </div>
+      )}
+
+      {/* The Hexagon Shield with Neon Gradient Border */}
+      <div style={{
+        position: "relative",
+        width: 68, height: 82,
+        padding: "2.1px",
+        background: "linear-gradient(45deg, #A855F7, #06B6D4)", 
+        clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 10px 24px rgba(0,0,0,0.8)",
+      }}>
+        <div style={{
+          width: "100%", height: "100%",
+          background: "linear-gradient(180deg, #0043FF 0%, #001A4D 100%)",
+          clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          overflow: "hidden"
+        }}>
+          <div style={{ width: "100%", height: "100%" }}>
+            <PlayerAvatar
+              playerName={player.Player || player.name || ""}
+              teamName={player.Squad || player.team}
+              sofaId={player.sofaId}
+              size="md"
+              className="w-full h-full object-cover bg-transparent border-none opacity-98"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Name Label */}
+      <div style={{
+        marginTop: -16,
+        background: "white",
+        color: "#000B29",
+        width: 82,
+        height: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 11,
+        fontWeight: 900,
+        textTransform: "uppercase",
+        boxShadow: "0 8px 18px rgba(0,0,0,0.6)",
+        zIndex: 20,
+        border: "1.2px solid #0043ff",
+        fontFamily: "'Saira Extra Condensed', sans-serif",
+        letterSpacing: "0.02em"
+      }}>
+        {String(player?.Player || player?.name || "NAME").split(" ").pop()}
+      </div>
+    </motion.div>
+  );
+};
+
 const containerVariants = {
   hidden: {},
   show: {
@@ -187,89 +289,6 @@ const FieldLines = () => (
   </svg>
 );
  
-const UCLPlayerCard = ({ player, top, left }: { player: any; top: string; left: string }) => {
-  if (!player) return null;
-  const teamId = player.teamId || 0;
-  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ scale: 1.15, zIndex: 100 }}
-      style={{
-        position: "absolute", top, left, transform: "translate(-50%, -50%)",
-        display: "flex", flexDirection: "column", alignItems: "center", zIndex: 10,
-        cursor: "pointer"
-      }}
-    >
-      {/* Club Logo Badge - 10 o'clock angle */}
-      {teamLogo && (
-        <div style={{
-          position: "absolute", top: -8, left: -26,
-          width: 32, height: 32,
-          background: "white",
-          borderRadius: "50%",
-          padding: 2,
-          boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
-          zIndex: 30,
-          border: "1.5px solid #0043ff"
-        }}>
-          <img src={teamLogo} alt={player.Squad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-        </div>
-      )}
-
-      {/* The Hexagon Shield with Neon Gradient Border */}
-      <div style={{
-        position: "relative",
-        width: 68, height: 82,
-        padding: "2.1px",
-        background: "linear-gradient(45deg, #A855F7, #06B6D4)", 
-        clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "0 10px 24px rgba(0,0,0,0.8)",
-      }}>
-        <div style={{
-          width: "100%", height: "100%",
-          background: "linear-gradient(180deg, #0043FF 0%, #001A4D 100%)",
-          clipPath: "polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          overflow: "hidden"
-        }}>
-          <div style={{ width: "100%", height: "100%" }}>
-            <PlayerAvatar
-              playerName={player.Player || ""}
-              teamName={player.Squad}
-              sofaId={player.sofaId}
-              size="md"
-              className="w-full h-full object-cover bg-transparent border-none opacity-98"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Name Label - Elevated white box with bold Condensed Font */}
-      <div style={{
-        marginTop: -16,
-        background: "white",
-        color: "#000B29",
-        width: 82,
-        height: 20,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 11,
-        fontWeight: 900,
-        textTransform: "uppercase",
-        boxShadow: "0 8px 18px rgba(0,0,0,0.6)",
-        zIndex: 20,
-        border: "1.2px solid #0043ff",
-        fontFamily: "'Saira Extra Condensed', sans-serif",
-        letterSpacing: "0.02em"
-      }}>
-        {player.Player?.split(" ").pop() || "NAME"}
-      </div>
-    </motion.div>
-  );
-};
 
 /* ─── League Widget Primitive ──────────────────────────── */
 function LeagueWidget({
@@ -785,8 +804,8 @@ export default function BentoHome() {
   const [, setLocation] = useLocation();
 
   /* Data hooks */
-  const { data: totwData } = useQuery<{ success: boolean; players: any[] }>({
-    queryKey: ["/api/live/top-players"],
+  const { data: totwData } = useQuery<{ success: boolean; totw: any[] }>({
+    queryKey: ["/api/ucl/rankings"],
     staleTime: 5 * 60_000,
   });
   const { data: matchesData } = useQuery<any[]>({
@@ -842,7 +861,7 @@ export default function BentoHome() {
 
 
 
-  const players = totwData?.players || [];
+  const players = (totwData?.totw && totwData.totw.length >= 5) ? totwData.totw : UCL_TOTW_2526;
   const topPlayer = players[0];
   
   // Tactical layout for TOTW (4-3-3)
@@ -1421,57 +1440,54 @@ export default function BentoHome() {
 
                 {/* Professional Player Rendering (4-4-2) */}
                 {(() => {
-                  const all = players.slice(0, 11);
+                  const all = players.length >= 11 ? players.slice(0, 11) : [];
                   if (all.length === 0) return (
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.2)" }}>
                       Chargement des données SofaScore...
                     </div>
                   );
                   
-                  // Specific logic for 4-4-2 with Dembele and Kane
-                  const findByName = (name: string) => all.find(p => p.Player?.toLowerCase().includes(name.toLowerCase()));
+                  const attackers = all.filter(p => ["FW", "F", "ST", "ATT"].some(tag => p.Pos?.toUpperCase().includes(tag)));
+                  const goalies = all.filter(p => ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase().includes(tag)));
+                  const defenders = all.filter(p => ["D", "DF", "B"].some(tag => p.Pos?.toUpperCase().includes(tag)));
+                  const mids = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && !defenders.includes(p));
+
+                  // Manual assignment for the requested layout
+                  const finalGk = all.find(p => p.Player?.includes("Neuer") || p.name?.includes("Neuer")) || goalies[0] || all[0];
                   
-                  const dembele = findByName("Dembélé");
-                  const kane = findByName("Kane");
-                  
-                  const attackers = [dembele, kane].filter(Boolean);
-                  const goalies = all.filter(p => !attackers.includes(p) && ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 1);
-                  const defenders = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag))).slice(0, 4);
-                  const mid = all.filter(p => !attackers.includes(p) && !goalies.includes(p) && !defenders.includes(p));
+                  const lb = all.find(p => p.Player?.includes("Davies") || p.name?.includes("Davies")) || defenders[0];
+                  const cb1 = all.find(p => p.Player?.includes("Saliba") || p.name?.includes("Saliba")) || defenders[1];
+                  const cb2 = all.find(p => p.Player?.includes("Pacho") || p.name?.includes("Pacho")) || defenders[2];
+                  const rb = all.find(p => p.Player?.includes("White") || p.name?.includes("White")) || defenders[3];
+                  const finalDf = [lb, cb1, cb2, rb];
 
-                  const finalFw = [...attackers];
-                  const finalDf = [...defenders];
-                  const finalGk = goalies[0] || null;
-                  const finalMf = [...mid.slice(0, 4)];
+                  const fwLeft = all.find(p => p?.Player?.includes("Dembélé") || p?.name?.includes("Dembélé")) || attackers[0];
+                  const fwRight = all.find(p => p?.Player?.includes("Kane") || p?.name?.includes("Kane")) || attackers[1];
+                  const finalFw = [fwLeft, fwRight].filter(Boolean);
 
-                  const usedIdx = new Set([...finalFw, ...finalMf, ...finalDf, finalGk].filter(Boolean).map(p => all.indexOf(p)));
-                  const remaining = all.filter((_, i) => !usedIdx.has(i));
-
-                  while (finalFw.length < 2 && remaining.length > 0) finalFw.push(remaining.shift());
-                  while (finalMf.length < 4 && remaining.length > 0) finalMf.push(remaining.shift());
-                  while (finalDf.length < 4 && remaining.length > 0) finalDf.push(remaining.shift());
-                  const safeGk = finalGk || remaining.shift() || all[0];
+                  const usedIds = new Set([finalGk, ...finalDf, ...finalFw].filter(Boolean).map(p => p?.Player || p?.name || ""));
+                  const finalMf = all.filter(p => p && !usedIds.has(p.Player || p.name || "")).slice(0, 4);
 
                   return (
                     <div style={{ position: "absolute", inset: 0 }}>
                       {/* Forwards (2) */}
-                      <UCLPlayerCard player={finalFw[0]} top="6%" left="33%" />
-                      <UCLPlayerCard player={finalFw[1]} top="6%" left="67%" />
+                      <UCLPlayerCard player={finalFw[0]} top="6%" left="30%" />
+                      <UCLPlayerCard player={finalFw[1]} top="6%" left="60%" />
 
                       {/* Midfielders (4) */}
-                      <UCLPlayerCard player={finalMf[0]} top="30%" left="18%" />
-                      <UCLPlayerCard player={finalMf[1]} top="30%" left="39%" />
-                      <UCLPlayerCard player={finalMf[2]} top="30%" left="61%" />
-                      <UCLPlayerCard player={finalMf[3]} top="30%" left="82%" />
+                      <UCLPlayerCard player={finalMf[0]} top="26%" left="13%" />
+                      <UCLPlayerCard player={finalMf[1]} top="26%" left="34%" />
+                      <UCLPlayerCard player={finalMf[2]} top="26%" left="56%" />
+                      <UCLPlayerCard player={finalMf[3]} top="26%" left="77%" />
 
                       {/* Defenders (4) */}
-                      <UCLPlayerCard player={finalDf[0]} top="54%" left="15%" />
-                      <UCLPlayerCard player={finalDf[1]} top="54%" left="38%" />
-                      <UCLPlayerCard player={finalDf[2]} top="54%" left="62%" />
-                      <UCLPlayerCard player={finalDf[3]} top="54%" left="85%" />
-
+                      <UCLPlayerCard player={finalDf[0]} top="52%" left="10%" />
+                      <UCLPlayerCard player={finalDf[1]} top="52%" left="33%" />
+                      <UCLPlayerCard player={finalDf[2]} top="52%" left="57%" />
+                      <UCLPlayerCard player={finalDf[3]} top="52%" left="80%" />
+                      
                       {/* Goalkeeper (1) */}
-                      <UCLPlayerCard player={safeGk} top="78%" left="45%" />
+                      <UCLPlayerCard player={finalGk} top="76%" left="45%" />
                     </div>
                   );
                 })()}

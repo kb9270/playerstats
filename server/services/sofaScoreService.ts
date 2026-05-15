@@ -120,9 +120,11 @@ class SofaScoreService {
   async getLatestSeasonId(tournamentId: number): Promise<number> {
     try {
       const resp = await this.fetchWithCache(`/unique-tournament/${tournamentId}/seasons`);
-      return resp.data.seasons[0]?.id || 61627;
+      // Use the first season (usually the latest active one)
+      const latestSeason = resp.data.seasons[0];
+      return latestSeason?.id || 76953;
     } catch {
-      return 61627;
+      return 76953;
     }
   }
 
@@ -240,8 +242,18 @@ class SofaScoreService {
       
       if (periods.length === 0) return [];
 
-      const latestPeriod = periods[0];
-      const players = await this.getTeamOfTheWeek(leagueId, seasonId, latestPeriod.id);
+      // Prioritize the user-requested round ID 26649 if we are in season 76953
+      const TARGET_ROUND_ID = 26649;
+      const selectedPeriod = (seasonId === 76953 && periods.some((p: any) => p.id === TARGET_ROUND_ID))
+        ? periods.find((p: any) => p.id === TARGET_ROUND_ID)
+        : periods[0];
+
+      console.log(`🔎 [SofaScore] UCL Selected Period: ${selectedPeriod.id} (${selectedPeriod.periodName || 'N/A'})`);
+      const players = await this.getTeamOfTheWeek(leagueId, seasonId, selectedPeriod.id);
+      console.log(`✅ [SofaScore] UCL TOTW Players Found: ${players.length}`);
+      if (players.length > 0) {
+        console.log(`👉 First player: ${players[0].player?.name} (${players[0].team?.name})`);
+      }
       
       return players.map((p: any) => ({
         Player: p.player?.name,
@@ -584,32 +596,31 @@ class SofaScoreService {
 
     const VERIFIED_SCORERS = [
       { name: "Kylian Mbappé", team: "Real Madrid", goals: 15, sofaId: 826643 },
-      { name: "Harry Kane", team: "FC Bayern München", goals: 14, sofaId: 108579 },
-      { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", goals: 10, sofaId: 889259 },
-      { name: "Julián Álvarez", team: "Atlético Madrid", goals: 10, sofaId: 911571 },
-      { name: "Anthony Gordon", team: "Newcastle United", goals: 10, sofaId: 866030 },
-      { name: "Erling Haaland", team: "Manchester City", goals: 9, sofaId: 839956 },
-      { name: "Lamine Yamal", team: "FC Barcelone", goals: 9, sofaId: 1402912 },
-      { name: "Bukayo Saka", team: "Arsenal", goals: 8, sofaId: 894988 },
+      { name: "Harry Kane", team: "Bayern", goals: 14, sofaId: 108579 },
+      { name: "Khvicha Kvaratskhelia", team: "PSG", goals: 10, sofaId: 889259 },
+      { name: "Julián Alvarez", team: "Atletico Madrid", goals: 10, sofaId: 944656 },
+      { name: "Anthony Gordon", team: "Newcastle", goals: 10, sofaId: 914902 },
+      { name: "Vinícius Júnior", team: "Real Madrid", goals: 9, sofaId: 868812 },
+      { name: "Robert Lewandowski", team: "Barcelona", goals: 9, sofaId: 18129 },
     ];
     const VERIFIED_ASSISTERS = [
-      { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", assists: 7, sofaId: 889259 },
-      { name: "Michael Olise", team: "FC Bayern München", assists: 6, sofaId: 948496 },
-      { name: "Achraf Hakimi", team: "Paris Saint-Germain", assists: 6, sofaId: 852073 },
-      { name: "Kevin De Bruyne", team: "Manchester City", assists: 6, sofaId: 164655 },
-      { name: "Lamine Yamal", team: "FC Barcelone", assists: 5, sofaId: 1402912 },
-      { name: "Bukayo Saka", team: "Arsenal", assists: 5, sofaId: 894988 },
+      { name: "Khvicha Kvaratskhelia", team: "PSG", assists: 6, sofaId: 889259 },
+      { name: "Michael Olise", team: "Bayern", assists: 6, sofaId: 978838 },
+      { name: "Achraf Hakimi", team: "PSG", assists: 6, sofaId: 814594 },
+      { name: "Vinícius Júnior", team: "Real Madrid", assists: 5, sofaId: 868812 },
+      { name: "Serge Gnabry", team: "Bayern", assists: 5, sofaId: 187433 },
     ];
     const VERIFIED_YOUNG = [
-      { name: "Lamine Yamal", team: "FC Barcelone", rating: 8.08, age: 18, sofaId: 1402912 },
+      { name: "Jonas Urbig", team: "Bayern", rating: 8.80, age: 22, sofaId: 1130647 },
+      { name: "Ruben van Bommel", team: "PSV", rating: 8.30, age: 21, sofaId: 1212550 },
+      { name: "Lamine Yamal", team: "Barcelona", rating: 8.08, age: 18, sofaId: 1402912 },
       { name: "Jude Bellingham", team: "Real Madrid", rating: 7.85, age: 22, sofaId: 991011 },
-      { name: "Pau Cubarsí", team: "FC Barcelone", rating: 7.72, age: 19, sofaId: 1402913 },
-      { name: "Warren Zaïre-Emery", team: "Paris Saint-Germain", rating: 7.65, age: 20, sofaId: 1395892 },
-      { name: "Gavi", team: "FC Barcelone", rating: 7.55, age: 21, sofaId: 976566 },
+      { name: "Dani van den Heuvel", team: "Club Brugge", rating: 7.80, age: 22, sofaId: 1049432 },
     ];
 
     try {
-      const seasonId = await this.getLatestSeasonId(leagueId);
+      // Force seasonId to 76953 for UCL (2025/26)
+      const seasonId = (leagueId === 7) ? 76953 : await this.getLatestSeasonId(leagueId);
       console.log(`✅ [SofaScore] UCL Season ID: ${seasonId}`);
 
       // Fetch all three stat types in parallel
