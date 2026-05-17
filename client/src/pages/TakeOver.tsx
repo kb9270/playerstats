@@ -317,9 +317,9 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
 
     // populate offscreen heatmap canvas
     for (const pt of matchData.heatmapPoints) {
-      // SofaScore y is horizontal on our vertical pitch mapping, x is vertical
-      const cx = m + (pt.y / 100) * pW;
-      const cy = m + (pt.x / 100) * pH;
+      // SofaScore X is goal-to-goal (lengthwise), Y is sideline-to-sideline (widthwise)
+      const cx = m + (pt.x / 100) * pW;
+      const cy = m + (pt.y / 100) * pH;
       
       const r = 26, iv = 0.35;
       const g = hCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
@@ -368,10 +368,10 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
     // DRAW PASS MAP
     const drawPassMap = () => {
       matchData.passes.forEach((p: any, idx: number) => {
-        const sx = m + (p.start.y / 100) * pW;
-        const sy = m + (p.start.x / 100) * pH;
-        const ex = m + (p.end.y / 100) * pW;
-        const ey = m + (p.end.x / 100) * pH;
+        const sx = m + (p.start.x / 100) * pW;
+        const sy = m + (p.start.y / 100) * pH;
+        const ex = m + (p.end.x / 100) * pW;
+        const ey = m + (p.end.y / 100) * pH;
 
         // Animate line reveal
         const animProgress = Math.min(1, Math.max(0, (frameRef.current - idx * 4) / 40));
@@ -433,10 +433,10 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
     // DRAW DRIBBLE MAP
     const drawDribbleMap = () => {
       matchData.dribbles.forEach((d: any, idx: number) => {
-        const sx = m + (d.start.y / 100) * pW;
-        const sy = m + (d.start.x / 100) * pH;
-        const ex = m + (d.end.y / 100) * pW;
-        const ey = m + (d.end.x / 100) * pH;
+        const sx = m + (d.start.x / 100) * pW;
+        const sy = m + (d.start.y / 100) * pH;
+        const ex = m + (d.end.x / 100) * pW;
+        const ey = m + (d.end.y / 100) * pH;
 
         const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 8) / 35));
         if (progress <= 0) return;
@@ -494,9 +494,10 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
     // DRAW SHOT MAP
     const drawShotMap = () => {
       matchData.shots.forEach((s: any, idx: number) => {
-        // Attack is toward bottom goal
-        const cx = m + (s.y / 100) * pW;
-        const cy = m + ((100 - s.x) / 100) * pH;
+        // Barcelona attacks from left to right, opponent goal is on the right side
+        // SofaScore: s.x is distance to goal line (0-100), s.y is width (0-100)
+        const cx = W - m - (s.x / 100) * pW;
+        const cy = m + (s.y / 100) * pH;
 
         const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 10) / 30));
         if (progress <= 0) return;
@@ -531,13 +532,13 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
         }
         ctx.restore();
 
-        // Shot line from kicker to goalmouth
+        // Shot line from kicker to goalmouth (right side center)
         if (progress >= 1) {
           ctx.strokeStyle = s.result === "goal" ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.15)";
           ctx.setLineDash([2, 4]);
           ctx.beginPath();
           ctx.moveTo(cx, cy);
-          ctx.lineTo(W/2, H - m); // Villareal goal center
+          ctx.lineTo(W - m, H/2); // Right side goal center
           ctx.stroke();
           ctx.setLineDash([]);
         }
@@ -547,8 +548,8 @@ function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string
     // DRAW DEFENSE MAP
     const drawDefenseMap = () => {
       matchData.defense.forEach((d: any, idx: number) => {
-        const cx = m + (d.y / 100) * pW;
-        const cy = m + (d.x / 100) * pH;
+        const cx = m + (d.x / 100) * pW;
+        const cy = m + (d.y / 100) * pH;
 
         const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 8) / 25));
         if (progress <= 0) return;
