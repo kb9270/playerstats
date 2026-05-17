@@ -23,6 +23,7 @@ export interface SofaPlayer {
 class SofaScoreService {
   private dailyCacheFilePath = path.join(process.cwd(), 'sofascore_daily_cache.json');
   private dailyCache = new Map<string, { timestamp: number, data: any }>();
+  private searchCache = new Map<string, any[]>();
 
   constructor() {
     this.loadCacheFromDisk();
@@ -580,12 +581,17 @@ class SofaScoreService {
     }
   }
   async getTopPlayersByStat(leagueId: number, seasonId: number, statType: string) {
-    // statType can be 'goals', 'assists', 'rating', 'keyPasses', etc.
+    // statType can be 'goals', 'assists', 'rating', 'cleanSheet', etc.
     try {
-      const resp = await this.fetchWithCache(`/unique-tournament/${leagueId}/season/${seasonId}/top-players/${statType}`);
-      return resp.data?.topPlayers || [];
-    } catch (err) {
-      console.error(`❌ [SofaScore] Erreur top players ${statType} (League ${leagueId}):`, err.message);
+      const resp = await this.fetchWithCache(`/unique-tournament/${leagueId}/season/${seasonId}/top-players/overall`);
+      const topPlayers = resp.data?.topPlayers || {};
+      
+      // Handle the case where cleanSheets is requested instead of cleanSheet
+      const mappedKey = statType === 'cleanSheets' ? 'cleanSheet' : statType;
+      
+      return topPlayers[mappedKey] || [];
+    } catch (err: any) {
+      console.error(`❌ [SofaScore] Erreur top players overall ${statType} (League ${leagueId}):`, err.message);
       return [];
     }
   }
@@ -680,6 +686,43 @@ class SofaScoreService {
     } catch (err: any) {
       console.error("❌ [SofaScore] Erreur fetchUCLTopStats:", err.message);
       return { scorers: VERIFIED_SCORERS, assisters: VERIFIED_ASSISTERS, young: VERIFIED_YOUNG, liveFromApi: false };
+    }
+  }
+
+  /**
+   * Fetches the full detailed statistics table for UCL players
+   * Includes: Assists, Key Passes, Big Chances Created, Accurate Passes %, Rating
+   */
+  async fetchUCLFullDetailedStats() {
+    const leagueId = 7;
+    const seasonId = 76953; // Official 2025/26 season
+
+    try {
+      console.log(`📊 [SofaScore] Fetching FULL UCL Detailed Stats for season ${seasonId}...`);
+      
+      // We'll fetch by 'rating' which usually returns the most complete player list
+      // and contains the secondary stats in the statistics object.
+      const playersRaw = await this.getTopPlayersByStat(leagueId, seasonId, 'rating');
+
+      if (!playersRaw || playersRaw.length === 0) {
+        return [];
+      }
+
+      return playersRaw.map((item: any) => ({
+        name: item.player.name,
+        team: item.team.name,
+        bigChancesCreated: item.statistics.bigChancesCreated ?? 0,
+        assists: item.statistics.assists ?? 0,
+        accuratePasses: item.statistics.accuratePasses ?? 0,
+        accuratePassesPercentage: parseFloat(item.statistics.accuratePassesPercentage?.toFixed(2) ?? "0"),
+        keyPasses: item.statistics.keyPasses ?? 0,
+        rating: parseFloat(item.statistics.rating?.toFixed(2) ?? "0"),
+        sofaId: item.player.id,
+        teamId: item.team.id
+      }));
+    } catch (err: any) {
+      console.error("❌ [SofaScore] Erreur fetchUCLFullDetailedStats:", err.message);
+      return [];
     }
   }
 }

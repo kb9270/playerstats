@@ -308,6 +308,64 @@ function LeagueWidget({
   const isL1 = name === "Ligue 1";
   const isLL = name === "La Liga";
   const isSA = name === "Serie A";
+  const isBL = name === "Bundesliga";
+
+  if (isBL) {
+    const displayRows = standings.length > 0 ? standings : [
+      { rank: 1, team: "Bayern Munich", points: 72 },
+      { rank: 2, team: "Bayer Leverkusen", points: 68 },
+      { rank: 3, team: "Stuttgart", points: 60 },
+      { rank: 4, team: "RB Leipzig", points: 58 },
+      { rank: 5, team: "Dortmund", points: 55 },
+    ];
+
+    return (
+      <div className="bl-ui-container sheen-container" onClick={onClick} style={{ cursor: "pointer", height: "100%" }}>
+        <div className="bl-ui-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {/* Bundesliga Logo */}
+            <img 
+              src={logo} 
+              alt="Bundesliga" 
+              style={{ height: 26, width: "auto", objectFit: "contain" }} 
+            />
+            <div className="bl-header-title">CLASSEMENT</div>
+          </div>
+          <div style={{ background: "rgba(211, 1, 12, 0.2)", padding: "2px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700, color: "#D3010C" }}>LIVE</div>
+        </div>
+
+        <motion.div 
+          className="bl-ui-body"
+          initial="hidden"
+          animate="show"
+          variants={{
+            show: {
+              transition: {
+                staggerChildren: 0.05
+              }
+            }
+          }}
+        >
+          {displayRows.map((row, i) => (
+            <motion.div 
+              key={i} 
+              variants={{
+                hidden: { opacity: 0, x: -10 },
+                show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 20 } }
+              }}
+              className={`bl-ui-row ${i === 0 ? 'bl-row-leader' : ''}`}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span className="bl-rank">{row.rank || row.r}</span>
+                <span style={{ fontWeight: 800, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.02em" }}>{row.team || row.t}</span>
+              </div>
+              <span className="bl-points">{row.points || row.p}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isSA) {
     const displayRows = standings.length > 0 ? standings : [
@@ -324,9 +382,9 @@ function LeagueWidget({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {/* Serie A "A" Logo */}
             <img 
-              src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Serie_A_logo_2022.svg" 
+              src={logo} 
               alt="Serie A" 
-              style={{ height: 28, width: "auto", objectFit: "contain", filter: "brightness(0) invert(1)" }} 
+              style={{ height: 28, width: "auto", objectFit: "contain" }} 
             />
             <div className="sa-header-title">CLASSEMENT</div>
           </div>

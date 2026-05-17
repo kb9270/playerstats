@@ -1312,3 +1312,88 @@ table th {
 .l1-neon-glow {
   box-shadow: 0 0 15px rgba(0, 73, 255, 0.4);
 }
+
+/* --- Bundesliga Theme (2025/2026) --- */
+:root {
+  --bl-red: #D3010C;
+  --bl-dark: #0F0F0F;
+  --bl-charcoal: #1A1A1A;
+  --bl-white: #FFFFFF;
+  --bl-glow: rgba(211, 1, 12, 0.25);
+}
+
+.bl-ui-container {
+  background: var(--bl-dark);
+  border: 1px solid rgba(211, 1, 12, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px var(--bl-glow);
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bl-ui-header {
+  background: var(--bl-charcoal);
+  color: white;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2.5px solid var(--bl-red);
+}
+
+.bl-header-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.bl-ui-body {
+  padding: 10px 0;
+}
+
+.bl-ui-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: var(--bl-dark);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255,255,255,0.9);
+}
+
+.bl-ui-row:hover {
+  background: var(--bl-charcoal);
+  padding-left: 24px;
+}
+
+.bl-ui-row:hover .pl-team-name {
+  color: var(--bl-red);
+}
+
+.bl-rank {
+  font-weight: 900;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  width: 24px;
+  color: rgba(255,255,255,0.4);
+}
+
+.bl-row-leader .bl-rank {
+  color: var(--bl-red);
+  text-shadow: 0 0 8px rgba(211, 1, 12, 0.4);
+}
+
+.bl-points {
+  font-weight: 900;
+  color: var(--bl-white);
+  font-size: 1rem;
+}
+
+.bl-row-leader .bl-points {
+  color: var(--bl-red);
+  text-shadow: 0 0 10px rgba(211, 1, 12, 0.4);
+}
+

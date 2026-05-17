@@ -76,6 +76,7 @@ function RankingBoard({ title, icon: Icon, data, color, unit = "", onClickPlayer
                  playerName={row.name} 
                  teamName={row.team} 
                  logo={row.logo} 
+                 sofaId={row.sofaId}
                  size="sm" 
                  className="rounded-full" 
                  showTeamBadge={isPL} 

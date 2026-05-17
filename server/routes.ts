@@ -22,6 +22,7 @@ import { registerN8nWebhooks } from "./n8nWebhooks";
 import { memoryTeamOfTheWeek } from "./services/automationWorkflows";
 import { sofaScoreService } from "./services/sofaScoreService";
 import { optimizedTransfermarktApi } from "./services/optimizedTransfermarktApi";
+import { preCachePlayerMatches, preCacheMultiplePlayers, getPreCacheProgress } from "./services/batchPreCacher";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register n8n Webhooks
@@ -815,78 +816,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ── CSV League Rankings Dashboard ──────────────────────────────────────
+  // ── CSV/SofaScore League Rankings Dashboard ──────────────────────────────
   app.get("/api/csv/leagues/:name/rankings", async (req, res) => {
     try {
       const leagueName = decodeURIComponent(req.params.name);
+      console.log(`🌐 [League Rankings] Fetching rankings for league: "${leagueName}"`);
+
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
-      const players = allPlayers.filter((p: any) => p.Comp === leagueName);
+      const csvPlayers = allPlayers.filter((p: any) => p.Comp === leagueName);
 
-      if (players.length === 0) {
-        return res.json({ scorers: [], assists: [], ratings: [], young: [], keepers: [] });
-      }
-
-      const scorers = [...players]
+      // Default CSV mappings as fallbacks
+      const fallbackScorers = () => [...csvPlayers]
         .filter(p => !p.Pos?.includes('GK'))
         .sort((a, b) => (b.Gls || 0) - (a.Gls || 0))
         .slice(0, 10)
-        .map(p => ({ 
-          name: p.Player, 
-          team: p.Squad, 
-          value: p.Gls || 0, 
-          logo: espnImageService.getTeamLogo(p.Squad),
-          headshot: null // Fast load
-        }));
-
-      const assists = [...players]
-        .filter(p => !p.Pos?.includes('GK'))
-        .sort((a, b) => (b.Ast || 0) - (a.Ast || 0))
-        .slice(0, 10)
-        .map(p => ({ 
-          name: p.Player, 
-          team: p.Squad, 
-          value: p.Ast || 0, 
+        .map(p => ({
+          name: p.Player,
+          team: p.Squad,
+          value: p.Gls || 0,
+          sofaId: Number(p.sofascore_id) || null,
           logo: espnImageService.getTeamLogo(p.Squad),
           headshot: null
         }));
 
-      // For ratings, let's use a combined metric for speed or pick top processed ones
-      // Since generatePlayerAnalysis is sync but expensive to run on all, we'll pick top G+A players first
-      const ratingCandidates = [...players]
-        .sort((a, b) => ((b.Gls || 0) + (b.Ast || 0)) - ((a.Gls || 0) + (a.Ast || 0)))
-        .slice(0, 50);
+      const fallbackAssists = () => [...csvPlayers]
+        .filter(p => !p.Pos?.includes('GK'))
+        .sort((a, b) => (b.Ast || 0) - (a.Ast || 0))
+        .slice(0, 10)
+        .map(p => ({
+          name: p.Player,
+          team: p.Squad,
+          value: p.Ast || 0,
+          sofaId: Number(p.sofascore_id) || null,
+          logo: espnImageService.getTeamLogo(p.Squad),
+          headshot: null
+        }));
 
-      const ratings = ratingCandidates
-        .map(p => {
-          const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
-          return {
-            name: p.Player,
-            team: p.Squad,
-            value: (analysis.overallRating / 10).toFixed(1),
-            logo: espnImageService.getTeamLogo(p.Squad),
-            headshot: null
-          };
-        })
-        .sort((a, b) => Number(b.value) - Number(a.value))
-        .slice(0, 10);
+      const fallbackRatings = () => {
+        const candidates = [...csvPlayers]
+          .sort((a, b) => ((b.Gls || 0) + (b.Ast || 0)) - ((a.Gls || 0) + (a.Ast || 0)))
+          .slice(0, 50);
+        return candidates
+          .map(p => {
+            const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
+            return {
+              name: p.Player,
+              team: p.Squad,
+              value: (analysis.overallRating / 10).toFixed(1),
+              sofaId: Number(p.sofascore_id) || null,
+              logo: espnImageService.getTeamLogo(p.Squad),
+              headshot: null
+            };
+          })
+          .sort((a, b) => Number(b.value) - Number(a.value))
+          .slice(0, 10);
+      };
 
-      const young = [...players]
-        .filter(p => p.Age && p.Age <= 21)
-        .map(p => {
-           const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
-           return {
-             name: p.Player,
-             team: p.Squad,
-             value: (analysis.overallRating / 10).toFixed(1),
-             age: p.Age,
-             logo: espnImageService.getTeamLogo(p.Squad),
-             headshot: null
-           };
-        })
-        .sort((a, b) => Number(b.value) - Number(a.value))
-        .slice(0, 10);
+      const fallbackYoung = () => {
+        return [...csvPlayers]
+          .filter(p => p.Age && p.Age <= 21)
+          .map(p => {
+             const analysis = csvDirectAnalyzer.generatePlayerAnalysis(p);
+             return {
+               name: p.Player,
+               team: p.Squad,
+               value: (analysis.overallRating / 10).toFixed(1),
+               age: p.Age,
+               sofaId: Number(p.sofascore_id) || null,
+               logo: espnImageService.getTeamLogo(p.Squad),
+               headshot: null
+             };
+          })
+          .sort((a, b) => Number(b.value) - Number(a.value))
+          .slice(0, 10);
+      };
 
-      const keepers = [...players]
+      const fallbackKeepers = () => [...csvPlayers]
         .filter(p => p.Pos?.includes('GK'))
         .sort((a, b) => (b.CS || 0) - (a.CS || 0))
         .slice(0, 10)
@@ -894,12 +899,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: p.Player,
           team: p.Squad,
           value: p.CS || 0,
+          sofaId: Number(p.sofascore_id) || null,
           logo: espnImageService.getTeamLogo(p.Squad),
           headshot: null
         }));
 
-      return res.json({ scorers, assists, ratings, young, keepers });
+      // If no players in CSV, return empty arrays
+      if (csvPlayers.length === 0) {
+        return res.json({ scorers: [], assists: [], ratings: [], young: [], keepers: [] });
+      }
+
+      // SofaScore tournament & season IDs mapping
+      const SOFA_LEAGUE_MAP: Record<string, { tournamentId: number; seasonId: number }> = {
+        "eng Premier League": { tournamentId: 17, seasonId: 76986 },
+        "es La Liga":         { tournamentId: 8,  seasonId: 77559 },
+        "fr Ligue 1":        { tournamentId: 34, seasonId: 77356 },
+        "it Serie A":        { tournamentId: 23, seasonId: 76457 },
+        "de Bundesliga":     { tournamentId: 35, seasonId: 77333 }
+      };
+
+      // Try fetching live data from SofaScore
+      const mapping = SOFA_LEAGUE_MAP[leagueName];
+      if (mapping) {
+        const { tournamentId, seasonId } = mapping;
+        try {
+          console.log(`⚡ [SofaScore Live] Fetching live data for tournament: ${tournamentId}, season: ${seasonId}`);
+          
+          // Fetch live lists in parallel
+          const [scorersRaw, assistersRaw, ratingRaw] = await Promise.all([
+            sofaScoreService.getTopPlayersByStat(tournamentId, seasonId, 'goals'),
+            sofaScoreService.getTopPlayersByStat(tournamentId, seasonId, 'assists'),
+            sofaScoreService.getTopPlayersByStat(tournamentId, seasonId, 'rating')
+          ]);
+
+          // Live enrichment
+          const liveScorers = scorersRaw.length > 0 ? await Promise.all(
+            scorersRaw
+              .filter((item: any) => item.statistics?.goals > 0)
+              .slice(0, 10)
+              .map(async (item: any) => {
+                const resolvedId = await resolveSofaId(item.player.name, item.player.id, allPlayers);
+                return {
+                  name: item.player.name,
+                  team: item.team.name,
+                  value: item.statistics.goals || 0,
+                  sofaId: resolvedId,
+                  logo: espnImageService.getTeamLogo(item.team.name),
+                  headshot: null
+                };
+              })
+          ) : null;
+
+          const liveAssists = assistersRaw.length > 0 ? await Promise.all(
+            assistersRaw
+              .filter((item: any) => item.statistics?.assists > 0)
+              .slice(0, 10)
+              .map(async (item: any) => {
+                const resolvedId = await resolveSofaId(item.player.name, item.player.id, allPlayers);
+                return {
+                  name: item.player.name,
+                  team: item.team.name,
+                  value: item.statistics.assists || 0,
+                  sofaId: resolvedId,
+                  logo: espnImageService.getTeamLogo(item.team.name),
+                  headshot: null
+                };
+              })
+          ) : null;
+
+          const liveRatings = ratingRaw.length > 0 ? await Promise.all(
+            ratingRaw
+              .slice(0, 10)
+              .map(async (item: any) => {
+                const resolvedId = await resolveSofaId(item.player.name, item.player.id, allPlayers);
+                return {
+                  name: item.player.name,
+                  team: item.team.name,
+                  value: parseFloat(item.statistics.rating?.toFixed(1) ?? "0"),
+                  sofaId: resolvedId,
+                  logo: espnImageService.getTeamLogo(item.team.name),
+                  headshot: null
+                };
+              })
+          ) : null;
+
+          const liveYoung = ratingRaw.length > 0 ? await Promise.all(
+            ratingRaw
+              .filter((item: any) => {
+                const age = item.player?.dateOfBirthTimestamp
+                  ? Math.floor((Date.now() / 1000 - item.player.dateOfBirthTimestamp) / 31_557_600)
+                  : item.player?.age ?? 99;
+                return age <= 21;
+              })
+              .slice(0, 10)
+              .map(async (item: any) => {
+                const resolvedId = await resolveSofaId(item.player.name, item.player.id, allPlayers);
+                const age = item.player?.dateOfBirthTimestamp
+                  ? Math.floor((Date.now() / 1000 - item.player.dateOfBirthTimestamp) / 31_557_600)
+                  : item.player?.age ?? 21;
+                return {
+                  name: item.player.name,
+                  team: item.team.name,
+                  value: parseFloat(item.statistics.rating?.toFixed(1) ?? "0"),
+                  age,
+                  sofaId: resolvedId,
+                  logo: espnImageService.getTeamLogo(item.team.name),
+                  headshot: null
+                };
+              })
+          ) : null;
+
+          // Keepers (Clean Sheets): use high-fidelity, verified local CSV data
+          const keepers = fallbackKeepers();
+
+          console.log(`✅ [SofaScore Live] Loaded live rankings for ${leagueName}`);
+          return res.json({
+            scorers: liveScorers || fallbackScorers(),
+            assists: liveAssists || fallbackAssists(),
+            ratings: liveRatings || fallbackRatings(),
+            young: liveYoung && liveYoung.length > 0 ? liveYoung : fallbackYoung(),
+            keepers
+          });
+
+        } catch (liveError: any) {
+          console.warn(`⚠️ [SofaScore Live] Failed to fetch live data for ${leagueName}, falling back to CSV. Error: ${liveError.message}`);
+        }
+      }
+
+      // Fallback
+      console.log(`ℹ️ [League Rankings] Using CSV fallback rankings for ${leagueName}`);
+      return res.json({
+        scorers: fallbackScorers(),
+        assists: fallbackAssists(),
+        ratings: fallbackRatings(),
+        young: fallbackYoung(),
+        keepers: fallbackKeepers()
+      });
+
     } catch (error) {
+      console.error('League rankings error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -930,14 +1068,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const lastName   = normalized.split(" ").pop() || "";
 
     const match = allCsvPlayers.find((p) => {
-      const pNorm     = normalizeName(p.Player || "");
-      const pLastName = pNorm.split(" ").pop() || "";
-      // Exact normalized match or shared last name (>3 chars)
+      const pNorm = normalizeName(p.Player || "");
+      // Exact match or one contains the other entirely (e.g., "vinicius junior" vs "vinicius jose paixao de oliveira junior")
       return (
         pNorm === normalized ||
-        pNorm.includes(normalized) ||
-        normalized.includes(pNorm) ||
-        (lastName.length > 3 && pLastName === lastName)
+        (pNorm.includes(normalized) && normalized.length > 5) ||
+        (normalized.includes(pNorm) && pNorm.length > 5)
       );
     });
 
@@ -947,6 +1083,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     return apiSofaId;
   }
+
+  app.get("/api/ucl/full-stats", async (_req, res) => {
+    try {
+      const stats = await sofaScoreService.fetchUCLFullDetailedStats();
+      res.json({ success: true, count: stats.length, data: stats });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 
   app.get("/api/ucl/rankings", async (_req, res) => {
     try {
@@ -967,7 +1112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // ── Enrich each list: resolve sofaId from CSV, fetch UCL-specific stats ──
       const UCL_TOURNAMENT_ID = 7;
-      const uclSeasonId = await sofaScoreService.getLatestSeasonId(UCL_TOURNAMENT_ID);
+      const uclSeasonId = 76953; // Forced 2025/26 season
 
       async function enrichPlayer(p: any, statKey: "goals" | "assists" | "rating"): Promise<any> {
         // 1. Resolve photo ID from CSV
@@ -2887,6 +3032,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch {
       return res.json({ headshot: null, logo: null });
     }
+  });
+
+  // ── BATCH PRE-CACHE ROUTES ─────────────────────────────────────────
+  // Start batch pre-caching for multiple players
+  app.post("/api/batch-cache/start", async (req, res) => {
+    try {
+      const { sofaIds, maxMatchesPerPlayer = 15 } = req.body;
+
+      if (!sofaIds || !Array.isArray(sofaIds) || sofaIds.length === 0) {
+        return res.status(400).json({ error: "sofaIds array is required" });
+      }
+
+      const progress = getPreCacheProgress();
+      if (progress.isRunning) {
+        return res.json({ success: false, message: "Pre-cache already running", progress });
+      }
+
+      // Start async (non-blocking)
+      preCacheMultiplePlayers(sofaIds.map(Number), maxMatchesPerPlayer);
+
+      res.json({
+        success: true,
+        message: `Started pre-caching for ${sofaIds.length} players (max ${maxMatchesPerPlayer} matches each)`,
+        estimatedTime: `~${Math.round(sofaIds.length * maxMatchesPerPlayer * 6 * 2.5 / 60)} minutes (less with cache hits)`,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Pre-cache a single player
+  app.post("/api/batch-cache/player/:sofaId", async (req, res) => {
+    try {
+      const sofaId = Number(req.params.sofaId);
+      const { maxMatches = 20 } = req.body || {};
+
+      // Start async
+      preCachePlayerMatches(sofaId, maxMatches);
+
+      res.json({
+        success: true,
+        message: `Started pre-caching match data for player ${sofaId} (max ${maxMatches} matches)`,
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Check batch pre-cache progress
+  app.get("/api/batch-cache/progress", (req, res) => {
+    res.json(getPreCacheProgress());
   });
 
   const httpServer = createServer(app);
