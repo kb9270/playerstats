@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import Parser from 'rss-parser';
+import fs from 'fs';
+import path from 'path';
 import { db } from '../db';
 import { players, playerStats, news, ballonDorRankings } from '@shared/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -318,7 +320,7 @@ export class AutomationWorkflows {
    * Workflow C: Calcul Ballon d'Or Ladder
    *
    * Algorithme à 5 critères pondérés (score sur 1000 pts):
-   *  1. Note SofaScore moyenne saison    → 30% (300 pts max)
+   *  1. Note SofaScore réelle (via ID)   → 30% (300 pts max)
    *  2. Performances en grands matchs    → 20% (200 pts max)
    *  3. Performances en LDC             → 20% (200 pts max)
    *  4. Caractère décisif en LDC        → 15% (150 pts max)
@@ -329,6 +331,37 @@ export class AutomationWorkflows {
       console.log("🏆 [BALLON D'OR] Calcul du nouveau classement 5 critères...");
       const { csvDirectAnalyzer } = await import('./csvDirectAnalyzer');
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+
+      // ─────────────────────────────────────────────────────────────────────
+      // CHARGEMENT DU CACHE SOFASCORE depuis le disque
+      // On construit un index sofaId → { goals, assists, rating, minutesPlayed }
+      // ─────────────────────────────────────────────────────────────────────
+      const sofaStatsById = new Map<number, { goals: number; assists: number; rating: number; minutesPlayed: number }>();
+      try {
+        const cachePath = path.join(process.cwd(), 'sofascore_daily_cache.json');
+        const cacheRaw = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
+        for (const [key, entry] of Object.entries(cacheRaw) as [string, any][]) {
+          if (!key.includes('statistics/overall')) continue;
+          const idMatch = key.match(/\/player\/(\d+)\//);
+          if (!idMatch) continue;
+          const sofaId = Number(idMatch[1]);
+          const s = entry?.data?.statistics;
+          if (!s) continue;
+          // On garde les stats de la meilleure entrée (plus de buts ou meilleure note)
+          const existing = sofaStatsById.get(sofaId);
+          const goals = Number(s.goals) || 0;
+          const assists = Number(s.assists) || 0;
+          const rating = Number(s.rating) || 0;
+          const minutesPlayed = Number(s.minutesPlayed) || 0;
+          if (!existing || goals + assists > existing.goals + existing.assists || rating > existing.rating) {
+            sofaStatsById.set(sofaId, { goals, assists, rating, minutesPlayed });
+          }
+        }
+        console.log(`✅ [BALLON D'OR] ${sofaStatsById.size} joueurs avec stats SofaScore réelles chargés depuis cache`);
+      } catch (e) {
+        console.warn('[BALLON D\'OR] Cache SofaScore non disponible, fallback CSV');
+      }
+
 
       // ─────────────────────────────────────────────────────────────────────
       // GRANDS CLUBS adverses pour définir un "grand match"
@@ -365,18 +398,26 @@ export class AutomationWorkflows {
       const maxSoT  = Math.max(...rawCandidates.map(p => Number(p.SoT)  || 0), 1);
 
       const scored = rawCandidates.map(p => {
-        const g    = Number(p.Gls)  || 0;
-        const a    = Number(p.Ast)  || 0;
+        const sofaId = Number((p as any).sofascore_id) || null;
+
+        // ── STATS RÉELLES SOFASCORE (si disponibles via ID) ──────────────
+        const sofaReal = sofaId ? sofaStatsById.get(sofaId) : null;
+
+        // Buts et passes : priorité aux stats SofaScore réelles
+        const g    = sofaReal ? sofaReal.goals   : (Number(p.Gls)  || 0);
+        const a    = sofaReal ? sofaReal.assists  : (Number(p.Ast)  || 0);
+        // Note SofaScore réelle (sur 10) — convertie en ratio 0→1 (note 6=min, 10=max)
+        const sofaRatingReal = sofaReal ? sofaReal.rating : 0;
+
         const xg   = Number(p.xG)   || 0;
         const xag  = Number(p.xAG)  || 0;
         const npxg = Number(p.npxG) || 0;
-        const min  = Number(p.Min)  || 0;
+        const min  = sofaReal ? sofaReal.minutesPlayed : (Number(p.Min) || 0);
         const prgP = Number(p.PrgP) || 0;
         const prgC = Number(p.PrgC) || 0;
         const sot  = Number(p.SoT)  || 0;
         const comp = (p.Comp || "").toLowerCase();
         const squad = (p.Squad || "");
-        const sofaId = Number((p as any).sofascore_id) || null;
 
         const isLDC   = comp.includes("champions");
         const isEuroTop = comp.includes("champions") || comp.includes("europa");
@@ -386,9 +427,9 @@ export class AutomationWorkflows {
         const isElite      = GRANDS_CLUBS.some(c => squad.includes(c) || c.includes(squad.split(" ")[0]));
 
         // ────────────────────────────────────────────────────────────────
-        // CRITÈRE 1 — Note SofaScore moyenne (30% = 300 pts max)
-        // On approxime via les métriques proxy : xG/90, création, implication
-        // Les vrais IDs SofaScore sont dans sofascore_id → utilisé pour trier
+        // CRITÈRE 1 — Note SofaScore réelle (30% = 300 pts max)
+        // Si on a la vraie note SofaScore → on l'utilise directement
+        // Sinon, proxy via stats CSV (xG/90, création, etc.)
         // ────────────────────────────────────────────────────────────────
         const nineties = Math.max(Number(p['90s']) || 0, 0.5);
         const xgPer90  = xg  / nineties;
@@ -396,12 +437,17 @@ export class AutomationWorkflows {
         const prgPer90 = (prgP + prgC) / nineties;
         const sotPer90 = sot / nineties;
 
-        // Score SofaScore proxy (0→1) : pondéré par intensité statistique
         let sofaProxy = 0;
-        sofaProxy += Math.min(xgPer90  / 0.8, 1)  * 0.35;  // xG/90 (top = 0.8)
-        sofaProxy += Math.min(xagPer90 / 0.5, 1)  * 0.25;  // xAG/90
-        sofaProxy += Math.min(prgPer90 / 15, 1)   * 0.25;  // progressivité
-        sofaProxy += Math.min(sotPer90 / 3, 1)    * 0.15;  // tirs cadrés/90
+        if (sofaRatingReal > 0) {
+          // Vraie note SofaScore : on normalise sur 0→1 (note 6.0 = 0, note 9.5+ = 1)
+          sofaProxy = Math.min(1, Math.max(0, (sofaRatingReal - 6.0) / 3.5));
+        } else {
+          // Proxy via métriques CSV
+          sofaProxy += Math.min(xgPer90  / 0.8, 1)  * 0.35;
+          sofaProxy += Math.min(xagPer90 / 0.5, 1)  * 0.25;
+          sofaProxy += Math.min(prgPer90 / 15, 1)   * 0.25;
+          sofaProxy += Math.min(sotPer90 / 3, 1)    * 0.15;
+        }
         // Bonus club prestige (reflète qualité des adversaires)
         if (isSuperElite) sofaProxy = Math.min(1, sofaProxy * 1.20);
         else if (isElite)  sofaProxy = Math.min(1, sofaProxy * 1.10);
@@ -490,7 +536,11 @@ export class AutomationWorkflows {
             passes: a,
             xg: Number(xg.toFixed(2)),
             xag: Number(xag.toFixed(2)),
-            rating: Number(sofaProxy.toFixed(2)),
+            // Vraie note SofaScore si disponible, sinon le proxy calculé
+            rating: sofaRatingReal > 0
+              ? Number(sofaRatingReal.toFixed(2))
+              : Number((sofaProxy * 3.5 + 6.0).toFixed(2)), // reconvertit proxy → note /10
+            hasSofaRealStats: sofaReal !== null,
             // Détail des critères pour debug
             scoreSofa: Number(scoreSofa.toFixed(1)),
             scoreGrandsMatchs: Number(grandsMatchScore.toFixed(1)),
