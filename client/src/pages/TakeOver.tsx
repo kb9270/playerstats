@@ -8,6 +8,7 @@ import {
   useSpring,
 } from "framer-motion";
 import { ArrowLeft, Target, Activity, Zap, Star, Shield, HelpCircle, AlertCircle, Compass } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import PlayerAvatar from "@/components/PlayerAvatar";
 
 // ── Real SofaScore Match Data (Lamine Yamal vs Villarreal - Feb 28, 2026) ───────
@@ -252,7 +253,7 @@ function StatBox({
 }
 
 // ── Unified Tactical Board Component ──────────────────────────────────────────
-function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisible: boolean }) {
+function TacticalBoard({ activeViz, vizVisible, matchData }: { activeViz: string; vizVisible: boolean; matchData: any }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const W = 740, H = 480;
   const frameRef = useRef(0);
@@ -312,10 +313,10 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
     const hc = document.createElement("canvas");
     hc.width = W; hc.height = H;
     const hCtx = hc.getContext("2d")!;
-    const maxC = Math.max(...MATCH_DATA.heatmapPoints.map(p => 1));
+    const maxC = Math.max(...matchData.heatmapPoints.map((p: any) => 1));
 
     // populate offscreen heatmap canvas
-    for (const pt of MATCH_DATA.heatmapPoints) {
+    for (const pt of matchData.heatmapPoints) {
       // SofaScore y is horizontal on our vertical pitch mapping, x is vertical
       const cx = m + (pt.y / 100) * pW;
       const cy = m + (pt.x / 100) * pH;
@@ -366,7 +367,7 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
 
     // DRAW PASS MAP
     const drawPassMap = () => {
-      MATCH_DATA.passes.forEach((p, idx) => {
+      matchData.passes.forEach((p: any, idx: number) => {
         const sx = m + (p.start.y / 100) * pW;
         const sy = m + (p.start.x / 100) * pH;
         const ex = m + (p.end.y / 100) * pW;
@@ -431,7 +432,7 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
 
     // DRAW DRIBBLE MAP
     const drawDribbleMap = () => {
-      MATCH_DATA.dribbles.forEach((d, idx) => {
+      matchData.dribbles.forEach((d: any, idx: number) => {
         const sx = m + (d.start.y / 100) * pW;
         const sy = m + (d.start.x / 100) * pH;
         const ex = m + (d.end.y / 100) * pW;
@@ -492,7 +493,7 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
 
     // DRAW SHOT MAP
     const drawShotMap = () => {
-      MATCH_DATA.shots.forEach((s, idx) => {
+      matchData.shots.forEach((s: any, idx: number) => {
         // Attack is toward bottom goal
         const cx = m + (s.y / 100) * pW;
         const cy = m + ((100 - s.x) / 100) * pH;
@@ -545,7 +546,7 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
 
     // DRAW DEFENSE MAP
     const drawDefenseMap = () => {
-      MATCH_DATA.defense.forEach((d, idx) => {
+      matchData.defense.forEach((d: any, idx: number) => {
         const cx = m + (d.y / 100) * pW;
         const cy = m + (d.x / 100) * pH;
 
@@ -606,7 +607,7 @@ function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisibl
       alive = false;
       cancelAnimationFrame(animRef.current);
     };
-  }, [activeViz, vizVisible]);
+  }, [activeViz, vizVisible, matchData]);
 
   return (
     <motion.div
@@ -775,6 +776,12 @@ export default function TakeOver() {
   const [activeViz, setActiveViz] = useState<string>("heatmap");
   const mountedRef = useRef(true);
 
+  // ── Fetch dynamic match data using the real Event ID 14081789 and Player ID 1402912 ──
+  const { data: realData, isLoading } = useQuery<any>({
+    queryKey: ["/api/sofa/match/14081789/player/1402912"],
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -792,21 +799,98 @@ export default function TakeOver() {
   const curtainDone = phase >= 1;
   const vizVisible  = phase >= 2;
 
+  // Process and format the loaded SofaScore data, falling back to MATCH_DATA
+  const stats = realData?.playerStats || {};
+  const event = realData?.event || {};
+  const heatmapPoints = realData?.heatmap && realData.heatmap.length > 0 
+    ? realData.heatmap 
+    : MATCH_DATA.heatmapPoints;
+
+  const rawShots = realData?.shotmap || [];
+  const shots = rawShots.length > 0 
+    ? rawShots.map((s: any) => ({
+        x: s.playerCoordinates?.x || 0,
+        y: s.playerCoordinates?.y || 0,
+        result: s.shotType || "miss",
+        time: `${s.time}'` + (s.addedTime ? `+${s.addedTime}` : ''),
+        xg: parseFloat((s.xg || 0).toFixed(2)),
+        bodyPart: s.bodyPart === "left-foot" ? "Pied Gauche" : s.bodyPart === "right-foot" ? "Pied Droit" : "Tête",
+        situation: s.situation === "assisted" ? "Action Assistée" : "Action Individuelle"
+      }))
+    : MATCH_DATA.shots;
+
+  // Format statistics dynamically
+  const rawAccPass = stats.accuratePass ?? MATCH_DATA.stats.passes.split("/")[0];
+  const rawTotalPass = stats.totalPass ?? (MATCH_DATA.stats.passes.split("/")[1]?.split(" ")[0] || 47);
+  const passPercent = rawTotalPass > 0 ? Math.round((Number(rawAccPass) / Number(rawTotalPass)) * 100) : 87;
+
+  const rawAccDribble = stats.wonContest ?? MATCH_DATA.stats.dribbles.split("/")[0];
+  const rawTotalDribble = (stats.wonContest ?? 6) + (stats.lostContest ?? 4);
+  const dribblePercent = rawTotalDribble > 0 ? Math.round((Number(rawAccDribble) / Number(rawTotalDribble)) * 100) : 60;
+
+  const rawGoals = stats.goals ?? 3;
+  const rawRating = stats.rating ?? 10.0;
+  const rawXg = stats.expectedGoals ?? 0.94;
+  const rawKeyPasses = stats.keyPass ?? 2;
+  const rawShotsOnTarget = stats.onTargetScoringAttempt ?? 4;
+  const rawTotalShots = stats.totalShots ?? 6;
+  const rawTouches = stats.touches ?? 70;
+  const rawDuelsWon = stats.duelWon ?? 6;
+  const rawTotalDuels = (stats.duelWon ?? 6) + (stats.duelLost ?? 7);
+  const rawRecoveries = stats.ballRecovery ?? 3;
+  const rawLongBallsAcc = stats.accurateLongBalls ?? 2;
+  const rawLongBallsTotal = stats.totalLongBalls ?? 2;
+  const rawProgression = stats.totalProgression ? `${Math.round(stats.totalProgression)}m` : "219m";
+  const rawProgActions = stats.progressiveBallCarriesCount ?? 10;
+  const rawMinutes = stats.minutesPlayed ?? 73;
+
+  const activeStats = {
+    goals: rawGoals,
+    rating: rawRating,
+    xg: typeof rawXg === "number" ? parseFloat(rawXg.toFixed(2)) : 0.94,
+    passes: `${rawAccPass}/${rawTotalPass} (${passPercent}%)`,
+    dribbles: `${rawAccDribble}/${rawTotalDribble} (${dribblePercent}%)`,
+    keyPasses: rawKeyPasses,
+    shotsOnTarget: `${rawShotsOnTarget}/${rawTotalShots}`,
+    minutes: rawMinutes,
+    touches: rawTouches,
+    duelsWon: `${rawDuelsWon}/${rawTotalDuels}`,
+    recoveries: rawRecoveries,
+    longBalls: `${rawLongBallsAcc}/${rawLongBallsTotal}`,
+    progression: rawProgression,
+    progressiveActions: rawProgActions,
+  };
+
+  const dynamicMatchData = {
+    playerName: "Lamine Yamal",
+    fakeName: "Lamine Yamal",
+    sofaId: 1402912,
+    team: event.homeTeam?.name ? (event.homeTeam.name.includes("Barcelona") ? "Barcelone" : event.homeTeam.name) : "Barcelone",
+    opponent: event.awayTeam?.name ? (event.awayTeam.name.includes("Barcelona") ? event.homeTeam?.name : event.awayTeam.name) : "Villarreal CF",
+    score: event.homeScore !== undefined ? `${event.homeScore} - ${event.awayScore}` : "4 - 1",
+    stats: activeStats,
+    heatmapPoints: heatmapPoints,
+    shots: shots,
+    passes: MATCH_DATA.passes,
+    dribbles: MATCH_DATA.dribbles,
+    defense: MATCH_DATA.defense
+  };
+
   const STATS = [
-    { label:"Buts",           value: MATCH_DATA.stats.goals,              sub:"Hat-trick" },
-    { label:"Note",           value: MATCH_DATA.stats.rating,             sub:"Perfection" },
-    { label:"xG",             value: MATCH_DATA.stats.xg,                 sub:"Exp. Goals" },
-    { label:"Passes",         value: MATCH_DATA.stats.passes,             sub:"87% Préc." },
-    { label:"Passes Clés",    value: MATCH_DATA.stats.keyPasses,          sub:"Créations" },
-    { label:"Dribbles",       value: MATCH_DATA.stats.dribbles,           sub:"6/10" },
-    { label:"Tirs Cadrés",    value: MATCH_DATA.stats.shotsOnTarget,      sub:"Clinique" },
-    { label:"Touches",        value: MATCH_DATA.stats.touches,            sub:"Ballons" },
-    { label:"Duels",          value: MATCH_DATA.stats.duelsWon,           sub:"Gagnés" },
-    { label:"Récup.",         value: MATCH_DATA.stats.recoveries,         sub:"Activité" },
-    { label:"Longs B.",       value: MATCH_DATA.stats.longBalls,          sub:"Précis" },
-    { label:"Prog.",          value: MATCH_DATA.stats.progression,        sub:"Portée" },
-    { label:"Att. Prog.",     value: MATCH_DATA.stats.progressiveActions, sub:"Impact" },
-    { label:"Temps",          value: `${MATCH_DATA.stats.minutes}'`,      sub:"Maestro" },
+    { label:"Buts",           value: dynamicMatchData.stats.goals,              sub:"Hat-trick" },
+    { label:"Note",           value: dynamicMatchData.stats.rating,             sub:"Perfection" },
+    { label:"xG",             value: dynamicMatchData.stats.xg,                 sub:"Exp. Goals" },
+    { label:"Passes",         value: dynamicMatchData.stats.passes,             sub:"Précision" },
+    { label:"Passes Clés",    value: dynamicMatchData.stats.keyPasses,          sub:"Créations" },
+    { label:"Dribbles",       value: dynamicMatchData.stats.dribbles,           sub:"Réussis" },
+    { label:"Tirs Cadrés",    value: dynamicMatchData.stats.shotsOnTarget,      sub:"Clinique" },
+    { label:"Touches",        value: dynamicMatchData.stats.touches,            sub:"Ballons" },
+    { label:"Duels",          value: dynamicMatchData.stats.duelsWon,           sub:"Gagnés" },
+    { label:"Récup.",         value: dynamicMatchData.stats.recoveries,         sub:"Activité" },
+    { label:"Longs B.",       value: dynamicMatchData.stats.longBalls,          sub:"Précis" },
+    { label:"Prog.",          value: dynamicMatchData.stats.progression,        sub:"Portée" },
+    { label:"Att. Prog.",     value: dynamicMatchData.stats.progressiveActions, sub:"Impact" },
+    { label:"Temps",          value: `${dynamicMatchData.stats.minutes}'`,      sub:"Maestro" },
   ];
 
   const tabs = [
@@ -816,6 +900,17 @@ export default function TakeOver() {
     { id: 'dribbles', label: 'Dribble Map', icon: '⚡' },
     { id: 'defense', label: 'Defense Map', icon: '🛡️' }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#050300]">
+        <div className="text-center space-y-6">
+          <div className="w-20 h-20 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto shadow-[0_0_50px_rgba(212,175,55,0.4)]" />
+          <p className="text-[#D4AF37] font-serif italic text-lg uppercase tracking-widest animate-pulse">Initialisation du Take Over...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -846,7 +941,7 @@ export default function TakeOver() {
                 animate={curtainDone ? { opacity:1, y:0 } : {}}
                 className="inline-block px-4 py-1 border border-[#D4AF37]/40 bg-[#D4AF37]/5 text-[#D4AF37] text-[10px] font-black uppercase tracking-[0.4em] mb-8"
               >
-                Match Take Over — {MATCH_DATA.opponent}
+                Match Take Over — {dynamicMatchData.opponent}
               </motion.div>
 
               <div className="overflow-hidden mb-6">
@@ -854,7 +949,7 @@ export default function TakeOver() {
                   className="font-serif italic font-black text-[#D4AF37] leading-[0.9]"
                   style={{ fontSize: "clamp(3.5rem, 10vw, 7.5rem)" }}
                 >
-                  {MATCH_DATA.fakeName.split(" ").map((word, wi) => (
+                  {dynamicMatchData.playerName.split(" ").map((word, wi) => (
                     <span key={wi} className="inline-block mr-[0.2em] overflow-hidden">
                       {word.split("").map((ch, ci) => (
                         <motion.span
@@ -885,7 +980,7 @@ export default function TakeOver() {
                   <div className="text-[10px] uppercase font-black text-[#D4AF37] tracking-widest mt-1">SofaScore</div>
                 </div>
                 <div className="text-left border-l border-white/20 pl-10">
-                  <div className="text-xl font-black italic text-white uppercase">{MATCH_DATA.team} <span className="text-[#D4AF37] mx-2">{MATCH_DATA.score}</span> {MATCH_DATA.opponent}</div>
+                  <div className="text-xl font-black italic text-white uppercase">{dynamicMatchData.team} <span className="text-[#D4AF37] mx-2">{dynamicMatchData.score}</span> {dynamicMatchData.opponent}</div>
                   <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">LaLiga · 28 Février 2026</div>
                 </div>
               </motion.div>
@@ -900,8 +995,8 @@ export default function TakeOver() {
             >
               <div className="w-64 h-64 md:w-80 md:h-80 rounded-full border-4 border-[#D4AF37] p-2 bg-black/40 shadow-[0_0_60px_rgba(212,175,55,0.3)]">
                 <PlayerAvatar
-                  playerName={MATCH_DATA.playerName}
-                  sofaId={MATCH_DATA.sofaId}
+                  playerName={dynamicMatchData.playerName}
+                  sofaId={dynamicMatchData.sofaId}
                   size="xl"
                   className="w-full h-full rounded-full object-cover"
                 />
@@ -943,7 +1038,7 @@ export default function TakeOver() {
           {/* Map and details layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-8 flex justify-center w-full">
-               <TacticalBoard activeViz={activeViz} vizVisible={vizVisible} />
+               <TacticalBoard activeViz={activeViz} vizVisible={vizVisible} matchData={dynamicMatchData} />
             </div>
             <div className="lg:col-span-4 w-full">
                <AnimatePresence mode="wait">
