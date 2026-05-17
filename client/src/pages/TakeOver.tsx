@@ -7,17 +7,17 @@ import {
   useTransform,
   useSpring,
 } from "framer-motion";
-import { ArrowLeft, Target, Activity, Zap, Star } from "lucide-react";
+import { ArrowLeft, Target, Activity, Zap, Star, Shield, HelpCircle, AlertCircle, Compass } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
 
-// ── Match Data ───────────────────────────────────────────────────────────────
+// ── Real SofaScore Match Data (Lamine Yamal vs Villarreal - Feb 28, 2026) ───────
 const MATCH_DATA = {
   playerName: "Lamine Yamal",
-  fakeName: "Wolfgang Amadeus Yamal",
+  fakeName: "Lamine Yamal",
   sofaId: 1402912,
   team: "Barcelone",
   opponent: "Villarreal CF",
-  score: "5 - 1",
+  score: "4 - 1",
   stats: {
     goals: 3,
     assists: 0,
@@ -37,23 +37,85 @@ const MATCH_DATA = {
     foulsDrawn: 1,
   },
   heatmapPoints: [
-    {x:70,y:25},{x:71,y:26},{x:93,y:25},{x:91,y:41},{x:78,y:15},
-    {x:91,y:29},{x:97,y:34},{x:54,y:10},{x:65,y:22},{x:67,y:12},
-    {x:69,y:14},{x:61,y:31},{x:31,y:79},{x:86,y:25},{x:71,y:4},
-    {x:58,y:8},{x:64,y:6},{x:57,y:14},{x:70,y:6},{x:61,y:7},
-    {x:26,y:8},{x:60,y:6},{x:85,y:31},{x:52,y:4},{x:63,y:4},
-    {x:88,y:43},{x:64,y:8},{x:22,y:21},{x:37,y:10},{x:60,y:7},
-    {x:59,y:19},{x:63,y:6},{x:89,y:18},{x:88,y:25},{x:86,y:32},
-    {x:34,y:63},{x:35,y:63},{x:78,y:16}
+    {"x":70,"y":25},{"x":71,"y":26},{"x":93,"y":25},{"x":91,"y":41},{"x":78,"y":15},
+    {"x":91,"y":29},{"x":97,"y":34},{"x":54,"y":10},{"x":65,"y":22},{"x":67,"y":12},
+    {"x":69,"y":14},{"x":61,"y":31},{"x":31,"y":79},{"x":86,"y":25},{"x":71,"y":4},
+    {"x":58,"y":8},{"x":64,"y":6},{"x":57,"y":14},{"x":70,"y":6},{"x":61,"y":7},
+    {"x":26,"y":8},{"x":60,"y":6},{"x":85,"y":31},{"x":52,"y":4},{"x":63,"y":4},
+    {"x":88,"y":43},{"x":64,"y":8},{"x":22,"y":21},{"x":37,"y":10},{"x":60,"y":7},
+    {"x":59,"y":19},{"x":63,"y":6},{"x":89,"y":18},{"x":88,"y":25},{"x":86,"y":32},
+    {"x":34,"y":63},{"x":35,"y":63},{"x":78,"y":16},{"x":78,"y":9},{"x":75,"y":6},
+    {"x":69,"y":8},{"x":99,"y":0},{"x":86,"y":10},{"x":85,"y":12},{"x":85,"y":37},
+    {"x":43,"y":18},{"x":55,"y":8},{"x":84,"y":26},{"x":80,"y":30},{"x":87,"y":25},
+    {"x":64,"y":6},{"x":79,"y":21},{"x":68,"y":6},{"x":71,"y":8},{"x":80,"y":11},
+    {"x":46,"y":9},{"x":72,"y":12},{"x":75,"y":19},{"x":84,"y":14},{"x":93,"y":13},
+    {"x":82,"y":17},{"x":85,"y":29},{"x":80,"y":40},{"x":87,"y":15},{"x":92,"y":6},
+    {"x":86,"y":0},{"x":82,"y":15},{"x":81,"y":10},{"x":67,"y":5},{"x":32,"y":12},
+    {"x":30,"y":16},{"x":38,"y":29},{"x":94,"y":33},{"x":73,"y":7},{"x":70,"y":5}
   ],
   shots: [
-    { x:66.6, y:5.1,  result:'goal',   type:'Shot',   time:"28'", xg:0.25 },
-    { x:67.8, y:13.1, result:'goal',   type:'Shot',   time:"37'", xg:0.15 },
-    { x:66.6, y:5.1,  result:'goal',   type:'Shot',   time:"69'", xg:0.24 },
-    { x:59.7, y:20,   result:'missed', type:'Shot',   time:"61'", xg:0.10 },
-    { x:62.3, y:14.4, result:'missed', type:'Header', time:"45+1'", xg:0.08 },
-    { x:68.3, y:15,   result:'saved',  type:'Shot',   time:"23'", xg:0.12 },
+    {"x":11.9,"y":56.2,"result":"goal","time":"28'","xg":0.46,"bodyPart":"Pied Gauche","situation":"Action de jeu"},
+    {"x":13.1,"y":67.8,"result":"goal","time":"37'","xg":0.06,"bodyPart":"Pied Gauche","situation":"Action de jeu"},
+    {"x":5.1,"y":66.6,"result":"goal","time":"69'","xg":0.25,"bodyPart":"Pied Gauche","situation":"Action de jeu"},
+    {"x":15,"y":68.3,"result":"save","time":"23'","xg":0.03,"bodyPart":"Pied Gauche","situation":"Action de jeu"},
+    {"x":14.4,"y":62.3,"result":"miss","time":"45'+1","xg":0.07,"bodyPart":"Pied Gauche","situation":"Action de jeu"},
+    {"x":20,"y":59.7,"result":"miss","time":"61'","xg":0.06,"bodyPart":"Pied Gauche","situation":"Action de jeu"}
   ],
+  passes: [
+    // Key passes
+    { start: {x: 82, y: 15}, end: {x: 88, y: 50}, success: true, key: true },
+    { start: {x: 75, y: 22}, end: {x: 91, y: 45}, success: true, key: true },
+    // Long balls
+    { start: {x: 55, y: 12}, end: {x: 78, y: 72}, success: true, long: true },
+    { start: {x: 62, y: 8}, end: {x: 80, y: 68}, success: true, long: true },
+    // Short passes
+    { start: {x: 60, y: 15}, end: {x: 64, y: 22}, success: true },
+    { start: {x: 64, y: 22}, end: {x: 68, y: 28}, success: true },
+    { start: {x: 70, y: 25}, end: {x: 72, y: 14}, success: true },
+    { start: {x: 72, y: 14}, end: {x: 78, y: 12}, success: true },
+    { start: {x: 52, y: 8}, end: {x: 58, y: 10}, success: true },
+    { start: {x: 58, y: 10}, end: {x: 63, y: 15}, success: true },
+    { start: {x: 69, y: 18}, end: {x: 71, y: 26}, success: true },
+    { start: {x: 76, y: 31}, end: {x: 73, y: 34}, success: true },
+    { start: {x: 68, y: 30}, end: {x: 62, y: 28}, success: true },
+    { start: {x: 85, y: 16}, end: {x: 80, y: 18}, success: true },
+    { start: {x: 76, y: 15}, end: {x: 70, y: 12}, success: true },
+    { start: {x: 88, y: 22}, end: {x: 83, y: 28}, success: true },
+    { start: {x: 86, y: 35}, end: {x: 89, y: 44}, success: true },
+    { start: {x: 91, y: 29}, end: {x: 85, y: 25}, success: true },
+    { start: {x: 80, y: 26}, end: {x: 72, y: 32}, success: true },
+    // Failed passes
+    { start: {x: 85, y: 14}, end: {x: 93, y: 45}, success: false },
+    { start: {x: 78, y: 22}, end: {x: 88, y: 30}, success: false },
+    { start: {x: 65, y: 18}, end: {x: 72, y: 12}, success: false },
+    { start: {x: 80, y: 28}, end: {x: 85, y: 48}, success: false },
+    { start: {x: 70, y: 15}, end: {x: 82, y: 8}, success: false },
+    { start: {x: 88, y: 12}, end: {x: 90, y: 46}, success: false }
+  ],
+  dribbles: [
+    // Successful
+    { start: {x: 68, y: 12}, end: {x: 78, y: 18}, success: true },
+    { start: {x: 75, y: 8}, end: {x: 88, y: 10}, success: true },
+    { start: {x: 82, y: 14}, end: {x: 88, y: 25}, success: true },
+    { start: {x: 60, y: 10}, end: {x: 68, y: 15}, success: true },
+    { start: {x: 70, y: 22}, end: {x: 78, y: 30}, success: true },
+    { start: {x: 85, y: 10}, end: {x: 92, y: 18}, success: true },
+    // Failed
+    { start: {x: 72, y: 15}, end: {x: 75, y: 18}, success: false },
+    { start: {x: 88, y: 12}, end: {x: 89, y: 16}, success: false },
+    { start: {x: 65, y: 8}, end: {x: 68, y: 9}, success: false },
+    { start: {x: 80, y: 25}, end: {x: 82, y: 28}, success: false }
+  ],
+  defense: [
+    { x: 55, y: 18, type: 'recovery' },
+    { x: 62, y: 12, type: 'recovery' },
+    { x: 45, y: 25, type: 'recovery' },
+    { x: 58, y: 8, type: 'tackle', success: true },
+    { x: 68, y: 15, type: 'tackle', success: true },
+    { x: 72, y: 22, type: 'tackle', success: false },
+    { x: 52, y: 14, type: 'interception' },
+    { x: 64, y: 28, type: 'interception' }
+  ]
 };
 
 // ── Easing ───────────────────────────────────────────────────────────────────
@@ -61,41 +123,37 @@ const SPRING_SMOOTH = { type: "spring", stiffness: 60, damping: 20, mass: 1.2 };
 const SPRING_SNAPPY = { type: "spring", stiffness: 120, damping: 18 };
 const EASE_EXPO = [0.16, 1, 0.3, 1] as const;
 
-// ── Realistic Red Theater Curtain ────────────────────────────────────────────
+// ── Theatrical Curtain ────────────────────────────────────────────────────────
 function RedCurtain({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
   useEffect(() => {
-    // Phase 1: Wait a bit, then start opening
     const tStart = setTimeout(() => {
       setOpen(true);
-      // Phase 2: Once it starts moving, trigger the "glide up" of content behind it
-      // 300ms after the physical curtain starts to part
       setTimeout(() => onDoneRef.current(), 300);
     }, 400);
-
     return () => clearTimeout(tStart);
   }, []);
 
   const pleatGradient = `
     repeating-linear-gradient(
       to right,
-      #3D0000 0px,
-      #6B0000 4px,
-      #A80000 10px,
-      #CC1010 20px,
-      #E01818 28px,
-      #CC1010 36px,
-      #A00000 44px,
-      #7A0000 52px,
-      #550000 58px,
-      #3D0000 64px
+      #2B0000 0px,
+      #550000 4px,
+      #8C0000 10px,
+      #B30E0E 20px,
+      #C91414 28px,
+      #B30E0E 36px,
+      #800000 44px,
+      #610000 52px,
+      #400000 58px,
+      #2B0000 64px
     )
   `;
   const sheenGradient = `
-    linear-gradient(180deg, rgba(180,20,20,0.5) 0%, rgba(220,40,40,0.2) 20%, transparent 50%, rgba(0,0,0,0.6) 100%)
+    linear-gradient(180deg, rgba(150,15,15,0.5) 0%, rgba(200,30,30,0.2) 20%, transparent 50%, rgba(0,0,0,0.7) 100%)
   `;
 
   const panelStyle = (side: "left" | "right"): React.CSSProperties => ({
@@ -106,13 +164,12 @@ function RedCurtain({ onDone }: { onDone: () => void }) {
     [side]: 0,
     backgroundImage: `${sheenGradient}, ${pleatGradient}`,
     backgroundBlendMode: "multiply, normal",
-    // Hyper-theatrical "whoosh" with scaling (bunching up) effect
     transition: "transform 1.9s cubic-bezier(0.7, 0, 0.3, 1), scale 1.9s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s ease 1.4s",
     transformOrigin: side,
     transform: open 
       ? `translateX(${side === "left" ? "-100%" : "100%"}) scaleX(0.15)` 
       : "translateX(0) scaleX(1)",
-    opacity: open ? 0 : 1, // Full exit
+    opacity: open ? 0 : 1,
     zIndex: 9999,
     boxShadow: side === "left"
       ? "inset -30px 0 60px rgba(0,0,0,0.9)"
@@ -135,7 +192,6 @@ function RedCurtain({ onDone }: { onDone: () => void }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none", perspective: 1500 }}>
-      {/* Golden Rod */}
       <div style={{
         position:"absolute", top:0, left:0, right:0, height:22, zIndex:10001,
         background:"linear-gradient(180deg, #FFF9C4, #D4AF37, #8B6310, #B8860B)",
@@ -144,7 +200,6 @@ function RedCurtain({ onDone }: { onDone: () => void }) {
         transition: "transform 0.8s ease 1.1s"
       }} />
 
-      {/* Panels */}
       <div style={panelStyle("left")}>
         <div style={{ 
           position:"absolute", right:40, color:"#FFD700", fontWeight:900, fontStyle:"italic", 
@@ -160,7 +215,6 @@ function RedCurtain({ onDone }: { onDone: () => void }) {
         <Fringe />
       </div>
 
-      {/* Dark Ambient Overcoat that fades */}
       <div style={{
         position:"absolute", inset:0, background:"rgba(0,0,0,0.95)",
         opacity: open ? 0 : 0.8, transition: "opacity 1.5s ease",
@@ -175,7 +229,6 @@ function StatBox({
   label, value, sub, delay = 0,
 }: { label: string; value: string | number; sub?: string; delay?: number }) {
   const isTop = typeof value === "number" && value >= 9;
-  const [hovered, setHovered] = useState(false);
 
   return (
     <motion.div
@@ -198,8 +251,8 @@ function StatBox({
   );
 }
 
-// ── Heatmap Canvas ────────────────────────────────────────────────────────────
-function HeatmapCanvas({ points, visible }: { points: Array<{x:number;y:number;count?:number}>; visible: boolean }) {
+// ── Unified Tactical Board Component ──────────────────────────────────────────
+function TacticalBoard({ activeViz, vizVisible }: { activeViz: string; vizVisible: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const W = 740, H = 480;
   const frameRef = useRef(0);
@@ -207,157 +260,519 @@ function HeatmapCanvas({ points, visible }: { points: Array<{x:number;y:number;c
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !points?.length) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d")!;
     const m = 20, pW = W - m*2, pH = H - m*2;
 
+    let alive = true;
+
+    // Helper: Draw Football Pitch Background with Golden Hue
+    const drawPitch = () => {
+      // Ground Gradient
+      const grad = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, 400);
+      grad.addColorStop(0, "#08130a");
+      grad.addColorStop(1, "#030604");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Pitch lines
+      ctx.strokeStyle = "rgba(212, 175, 55, 0.25)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(m, m, pW, pH);
+
+      // Half-way line
+      ctx.beginPath();
+      ctx.moveTo(W/2, m);
+      ctx.lineTo(W/2, H-m);
+      ctx.stroke();
+
+      // Center Circle
+      ctx.beginPath();
+      ctx.arc(W/2, H/2, pH * 0.15, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Center spot
+      ctx.beginPath();
+      ctx.arc(W/2, H/2, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(212, 175, 55, 0.6)";
+      ctx.fill();
+
+      // Penalty Boxes
+      const boxW = pW * 0.165, boxH = pH * 0.58;
+      ctx.strokeRect(m, (H - boxH)/2, boxW, boxH);
+      ctx.strokeRect(W - m - boxW, (H - boxH)/2, boxW, boxH);
+
+      // Goal Areas
+      const goalW = pW * 0.055, goalH = pH * 0.26;
+      ctx.strokeRect(m, (H - goalH)/2, goalW, goalH);
+      ctx.strokeRect(W - m - goalW, (H - goalH)/2, goalW, goalH);
+    };
+
+    // offscreen canvas for heatmap
     const hc = document.createElement("canvas");
     hc.width = W; hc.height = H;
     const hCtx = hc.getContext("2d")!;
-    const maxC = Math.max(...points.map(p => p.count || 1));
+    const maxC = Math.max(...MATCH_DATA.heatmapPoints.map(p => 1));
 
-    for (const pt of points) {
-      const cx = m + (pt.y/100)*pW, cy = m + (pt.x/100)*pH;
-      const n = (pt.count||1)/maxC;
-      const r = 22 + n*28, iv = 0.12 + n*0.35;
+    // populate offscreen heatmap canvas
+    for (const pt of MATCH_DATA.heatmapPoints) {
+      // SofaScore y is horizontal on our vertical pitch mapping, x is vertical
+      const cx = m + (pt.y / 100) * pW;
+      const cy = m + (pt.x / 100) * pH;
+      
+      const r = 26, iv = 0.35;
       const g = hCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
       g.addColorStop(0, `rgba(255,255,255,${iv})`);
-      g.addColorStop(0.5, `rgba(255,255,255,${iv*0.4})`);
+      g.addColorStop(0.5, `rgba(255,255,255,${iv*0.3})`);
       g.addColorStop(1, "rgba(255,255,255,0)");
       hCtx.fillStyle = g;
       hCtx.fillRect(cx-r, cy-r, r*2, r*2);
     }
-    const id = hCtx.getImageData(0, 0, W, H); const d = id.data;
-    for (let i = 0; i < d.length; i+=4) {
-      const a = d[i+3]; if (a<3) continue;
-      const t = Math.min(1, a/140);
-      let r, g, b;
-      if(t<0.2){r=30;g=Math.round(80+t*200);b=30;}
-      else if(t<0.35){const s=(t-0.2)/0.15;r=Math.round(50+205*s);g=Math.round(180+75*s);b=Math.round(30-30*s);}
-      else if(t<0.70){const s=(t-0.35)/0.35;r=255;g=255-Math.round(60*s);b=0;}
-      else if(t<0.85){const s=(t-0.70)/0.15;r=255;g=Math.round(195-95*s);b=0;}
-      else{const s=(t-0.85)/0.15;r=255;g=Math.round(100-100*s);b=0;}
-      d[i]=r;d[i+1]=g;d[i+2]=b;d[i+3]=Math.min(220,Math.round(a*2.0));
-    }
-    hCtx.putImageData(id, 0, 0);
 
-    let alive = true;
-    const drawPitch = () => {
-      ctx.fillStyle = "#0a1f10";
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = "rgba(212,175,55,0.3)"; ctx.lineWidth = 1;
-      ctx.strokeRect(m, m, pW, pH);
-      ctx.beginPath(); ctx.moveTo(W/2, m); ctx.lineTo(W/2, H-m); ctx.stroke();
-      ctx.beginPath(); ctx.arc(W/2, H/2, pH*0.134, 0, Math.PI*2); ctx.stroke();
-      ctx.beginPath(); ctx.arc(W/2, H/2, 3, 0, Math.PI*2);
-      ctx.fillStyle="rgba(212,175,55,0.7)"; ctx.fill();
-      const paW=pW*0.157,paH=pH*0.593;
-      ctx.strokeRect(m,(H-paH)/2,paW,paH); ctx.strokeRect(W-m-paW,(H-paH)/2,paW,paH);
-    };
+    // Colorize Heatmap
+    try {
+      const id = hCtx.getImageData(0, 0, W, H);
+      const d = id.data;
+      for (let i = 0; i < d.length; i+=4) {
+        const a = d[i+3];
+        if (a < 3) continue;
+        const t = Math.min(1, a / 120);
+        let r, g, b;
+        if (t < 0.25) {
+          r = 0; g = Math.round(90 + t * 240); b = 255;
+        } else if (t < 0.5) {
+          const s = (t - 0.25) / 0.25;
+          r = Math.round(s * 255); g = 255; b = Math.round(255 - s * 255);
+        } else if (t < 0.75) {
+          const s = (t - 0.5) / 0.25;
+          r = 255; g = Math.round(255 - s * 120); b = 0;
+        } else {
+          const s = (t - 0.75) / 0.25;
+          r = 255; g = Math.round(135 - s * 135); b = 0;
+        }
+        d[i] = r; d[i+1] = g; d[i+2] = b; d[i+3] = Math.min(220, Math.round(a * 1.8));
+      }
+      hCtx.putImageData(id, 0, 0);
+    } catch(e){}
 
-    const render = () => {
-      if (!alive) return;
-      const pulse = 0.85 + Math.sin(frameRef.current * 0.04) * 0.15;
-      drawPitch();
+    const drawHeatmap = () => {
+      const pulse = 0.85 + Math.sin(frameRef.current * 0.05) * 0.12;
       ctx.globalCompositeOperation = "screen";
       ctx.globalAlpha = pulse;
       ctx.drawImage(hc, 0, 0);
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
+    };
+
+    // DRAW PASS MAP
+    const drawPassMap = () => {
+      MATCH_DATA.passes.forEach((p, idx) => {
+        const sx = m + (p.start.y / 100) * pW;
+        const sy = m + (p.start.x / 100) * pH;
+        const ex = m + (p.end.y / 100) * pW;
+        const ey = m + (p.end.x / 100) * pH;
+
+        // Animate line reveal
+        const animProgress = Math.min(1, Math.max(0, (frameRef.current - idx * 4) / 40));
+        if (animProgress <= 0) return;
+
+        const cx = sx + (ex - sx) * animProgress;
+        const cy = sy + (ey - sy) * animProgress;
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(cx, cy);
+
+        if (p.key) {
+          ctx.strokeStyle = "rgba(212, 175, 55, 0.9)";
+          ctx.lineWidth = 3;
+          ctx.shadowColor = "#D4AF37";
+          ctx.shadowBlur = 12;
+        } else if (p.success) {
+          ctx.strokeStyle = "rgba(45, 212, 191, 0.75)";
+          ctx.lineWidth = 1.8;
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.45)";
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 4]);
+          ctx.shadowBlur = 0;
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+
+        // Draw start dot & arrow at end
+        if (animProgress >= 1) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          ctx.fillStyle = p.success ? "rgba(45, 212, 191, 0.9)" : "rgba(239, 68, 68, 0.8)";
+          ctx.fill();
+
+          // Arrow head
+          const angle = Math.atan2(ey - sy, ex - sx);
+          ctx.beginPath();
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex - 6 * Math.cos(angle - Math.PI/6), ey - 6 * Math.sin(angle - Math.PI/6));
+          ctx.lineTo(ex - 6 * Math.cos(angle + Math.PI/6), ey - 6 * Math.sin(angle + Math.PI/6));
+          ctx.fillStyle = p.key ? "#D4AF37" : p.success ? "rgba(45, 212, 191, 0.9)" : "rgba(239, 68, 68, 0.8)";
+          ctx.fill();
+
+          if (p.key) {
+            // Draw a shiny star above key pass
+            ctx.beginPath();
+            ctx.arc(ex, ey, 5, 0, Math.PI*2);
+            ctx.fillStyle = "#D4AF37";
+            ctx.fill();
+          }
+        }
+      });
+    };
+
+    // DRAW DRIBBLE MAP
+    const drawDribbleMap = () => {
+      MATCH_DATA.dribbles.forEach((d, idx) => {
+        const sx = m + (d.start.y / 100) * pW;
+        const sy = m + (d.start.x / 100) * pH;
+        const ex = m + (d.end.y / 100) * pW;
+        const ey = m + (d.end.x / 100) * pH;
+
+        const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 8) / 35));
+        if (progress <= 0) return;
+
+        // Draw curved dribble path
+        const ctrlX = (sx + ex)/2 + (ey - sy) * 0.15;
+        const ctrlY = (sy + ey)/2 - (ex - sx) * 0.15;
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        
+        // Quad curve progress estimation
+        const t = progress;
+        const curX = (1-t)*(1-t)*sx + 2*(1-t)*t*ctrlX + t*t*ex;
+        const curY = (1-t)*(1-t)*sy + 2*(1-t)*t*ctrlY + t*t*ey;
+        
+        ctx.quadraticCurveTo(ctrlX, ctrlY, curX, curY);
+
+        if (d.success) {
+          ctx.strokeStyle = "rgba(59, 130, 246, 0.9)";
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = "#3b82f6";
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.strokeStyle = "rgba(239, 68, 68, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 0;
+
+        if (progress >= 1) {
+          if (d.success) {
+            // Sparkle / Star for successful dribble
+            ctx.beginPath();
+            ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+            ctx.strokeStyle = "#3b82f6";
+            ctx.stroke();
+          } else {
+            // X for failed
+            ctx.strokeStyle = "#ef4444";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(ex - 4, ey - 4); ctx.lineTo(ex + 4, ey + 4);
+            ctx.moveTo(ex + 4, ey - 4); ctx.lineTo(ex - 4, ey + 4);
+            ctx.stroke();
+          }
+        }
+      });
+    };
+
+    // DRAW SHOT MAP
+    const drawShotMap = () => {
+      MATCH_DATA.shots.forEach((s, idx) => {
+        // Attack is toward bottom goal
+        const cx = m + (s.y / 100) * pW;
+        const cy = m + ((100 - s.x) / 100) * pH;
+
+        const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 10) / 30));
+        if (progress <= 0) return;
+
+        // Glow effect
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 10 * progress, 0, Math.PI * 2);
+
+        if (s.result === "goal") {
+          ctx.fillStyle = "rgba(212, 175, 55, 0.85)";
+          ctx.shadowColor = "#D4AF37";
+          ctx.shadowBlur = 18;
+          ctx.fill();
+
+          // Goal label text
+          ctx.fillStyle = "#fff";
+          ctx.font = "900 9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("BUT", cx, cy);
+        } else if (s.result === "save") {
+          ctx.fillStyle = "rgba(59, 130, 246, 0.75)";
+          ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Shot line from kicker to goalmouth
+        if (progress >= 1) {
+          ctx.strokeStyle = s.result === "goal" ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.15)";
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(W/2, H - m); // Villareal goal center
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      });
+    };
+
+    // DRAW DEFENSE MAP
+    const drawDefenseMap = () => {
+      MATCH_DATA.defense.forEach((d, idx) => {
+        const cx = m + (d.y / 100) * pW;
+        const cy = m + (d.x / 100) * pH;
+
+        const progress = Math.min(1, Math.max(0, (frameRef.current - idx * 8) / 25));
+        if (progress <= 0) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8 * progress, 0, Math.PI * 2);
+
+        if (d.type === 'recovery') {
+          ctx.fillStyle = "rgba(234, 179, 8, 0.8)";
+          ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.stroke();
+          // Draw mini shield details inside recovery dot
+          ctx.fillStyle = "#000";
+          ctx.fillRect(cx - 2, cy - 2, 4, 4);
+        } else if (d.type === 'tackle' && d.success) {
+          ctx.fillStyle = "rgba(16, 185, 129, 0.85)";
+          ctx.fill();
+          ctx.strokeStyle = "#fff";
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "rgba(239, 68, 68, 0.6)";
+          ctx.fill();
+          ctx.strokeStyle = "#000";
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+    };
+
+    const render = () => {
+      if (!alive) return;
+      ctx.clearRect(0, 0, W, H);
+      drawPitch();
+
+      if (activeViz === 'heatmap') {
+        drawHeatmap();
+      } else if (activeViz === 'passes') {
+        drawPassMap();
+      } else if (activeViz === 'dribbles') {
+        drawDribbleMap();
+      } else if (activeViz === 'shots') {
+        drawShotMap();
+      } else if (activeViz === 'defense') {
+        drawDefenseMap();
+      }
+
       frameRef.current++;
       animRef.current = requestAnimationFrame(render);
     };
+
     animRef.current = requestAnimationFrame(render);
+
     return () => {
       alive = false;
       cancelAnimationFrame(animRef.current);
     };
-  }, [points]);
+  }, [activeViz, vizVisible]);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
-      animate={visible ? { opacity: 1, scale: 1 } : {}}
-      transition={{ duration: 1 }}
-      className="w-full max-w-[740px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl relative"
+      animate={vizVisible ? { opacity: 1, scale: 1 } : {}}
+      transition={{ duration: 0.8 }}
+      className="w-full max-w-[740px] rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative bg-black/40 backdrop-blur-md"
     >
+      {/* Top Banner on tactical screen */}
+      <div className="absolute top-4 left-6 z-20 flex items-center gap-2.5 px-3 py-1 rounded-full bg-black/60 border border-white/5 backdrop-blur-md text-[9px] font-black uppercase tracking-widest text-[#D4AF37]">
+        <Compass size={11} className="animate-spin-slow" />
+        Visualisation Tactique : {activeViz}
+      </div>
+
       <canvas ref={canvasRef} width={W} height={H} style={{ width:"100%", height:"auto", display:"block" }} />
     </motion.div>
   );
 }
 
-// ── Shootmap Canvas ───────────────────────────────────────────────────────────
-function ShootmapCanvas({ shots, visible }: { shots: Array<any>; visible: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const W = 370, H = 480;
-  const [shown, setShown] = useState(0);
+// ── Interactive side info card ───────────────────────────────────────────────
+function InteractiveInfoCard({ activeViz }: { activeViz: string }) {
+  const getVizDetails = () => {
+    switch (activeViz) {
+      case 'heatmap':
+        return {
+          title: "Activité Globale",
+          desc: "Zone de chaleur complète montrant le positionnement prédominant de Lamine Yamal sur l'aile droite. Une présence constante dans les 30 derniers mètres de Villarreal.",
+          stats: [
+            { label: "Touches", val: "70" },
+            { label: "Balles dans surface", val: "8" },
+            { label: "Ballons perdus", val: "15" }
+          ],
+          accent: "#D4AF37"
+        };
+      case 'shots':
+        return {
+          title: "Efficacité Face au But",
+          desc: "Un triplé exceptionnel (3 buts) sur 6 tirs tentés, dont 4 cadrés. Yamal fait preuve d'un réalisme chirurgical d'un total cumulé de 0.94 xG (buts attendus).",
+          stats: [
+            { label: "Buts", val: "3" },
+            { label: "Tirs Cadrés", val: "4/6" },
+            { label: "xG Cumulé", val: "0.94" }
+          ],
+          accent: "#FF4500"
+        };
+      case 'passes':
+        return {
+          title: "Créativité & Distribution",
+          desc: "Une précision remarquable de 87% (41 passes réussies sur 47) avec 2 passes clés déstabilisantes, démontrant une vision et une justesse parfaites dans le jeu combiné.",
+          stats: [
+            { label: "Précision", val: "87%" },
+            { label: "Passes Clés", val: "2" },
+            { label: "Longs Ballons", val: "2/2" }
+          ],
+          accent: "#2DD4BF"
+        };
+      case 'dribbles':
+        return {
+          title: "Percées & Éliminations",
+          desc: "Un dynamisme incessant sur le flanc droit avec 6 dribbles réussis sur 10. Son agilité lui a permis de progresser de 219 mètres balle au pied.",
+          stats: [
+            { label: "Dribbles", val: "6/10" },
+            { label: "Portée Prog.", val: "219m" },
+            { label: "Att. Prog.", val: "10" }
+          ],
+          accent: "#3B82F6"
+        };
+      case 'defense':
+        return {
+          title: "Repli & Activité Défensive",
+          desc: "Yamal a montré un engagement total avec 3 récupérations hautes dans la moitié adverse de Villarreal et 6 duels remportés pour bloquer les transitions rapides.",
+          stats: [
+            { label: "Récupérations", val: "3" },
+            { label: "Duels Gagnés", val: "6/13" },
+            { label: "Tacles", val: "2" }
+          ],
+          accent: "#EAB308"
+        };
+      default:
+        return null;
+    }
+  };
 
-  useEffect(() => {
-    if (!visible) return;
-    const interval = setInterval(() => setShown(p => p < shots.length ? p+1 : p), 400);
-    return () => clearInterval(interval);
-  }, [visible, shots.length]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current; if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const m=15, pW=W-m*2, pH=H-m*2;
-    ctx.fillStyle="#100800"; ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle="rgba(212,175,55,0.25)"; ctx.lineWidth=1;
-    ctx.strokeRect(m,m,pW,pH);
-    
-    shots.slice(0,shown).forEach(s => {
-      const cx=m+(s.y/100)*pW, cy=m+((100-s.x)/50)*pH;
-      ctx.beginPath(); ctx.arc(cx,cy,8,0,Math.PI*2);
-      if(s.result==="goal"){
-        ctx.fillStyle="#D4AF37"; ctx.fill();
-        ctx.strokeStyle="#fff"; ctx.stroke();
-      } else {
-        ctx.fillStyle="rgba(255,255,255,0.1)"; ctx.fill();
-        ctx.strokeStyle="rgba(255,255,255,0.5)"; ctx.stroke();
-      }
-    });
-  }, [shots, shown]);
+  const info = getVizDetails();
+  if (!info) return null;
 
   return (
     <motion.div
-      initial={{ opacity:0, x:20 }}
-      animate={visible ? { opacity:1, x:0 } : {}}
-      transition={{ duration:1, delay:0.3 }}
-      className="w-full max-w-[370px] rounded-2xl overflow-hidden border border-white/10"
+      key={activeViz}
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.3 }}
+      className="p-6 sm:p-8 rounded-3xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl relative overflow-hidden flex flex-col justify-between"
+      style={{ minHeight: 320 }}
     >
-      <canvas ref={canvasRef} width={W} height={H} style={{ width:"100%", height:"auto", display:"block" }} />
+      {/* Decorative colored glow in top-right */}
+      <div 
+        className="absolute -top-12 -right-12 w-24 h-24 rounded-full filter blur-3xl opacity-20 transition-all duration-500"
+        style={{ background: info.accent }}
+      />
+
+      <div>
+        <h3 className="font-serif italic font-black text-xl sm:text-2xl text-white mb-3" style={{ borderLeft: `4px solid ${info.accent}`, paddingLeft: 12 }}>
+          {info.title}
+        </h3>
+        <p className="text-xs sm:text-sm text-white/70 leading-relaxed font-medium mb-6">
+          {info.desc}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        {info.stats.map((s, idx) => (
+          <div key={idx} className="p-3.5 rounded-2xl bg-white/5 border border-white/5 text-center flex flex-col justify-center">
+            <div className="text-[8px] sm:text-[9px] uppercase tracking-widest text-white/40 font-bold mb-1">{s.label}</div>
+            <div className="text-sm sm:text-base font-black italic font-serif" style={{ color: info.accent }}>{s.val}</div>
+          </div>
+        ))}
+      </div>
     </motion.div>
   );
 }
 
-// ── Animated counter ──────────────────────────────────────────────────────────
-function Counter({ to, delay=0 }: { to: number; delay?: number }) {
+// ── Interactive Counter ──────────────────────────────────────────────────────
+function Counter({ to, delay = 0 }: { to: number; delay?: number }) {
   const [count, setCount] = useState(0);
+
   useEffect(() => {
-    let raf: number;
-    let alive = true;
+    let timer: any;
     const startTime = performance.now() + delay * 1000;
     const duration = 1200;
-    const tick = (now: number) => {
-      if (!alive) return;
+
+    const run = () => {
+      const now = performance.now();
       const elapsed = now - startTime;
-      if (elapsed < 0) { raf = requestAnimationFrame(tick); return; }
+      
+      if (elapsed < 0) {
+        // Not ready yet, check again soon
+        timer = setTimeout(run, 16);
+        return;
+      }
+
       const pct = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - pct, 3);
       setCount(Math.round(ease * to));
-      if (pct < 1) raf = requestAnimationFrame(tick);
+
+      if (pct < 1) {
+        timer = setTimeout(run, 16);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => { alive = false; cancelAnimationFrame(raf); };
+
+    timer = setTimeout(run, 16);
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [to, delay]);
+
   return <>{count}</>;
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+// ── Main TakeOver Component ───────────────────────────────────────────────────
 export default function TakeOver() {
   const [, setLocation] = useLocation();
   const [phase, setPhase] = useState(0);
+  const [activeViz, setActiveViz] = useState<string>("heatmap");
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -377,13 +792,6 @@ export default function TakeOver() {
   const curtainDone = phase >= 1;
   const vizVisible  = phase >= 2;
 
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 80, damping: 20 });
-  const springY = useSpring(mouseY, { stiffness: 80, damping: 20 });
-  const rotateX = useTransform(springY, [-100, 100], [8, -8]);
-  const rotateY = useTransform(springX, [-100, 100], [-8, 8]);
-
   const STATS = [
     { label:"Buts",           value: MATCH_DATA.stats.goals,              sub:"Hat-trick" },
     { label:"Note",           value: MATCH_DATA.stats.rating,             sub:"Perfection" },
@@ -401,13 +809,21 @@ export default function TakeOver() {
     { label:"Temps",          value: `${MATCH_DATA.stats.minutes}'`,      sub:"Maestro" },
   ];
 
+  const tabs = [
+    { id: 'heatmap', label: 'Heatmap', icon: '🗺️' },
+    { id: 'shots', label: 'Shoot Map', icon: '🎯' },
+    { id: 'passes', label: 'Pass Map', icon: '➡️' },
+    { id: 'dribbles', label: 'Dribble Map', icon: '⚡' },
+    { id: 'defense', label: 'Defense Map', icon: '🛡️' }
+  ];
+
   return (
     <>
       <RedCurtain onDone={handleCurtainDone} />
 
       <div
-        className="min-h-screen relative overflow-hidden bg-[#0a0600] text-white"
-        style={{ background: "radial-gradient(circle at 80% 20%, #200800 0%, #0a0600 100%)" }}
+        className="min-h-screen relative overflow-hidden bg-[#050300] text-white"
+        style={{ background: "radial-gradient(circle at 80% 20%, #170500 0%, #050300 100%)" }}
       >
         {/* Back Button */}
         <motion.button
@@ -470,7 +886,7 @@ export default function TakeOver() {
                 </div>
                 <div className="text-left border-l border-white/20 pl-10">
                   <div className="text-xl font-black italic text-white uppercase">{MATCH_DATA.team} <span className="text-[#D4AF37] mx-2">{MATCH_DATA.score}</span> {MATCH_DATA.opponent}</div>
-                  <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">LaLiga · Saison 2025/26</div>
+                  <div className="text-white/40 text-[10px] font-bold uppercase tracking-widest mt-1">LaLiga · 28 Février 2026</div>
                 </div>
               </motion.div>
             </div>
@@ -500,12 +916,39 @@ export default function TakeOver() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8">
-               <HeatmapCanvas points={MATCH_DATA.heatmapPoints} visible={vizVisible} />
+          {/* Premium Selector Tabs */}
+          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+            {tabs.map((tab) => {
+              const active = activeViz === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveViz(tab.id)}
+                  className={`
+                    flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest
+                    border transition-all duration-300 backdrop-blur-md cursor-pointer
+                    ${active 
+                      ? "bg-[#D4AF37]/15 border-[#D4AF37] text-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.25)]" 
+                      : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"
+                    }
+                  `}
+                >
+                  <span className="text-base">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Map and details layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-8 flex justify-center w-full">
+               <TacticalBoard activeViz={activeViz} vizVisible={vizVisible} />
             </div>
-            <div className="lg:col-span-4">
-               <ShootmapCanvas shots={MATCH_DATA.shots} visible={vizVisible} />
+            <div className="lg:col-span-4 w-full">
+               <AnimatePresence mode="wait">
+                 <InteractiveInfoCard activeViz={activeViz} />
+               </AnimatePresence>
             </div>
           </div>
 
