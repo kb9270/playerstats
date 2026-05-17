@@ -183,7 +183,7 @@ export default function LeagueDetail() {
         <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button 
-              onClick={() => setLocation("/leagues")}
+              onClick={() => setLocation("/")}
               style={{ background: "rgba(255,255,255,0.05)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
             >
               <ArrowLeft size={18} />

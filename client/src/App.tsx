@@ -25,6 +25,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={BentoHome} />
+      <Route path="/leagues" component={BentoHome} />
       <Route path="/home-legacy" component={Home} />
       <Route path="/dashboard" component={BeautifulCSVDashboard} />
       <Route path="/player/:id" component={PlayerProfile} />
