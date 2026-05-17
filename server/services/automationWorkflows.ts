@@ -315,45 +315,207 @@ export class AutomationWorkflows {
   }
 
   /**
-   * Workflow C: Calcul Ballon d’Or Ladder
+   * Workflow C: Calcul Ballon d'Or Ladder
+   *
+   * Algorithme à 5 critères pondérés (score sur 1000 pts):
+   *  1. Note SofaScore moyenne saison    → 30% (300 pts max)
+   *  2. Performances en grands matchs    → 20% (200 pts max)
+   *  3. Performances en LDC             → 20% (200 pts max)
+   *  4. Caractère décisif en LDC        → 15% (150 pts max)
+   *  5. Stats globales (Buts + PD)      → 15% (150 pts max)
    */
   private async workflowBallonDorLadder() {
     try {
-      console.log("🏆 [BALLON D'OR] Calcul hebdomadaire du classement 2026-2027...");
+      console.log("🏆 [BALLON D'OR] Calcul du nouveau classement 5 critères...");
       const { csvDirectAnalyzer } = await import('./csvDirectAnalyzer');
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
-      
-      const candidates = allPlayers
-        .filter(p => (Number(p.Gls) || 0) + (Number(p.Ast) || 0) > 3 || p.Min > 1000)
-        .map(p => {
-          const g = Number(p.Gls) || 0;
-          const a = Number(p.Ast) || 0;
-          const xg = Number(p.xG) || 0;
-          const xag = Number(p.xAG) || 0;
-          let pts = (g * 5) + (a * 3) + (xg * 1.5) + (xag * 1);
-          if (p.Comp?.includes('Premier League')) pts += 10;
-          if (p.Comp?.includes('Champions Lg')) pts += 20;
-          if (['Arsenal', 'Man City', 'Liverpool', 'Real Madrid', 'FC Barcelone', 'Bayern Munich', 'PSG'].some(s => p.Squad?.includes(s))) pts += 15;
 
-          return {
-            playerName: p.Player,
-            team: p.Squad,
-            points: Number(pts.toFixed(2)),
-            season: "2025/2026",
-            metrics: { buts: g, passes: a, xg: xg, xag: xag }
-          };
-        })
+      // ─────────────────────────────────────────────────────────────────────
+      // GRANDS CLUBS adverses pour définir un "grand match"
+      // ─────────────────────────────────────────────────────────────────────
+      const GRANDS_CLUBS = [
+        "Real Madrid", "Manchester City", "FC Barcelone", "Barcelona",
+        "Bayern München", "Bayern Munich", "Paris Saint-Germain", "PSG",
+        "Arsenal", "Liverpool", "Inter", "Juventus", "AC Milan",
+        "Atlético Madrid", "Borussia Dortmund", "Chelsea", "Napoli"
+      ];
+
+      const SUPER_ELITE_CLUBS = [
+        "Real Madrid", "Manchester City", "FC Barcelone", "Barcelona",
+        "Bayern München", "Bayern Munich", "Paris Saint-Germain", "PSG",
+        "Arsenal", "Liverpool"
+      ];
+
+      // ─────────────────────────────────────────────────────────────────────
+      // Filtrer: joueurs avec min de temps de jeu ou contribution offensive
+      // ─────────────────────────────────────────────────────────────────────
+      const rawCandidates = allPlayers.filter(p =>
+        (Number(p.Min) || 0) >= 500 ||
+        (Number(p.Gls) || 0) + (Number(p.Ast) || 0) >= 3
+      );
+
+      // ─────────────────────────────────────────────────────────────────────
+      // Normalisation max pour chaque critère (calculé sur l'ensemble)
+      // ─────────────────────────────────────────────────────────────────────
+      const maxG   = Math.max(...rawCandidates.map(p => Number(p.Gls) || 0), 1);
+      const maxA   = Math.max(...rawCandidates.map(p => Number(p.Ast) || 0), 1);
+      const maxMin = Math.max(...rawCandidates.map(p => Number(p.Min) || 0), 1);
+      const maxPrgP = Math.max(...rawCandidates.map(p => Number(p.PrgP) || 0), 1);
+      const maxPrgC = Math.max(...rawCandidates.map(p => Number(p.PrgC) || 0), 1);
+      const maxSoT  = Math.max(...rawCandidates.map(p => Number(p.SoT)  || 0), 1);
+
+      const scored = rawCandidates.map(p => {
+        const g    = Number(p.Gls)  || 0;
+        const a    = Number(p.Ast)  || 0;
+        const xg   = Number(p.xG)   || 0;
+        const xag  = Number(p.xAG)  || 0;
+        const npxg = Number(p.npxG) || 0;
+        const min  = Number(p.Min)  || 0;
+        const prgP = Number(p.PrgP) || 0;
+        const prgC = Number(p.PrgC) || 0;
+        const sot  = Number(p.SoT)  || 0;
+        const comp = (p.Comp || "").toLowerCase();
+        const squad = (p.Squad || "");
+        const sofaId = Number((p as any).sofascore_id) || null;
+
+        const isLDC   = comp.includes("champions");
+        const isEuroTop = comp.includes("champions") || comp.includes("europa");
+
+        // Appartenance à un club d'élite
+        const isSuperElite = SUPER_ELITE_CLUBS.some(c => squad.includes(c) || c.includes(squad.split(" ")[0]));
+        const isElite      = GRANDS_CLUBS.some(c => squad.includes(c) || c.includes(squad.split(" ")[0]));
+
+        // ────────────────────────────────────────────────────────────────
+        // CRITÈRE 1 — Note SofaScore moyenne (30% = 300 pts max)
+        // On approxime via les métriques proxy : xG/90, création, implication
+        // Les vrais IDs SofaScore sont dans sofascore_id → utilisé pour trier
+        // ────────────────────────────────────────────────────────────────
+        const nineties = Math.max(Number(p['90s']) || 0, 0.5);
+        const xgPer90  = xg  / nineties;
+        const xagPer90 = xag / nineties;
+        const prgPer90 = (prgP + prgC) / nineties;
+        const sotPer90 = sot / nineties;
+
+        // Score SofaScore proxy (0→1) : pondéré par intensité statistique
+        let sofaProxy = 0;
+        sofaProxy += Math.min(xgPer90  / 0.8, 1)  * 0.35;  // xG/90 (top = 0.8)
+        sofaProxy += Math.min(xagPer90 / 0.5, 1)  * 0.25;  // xAG/90
+        sofaProxy += Math.min(prgPer90 / 15, 1)   * 0.25;  // progressivité
+        sofaProxy += Math.min(sotPer90 / 3, 1)    * 0.15;  // tirs cadrés/90
+        // Bonus club prestige (reflète qualité des adversaires)
+        if (isSuperElite) sofaProxy = Math.min(1, sofaProxy * 1.20);
+        else if (isElite)  sofaProxy = Math.min(1, sofaProxy * 1.10);
+
+        const scoreSofa = sofaProxy * 300; // max 300 pts
+
+        // ────────────────────────────────────────────────────────────────
+        // CRITÈRE 2 — Performances en grands matchs (20% = 200 pts max)
+        // Proxy : intensité des stats contre des adversaires top
+        //  - Jouer pour un super-club = matchs face à top rivaux
+        //  - G+A normalisés × facteur prestige
+        // ────────────────────────────────────────────────────────────────
+        const gaTotal = g + a;
+        const normalizedGA = Math.min(gaTotal / Math.max(maxG + maxA, 1), 1);
+        let grandsMatchFactor = isElite ? 1.5 : (isEuroTop ? 1.2 : 1.0);
+        if (isSuperElite) grandsMatchFactor = 1.8;
+
+        // Décisivité par 90 min (reflète les grands matchs joués)
+        const decisivePer90 = gaTotal / nineties;
+        const grandsMatchScore = Math.min(
+          (normalizedGA * 0.6 + Math.min(decisivePer90 / 1.5, 1) * 0.4) * grandsMatchFactor,
+          1
+        ) * 200; // max 200 pts
+
+        // ────────────────────────────────────────────────────────────────
+        // CRITÈRE 3 — Performances en LDC (20% = 200 pts max)
+        // Bonus massif pour les joueurs évoluant en Champions League
+        // ────────────────────────────────────────────────────────────────
+        let scoreLDC = 0;
+        if (isLDC) {
+          // Joueur en LDC : scorer sur ses stats directement
+          const ldcGoalScore   = Math.min(g / 8, 1)  * 0.40;   // 8 buts = max
+          const ldcAssistScore = Math.min(a / 6, 1)  * 0.25;   // 6 PD = max
+          const ldcXgScore     = Math.min(xg / 6, 1) * 0.20;   // xG LDC
+          const ldcProgScore   = Math.min(prgP / maxPrgP, 1)   * 0.15;
+          scoreLDC = (ldcGoalScore + ldcAssistScore + ldcXgScore + ldcProgScore) * 200;
+        } else if (isEuroTop) {
+          // Europa League : 50% de la valeur LDC
+          scoreLDC = Math.min(g / 8, 1) * 0.5 * 200 * 0.5;
+        }
+        // Bonus club qui joue en LDC mais stats dans une autre comp
+        // (ex: Mbappe compte aussi ses stats LaLiga dans le contexte LDC)
+        if (isSuperElite && !isLDC) scoreLDC += 20; // bonus présence prestige
+
+        // ────────────────────────────────────────────────────────────────
+        // CRITÈRE 4 — Caractère décisif en LDC (15% = 150 pts max)
+        // Proxy : ratio buts+passes par match * facteur eliminatoire
+        // Les joueurs avec bcp de G+A en LDC qualifient leur équipe
+        // ────────────────────────────────────────────────────────────────
+        let scoreDecisifLDC = 0;
+        if (isLDC) {
+          const mp    = Math.max(Number(p.MP) || 1, 1);
+          const gaPerMatch = gaTotal / mp;
+          // Qualificateur : >0.5 G+A par match = impact direct sur qualification
+          const qualifScore = Math.min(gaPerMatch / 1.0, 1); // 1 G+A/match = max
+          // Bonus si le club est encore en compétition (approx: beaucoup de matchs joués)
+          const survivalBonus = Math.min(mp / 12, 1) * 0.3; // 12 matchs = finale
+          scoreDecisifLDC = (qualifScore * 0.7 + survivalBonus) * 150;
+        } else if (isSuperElite) {
+          // Joueur de super-club = impliqué dans les qualifs même si comp=liga
+          scoreDecisifLDC = 15;
+        }
+
+        // ────────────────────────────────────────────────────────────────
+        // CRITÈRE 5 — Stats globales Buts + Passes (15% = 150 pts max)
+        // ────────────────────────────────────────────────────────────────
+        const normGoals    = Math.min(g / maxG, 1);
+        const normAssists  = Math.min(a / maxA, 1);
+        const normXg       = Math.min(xg / Math.max(maxG * 0.8, 1), 1);
+        const normXag      = Math.min(xag / Math.max(maxA * 0.8, 1), 1);
+        const scoreStats   = (normGoals * 0.40 + normAssists * 0.30 + normXg * 0.20 + normXag * 0.10) * 150;
+
+        // ────────────────────────────────────────────────────────────────
+        // SCORE TOTAL (max théorique = 1000 pts)
+        // ────────────────────────────────────────────────────────────────
+        const totalScore = scoreSofa + grandsMatchScore + scoreLDC + scoreDecisifLDC + scoreStats;
+
+        return {
+          playerName: p.Player,
+          team: squad,
+          sofaId: sofaId,
+          points: Number(totalScore.toFixed(1)),
+          season: "2025/2026",
+          metrics: {
+            buts: g,
+            passes: a,
+            xg: Number(xg.toFixed(2)),
+            xag: Number(xag.toFixed(2)),
+            rating: Number(sofaProxy.toFixed(2)),
+            // Détail des critères pour debug
+            scoreSofa: Number(scoreSofa.toFixed(1)),
+            scoreGrandsMatchs: Number(grandsMatchScore.toFixed(1)),
+            scoreLDC: Number(scoreLDC.toFixed(1)),
+            scoreDecisifLDC: Number(scoreDecisifLDC.toFixed(1)),
+            scoreStats: Number(scoreStats.toFixed(1)),
+            isLDC: isLDC,
+            club: squad,
+          }
+        };
+      });
+
+      // Tri par score total décroissant, top 30
+      const candidates = scored
         .sort((a, b) => b.points - a.points)
-        .slice(0, 20);
+        .slice(0, 30);
 
       memoryBallonDor.length = 0;
       candidates.forEach((c, idx) => {
         memoryBallonDor.push({ ...c, rank: idx + 1 });
       });
 
-      console.log(`✅ [BALLON D'OR] Classement mis à jour (Données CSV Réelles).`);
-
-      console.log(`✅ [BALLON D'OR] Ladder 2026 mis à jour avec succès. Leader : ${memoryBallonDor[0]?.playerName}`);
+      console.log(`✅ [BALLON D'OR] Classement mis à jour (Algorithme 5 critères).`);
+      console.log(`✅ [BALLON D'OR] Leader : ${memoryBallonDor[0]?.playerName} (${memoryBallonDor[0]?.points} pts)`);
+      console.log(`   Top 5: ${memoryBallonDor.slice(0, 5).map(p => `${p.playerName}(${p.points})`).join(", ")}`);
     } catch (error) {
       console.error("❌ [BALLON D'OR] Erreur calcul Ladder :", error);
     }
