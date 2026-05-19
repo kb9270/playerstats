@@ -15,6 +15,10 @@ import os, sys, time, random, shutil
 import pandas as pd
 from tqdm import tqdm
 
+# Force UTF-8 for Windows terminal
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 OUTPUT_FILE  = "players_data_2025_2026.csv"
 BACKUP_FILE  = "players_data_2025_2026_backup.csv"
 BLOCK_SIZE   = 100  # joueurs par bloc dans les logs
@@ -206,6 +210,23 @@ def main():
     if result is None or result.empty:
         print("\n❌ Rien à sauvegarder.")
         return
+
+    # ─── RÉCUPÉRATION DES IDs (FBref & SofaScore) ─────────────────
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            print("  🔍 Récupération des anciens IDs (fbref_id, sofascore_id)...")
+            old_df = pd.read_csv(OUTPUT_FILE)
+            if "Player" in old_df.columns:
+                id_cols = ["Player"]
+                if "fbref_id" in old_df.columns: id_cols.append("fbref_id")
+                if "sofascore_id" in old_df.columns: id_cols.append("sofascore_id")
+                
+                if len(id_cols) > 1:
+                    old_ids = old_df[id_cols].drop_duplicates(subset=["Player"])
+                    result = result.merge(old_ids, on="Player", how="left")
+                    print(f"  ✅ IDs préservés avec succès.")
+        except Exception as e:
+            print(f"  ⚠️ Erreur lors de la récupération des anciens IDs: {e}")
 
     result.to_csv(OUTPUT_FILE, index=False)
     print(f"\n\n{'='*62}")

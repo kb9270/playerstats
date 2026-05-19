@@ -27,7 +27,7 @@ const UCL_CYAN  = "#00E5FF";
 const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: string; left: string; onClick?: () => void }) => {
   if (!player) return null;
   const teamId = player.teamId || 0;
-  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
+  const teamLogo = teamId ? `https://api.sofascore.app/api/v1/team/${teamId}/image` : null;
 
   return (
     <motion.div

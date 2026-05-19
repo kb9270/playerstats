@@ -8,6 +8,7 @@
 
 import sys
 import time
+import random
 import re
 import json
 import warnings
@@ -21,6 +22,10 @@ import requests
 from bs4 import BeautifulSoup
 
 warnings.filterwarnings('ignore')
+
+# Force UTF-8 for Windows terminal
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
 
@@ -168,11 +173,13 @@ def collect_fbref_soccerdata() -> pd.DataFrame:
                         else:
                             league_merged = pd.concat([league_merged, df], axis=0, ignore_index=True)
 
-                    time.sleep(2)  # respect FBref rate limit
+                    delay = random.uniform(6, 10)
+                    print(f"  ⏳ Pause furtive {delay:.1f}s...")
+                    time.sleep(delay)  # respect FBref rate limit
 
                 except Exception as e:
                     print(f"⚠️  {e}")
-                    time.sleep(3)
+                    time.sleep(random.uniform(5, 8))
 
             if league_merged is not None and not league_merged.empty:
                 league_merged["_comp"] = info["comp"]
@@ -194,7 +201,9 @@ def collect_fbref_soccerdata() -> pd.DataFrame:
             print(f"  ❌ Erreur pour {league}: {e}")
             traceback.print_exc()
 
-        time.sleep(5)  # pause entre ligues
+        league_pause = random.uniform(15, 25)
+        print(f"\n⏳ Pause inter-ligue {league_pause:.0f}s...")
+        time.sleep(league_pause)  # pause entre ligues
 
     if not all_dfs:
         print("❌ Aucune donnée FBref collectée")
@@ -427,6 +436,23 @@ def finalize(df: pd.DataFrame) -> pd.DataFrame:
 
     # Reset index
     df = df.reset_index(drop=True)
+    
+    # ─── RÉCUPÉRATION DE TOUTES LES ANCIENNES COLONNES ─────────────────
+    if os.path.exists(OUTPUT_CSV):
+        try:
+            print("  🔍 Récupération des anciennes colonnes (IDs, valeurs TM, etc.)...")
+            old_df = pd.read_csv(OUTPUT_CSV)
+            if "Player" in old_df.columns:
+                # On garde le nom du joueur + toutes les colonnes qui ne sont pas dans les nouvelles données
+                cols_to_keep = ["Player"] + [c for c in old_df.columns if c not in df.columns]
+                
+                if len(cols_to_keep) > 1:
+                    old_data = old_df[cols_to_keep].drop_duplicates(subset=["Player"])
+                    df = df.merge(old_data, on="Player", how="left")
+                    print(f"  ✅ {len(cols_to_keep)-1} anciennes colonnes préservées avec succès.")
+        except Exception as e:
+            print(f"  ⚠️ Erreur lors de la récupération des anciennes données: {e}")
+
     df.insert(0, "Rk", range(1, len(df) + 1))
 
     print(f"  ✅ Dataset : {len(df)} joueurs × {len(df.columns)} colonnes")

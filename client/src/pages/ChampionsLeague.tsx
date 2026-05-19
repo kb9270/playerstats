@@ -5,6 +5,7 @@ import { useLocation } from "wouter";
 import { Star, Target, Zap, ChevronLeft, Award, RefreshCw, Wifi, WifiOff } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import Header from "@/components/Header";
+import uclStarballBg from "@/assets/ucl_starball_bg.png";
 
 // ─── Ultimate Stage Palette ────────────────────────────────
 const UCL_NIGHT = "#000B29"; // Deep night blue
@@ -32,12 +33,12 @@ const UCL_TOTW_2526 = [
 const UCL_SCORERS_SEED = [
   { name: "Kylian Mbappé",    team: "Real Madrid",         goals: 15, sofaId: 826643 },
   { name: "Harry Kane",       team: "FC Bayern München",   goals: 14, sofaId: 108579 },
-  { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", goals: 10, sofaId: 889259 },
+  { name: "Khvicha Kvaratskhelia", team: "Napoli", goals: 10, sofaId: 889259 },
   { name: "Julián Álvarez",   team: "Atlético Madrid",     goals: 10, sofaId: 911571 },
   { name: "Anthony Gordon",   team: "Newcastle United",    goals: 10, sofaId: 866030 },
 ];
 const UCL_ASSISTERS_SEED = [
-  { name: "Khvicha Kvaratskhelia", team: "Paris Saint-Germain", assists: 7, sofaId: 889259 },
+  { name: "Khvicha Kvaratskhelia", team: "Napoli", assists: 7, sofaId: 889259 },
   { name: "Michael Olise",    team: "FC Bayern München",   assists: 6, sofaId: 948496 },
   { name: "Achraf Hakimi",    team: "Paris Saint-Germain", assists: 6, sofaId: 852073 },
   { name: "Kevin De Bruyne",  team: "Manchester City",     assists: 6, sofaId: 164655 },
@@ -81,10 +82,49 @@ function UCLField() {
 }
 
 // ─── Player Token (Pitch) ────────────────────────────────
+const CLUB_IDS: Record<string, number> = {
+  "bayern munich": 2672,
+  "fc bayern munchen": 2672,
+  "fc bayern münchen": 2672,
+  "bayern": 2672,
+  "arsenal": 42,
+  "psg": 1644,
+  "paris saint-germain": 1644,
+  "liverpool": 44,
+  "real madrid": 2829,
+  "barcelona": 2817,
+  "fc barcelona": 2817,
+  "fc barcelone": 2817,
+  "ac milan": 2692,
+  "manchester city": 17,
+  "man city": 17,
+  "atletico madrid": 2836,
+  "atletico": 2836,
+  "atlético madrid": 2836,
+  "newcastle": 33,
+  "newcastle united": 33,
+  "psv": 2917,
+  "club brugge": 349,
+  "bayer leverkusen": 2681,
+  "leverkusen": 2681,
+  "dortmund": 2673,
+  "borussia dortmund": 2673,
+  "chelsea": 38,
+  "juventus": 2687,
+  "monaco": 1623,
+  "lille": 1643,
+  "marseille": 1641,
+  "lens": 1648,
+  "napoli": 2714,
+  "ssc napoli": 2714,
+  "atalanta": 2686,
+};
+
 const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: string; left: string; onClick?: () => void }) => {
   if (!player) return null;
-  const teamId = player.teamId || 0;
-  const teamLogo = teamId ? `https://www.sofascore.com/api/v1/team/${teamId}/image` : null;
+  const squadNormalized = (player.Squad || player.team || "").toLowerCase().trim();
+  const teamId = player.teamId || CLUB_IDS[squadNormalized] || 0;
+  const teamLogo = teamId ? `https://api.sofascore.app/api/v1/team/${teamId}/image` : null;
 
   return (
     <motion.div
@@ -133,8 +173,8 @@ const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: strin
         }}>
           <div style={{ width: "100%", height: "100%" }}>
             <PlayerAvatar
-              playerName={player.Player || ""}
-              teamName={player.Squad}
+              playerName={player.Player || player.name || ""}
+              teamName={player.Squad || player.team}
               sofaId={player.sofaId}
               size="md"
               className="w-full h-full object-cover bg-transparent border-none opacity-98"
@@ -250,7 +290,7 @@ export default function ChampionsLeague() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundImage: `url("/src/assets/ucl_starball_bg.png")`,
+      backgroundImage: `url(${uclStarballBg})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundAttachment: "fixed",
@@ -347,7 +387,7 @@ export default function ChampionsLeague() {
                 {/* Field Grass Gradient with Official Background Overlay */}
                 <div style={{ 
                   position: "absolute", inset: 0, 
-                  backgroundImage: `linear-gradient(rgba(0,30,80,0.4), rgba(0,10,40,0.6)), url("/src/assets/ucl_starball_bg.png")`,
+                  backgroundImage: `linear-gradient(rgba(0,30,80,0.4), rgba(0,10,40,0.6)), url(${uclStarballBg})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
                   zIndex: 0 

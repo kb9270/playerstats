@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
 import { scraper } from "./services/scraper";
 import { pdfReportGenerator } from "./services/pdfReportGenerator";
@@ -25,6 +26,49 @@ import { optimizedTransfermarktApi } from "./services/optimizedTransfermarktApi"
 import { preCachePlayerMatches, preCacheMultiplePlayers, getPreCacheProgress } from "./services/batchPreCacher";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Limiteur de requêtes global pour l'ensemble des routes API
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 150, // Limite chaque IP à 150 requêtes par 15 minutes
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: "Trop de requêtes depuis cette adresse IP. Veuillez réessayer dans 15 minutes.",
+    },
+  });
+
+  // Limiteur strict pour les analyses IA (appels à OpenAI / DeepSeek)
+  const aiLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 heure
+    max: 15, // Limite chaque IP à 15 requêtes d'analyse par heure
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: "Limite de requêtes d'analyse IA atteinte (15 par heure). Veuillez réessayer plus tard.",
+    },
+  });
+
+  // Limiteur extrêmement strict pour les actions d'administration (déclenchement du scraper)
+  const adminLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 heure
+    max: 3, // Limite à 3 déclenchements d'administration par heure
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      success: false,
+      error: "Trop d'actions d'administration déclenchées. Veuillez réessayer plus tard.",
+    },
+  });
+
+  // Appliquer le rate limit global
+  app.use("/api", apiLimiter);
+
+  // Appliquer les rate limits spécifiques aux endpoints sensibles
+  app.use("/api/csv-direct/player/:name/ai-analysis", aiLimiter);
+  app.use("/api/admin/force-veille", adminLimiter);
+
   // Register n8n Webhooks
   registerN8nWebhooks(app);
 

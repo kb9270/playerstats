@@ -528,7 +528,22 @@ export class AutomationWorkflows {
         };
       });
 
-      const candidates = scored.sort((a, b) => b.points - a.points).slice(0, 30);
+      // Filter out duplicate players by sofaId or playerName (due to corrupted CSV lines)
+      const seenSofaIds = new Set<number>();
+      const seenNames = new Set<string>();
+      const uniqueScored: typeof scored = [];
+      for (const item of scored) {
+        if (item.sofaId) {
+          if (seenSofaIds.has(item.sofaId)) continue;
+          seenSofaIds.add(item.sofaId);
+        }
+        const nameKey = item.playerName.toLowerCase().trim();
+        if (seenNames.has(nameKey)) continue;
+        seenNames.add(nameKey);
+        uniqueScored.push(item);
+      }
+
+      const candidates = uniqueScored.sort((a, b) => b.points - a.points).slice(0, 30);
       memoryBallonDor.length = 0;
       candidates.forEach((c, idx) => memoryBallonDor.push({ ...c, rank: idx + 1 }));
 

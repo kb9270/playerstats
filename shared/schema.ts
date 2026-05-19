@@ -17,6 +17,7 @@ export const players = pgTable("players", {
   foot: text("foot"),
   photoUrl: text("photo_url"),
   fbrefId: text("fbref_id").unique(),
+  sofascoreId: text("sofascore_id").unique(),
   transfermarktId: text("transfermarkt_id").unique(),
   lastUpdated: timestamp("last_updated").defaultNow(),
 });

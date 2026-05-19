@@ -4,8 +4,13 @@ import datetime
 import pandas as pd
 import requests
 from io import StringIO
+import sys
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup, Comment
+
+# Force UTF-8 for Windows terminal
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # Charger les clés API depuis le .env
 load_dotenv()
@@ -28,6 +33,9 @@ LEAGUES_BIG5 = {
     "passing": "https://fbref.com/en/comps/Big5/passing/players/Big-5-European-Leagues-Stats",
     "possession": "https://fbref.com/en/comps/Big5/possession/players/Big-5-European-Leagues-Stats",
     "defense": "https://fbref.com/en/comps/Big5/defense/players/Big-5-European-Leagues-Stats",
+    "misc": "https://fbref.com/en/comps/Big5/misc/players/Big-5-European-Leagues-Stats",
+    "playingtime": "https://fbref.com/en/comps/Big5/playingtime/players/Big-5-European-Leagues-Stats",
+    "keepers": "https://fbref.com/en/comps/Big5/keepers/players/Big-5-European-Leagues-Stats",
 }
 
 def fetch_html_scrapninja(target_url):
@@ -90,7 +98,10 @@ def parse_fbref_html(html, stat_type):
         "shooting": "stats_shooting",
         "passing": "stats_passing",
         "possession": "stats_possession",
-        "defense": "stats_defense"
+        "defense": "stats_defense",
+        "misc": "stats_misc",
+        "playingtime": "stats_playing_time",
+        "keepers": "stats_keeper"
     }
     target_id = id_map.get(stat_type, "stats_standard")
 
@@ -176,6 +187,24 @@ def main():
         if 'Comp' in final_df.columns:
              final_df['League'] = final_df['Comp'].apply(lambda x: str(x).split(" ", 1)[1] if len(str(x).split(" ", 1)) > 1 else x)
         
+        # ─── RÉCUPÉRATION DE TOUTES LES ANCIENNES COLONNES ─────────────────
+        if os.path.exists(BACKUP_FILE):
+            try:
+                print("  🔍 Récupération des anciennes colonnes...")
+                old_df = pd.read_csv(BACKUP_FILE)
+                if "Player" in old_df.columns:
+                    col_player = [c for c in final_df.columns if 'player' in str(c).lower()][0]
+                    # Colonnes de l'ancien fichier qu'on veut garder
+                    cols_to_keep = ["Player"] + [c for c in old_df.columns if c not in final_df.columns]
+                    
+                    if len(cols_to_keep) > 1:
+                        old_ids = old_df[cols_to_keep].drop_duplicates(subset=["Player"])
+                        old_ids = old_ids.rename(columns={"Player": col_player})
+                        final_df = final_df.merge(old_ids, on=col_player, how="left")
+                        print(f"  ✅ {len(cols_to_keep)-1} anciennes colonnes préservées avec succès.")
+            except Exception as e:
+                print(f"  ⚠️ Erreur lors de la récupération des anciennes colonnes: {e}")
+
         final_df.to_csv(OUTPUT_FILE, index=False)
         print("\n============================================================")
         print(f"  ✨ SUCCÈS : {len(final_df)} joueurs mis à jour.")

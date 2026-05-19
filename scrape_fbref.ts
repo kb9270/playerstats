@@ -1,10 +1,14 @@
 /**
- * scrape_fbref.ts  v3 — stealth Puppeteer + dynamic table detection
+ * scrape_fbref.ts  v4 — stealth Puppeteer + table wait + all stats
  * Lance via :  npm run scrape
  */
-import puppeteer from "puppeteer";
+import puppeteerExtra from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import * as fs from "fs";
 import * as path from "path";
+
+// Activer le plugin stealth (anti-Cloudflare)
+puppeteerExtra.use(StealthPlugin());
 
 const OUTPUT_FILE = path.join(process.cwd(), "players_data_2025_2026.csv");
 const BACKUP_FILE = path.join(process.cwd(), "players_data_2025_2026_backup.csv");
@@ -23,11 +27,14 @@ const LEAGUES = [
 ];
 
 const STAT_TYPES = [
-  { slug: "stats",      label: "Standard"   },
-  { slug: "shooting",   label: "Shooting"   },
-  { slug: "passing",    label: "Passing"    },
-  { slug: "possession", label: "Possession" },
-  { slug: "defense",    label: "Defense"    },
+  { slug: "stats",       label: "Standard"    },
+  { slug: "shooting",    label: "Shooting"    },
+  { slug: "passing",     label: "Passing"     },
+  { slug: "possession",  label: "Possession"  },
+  { slug: "defense",     label: "Defense"     },
+  { slug: "misc",        label: "Misc"        },
+  { slug: "playingtime", label: "Playing Time"},
+  { slug: "keepers",     label: "Keepers"     },
 ];
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -43,9 +50,8 @@ function urlFor(leagueId: number, slug: string) {
 }
 
 /** Extrait le tableau HTML → tableau de Row via page.evaluate */
-async function extractTable(page: puppeteer.Page, leagueId: number, slug: string): Promise<Row[]> {
+async function extractTable(page: any, leagueId: number, slug: string): Promise<Row[]> {
   return page.evaluate((lid: number, s: string) => {
-    // Cherche TOUS les tableaux qui contiennent des stats
     const allTables = Array.from(document.querySelectorAll("table[id]"));
     const target = allTables.find(t => {
       const id = t.id;
@@ -54,7 +60,6 @@ async function extractTable(page: puppeteer.Page, leagueId: number, slug: string
 
     if (!target) return [];
 
-    // Récupère les headers (dernier tr du thead)
     const headRows = Array.from(target.querySelectorAll("thead tr"));
     const lastHead = headRows[headRows.length - 1];
     if (!lastHead) return [];
@@ -78,19 +83,35 @@ async function extractTable(page: puppeteer.Page, leagueId: number, slug: string
 }
 
 /** Scrape une URL avec 3 tentatives + screenshot debug */
-async function scrapePage(page: puppeteer.Page, url: string, leagueId: number, slug: string, label: string): Promise<Row[]> {
+async function scrapePage(page: any, url: string, leagueId: number, slug: string, label: string): Promise<Row[]> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       console.log(`    📥 ${label} (tentative ${attempt})...`);
 
-      await page.goto(url, { waitUntil: "networkidle0", timeout: 90_000 });
-      await sleep(rand(3000, 6000));
+      await page.goto(url, { waitUntil: "networkidle0", timeout: 120_000 });
 
-      // Vérifier si on est bloqué (CAPTCHA / 429 / redirect)
+      // Attendre que le tableau soit réellement rendu dans le DOM
+      try {
+        await page.waitForSelector('table[id^="stats_"]', { timeout: 30_000 });
+        console.log(`    ✓ Tableau détecté dans le DOM`);
+      } catch {
+        console.log(`    ⚠ Tableau non trouvé via sélecteur, on tente quand même...`);
+      }
+
+      // Pause humaine aléatoire
+      await sleep(rand(4000, 8000));
+
+      // Vérifier si on est bloqué
       const title = await page.title();
       const bodyText = await page.evaluate(() => document.body?.innerText?.substring(0, 300) || "");
       if (title.toLowerCase().includes("captcha") || bodyText.includes("429") || bodyText.includes("Too Many Requests")) {
         console.log(`    ⚠ FBref bloqué (${title}) — attente longue...`);
+        await sleep(rand(60_000, 90_000));
+        continue;
+      }
+
+      if (title.toLowerCase().includes("just a moment") || title.toLowerCase().includes("attention required")) {
+        console.log(`    ⚠ Cloudflare challenge détecté — attente 60s...`);
         await sleep(rand(60_000, 90_000));
         continue;
       }
@@ -144,7 +165,7 @@ function logBlock(rows: Row[], b: number) {
 // ── Main ─────────────────────────────────────────────────────────
 async function main() {
   console.log("\n" + "=".repeat(60));
-  console.log("  🚀 PlayerStats — FBref Scraper v3 (Stealth Puppeteer)");
+  console.log("  🚀 PlayerStats — FBref Scraper v4 (STEALTH MODE)");
   console.log(`  📅 ${new Date().toLocaleString("fr-FR")}`);
   console.log("=".repeat(60));
 
@@ -153,12 +174,12 @@ async function main() {
     console.log(`\n💾 Backup : ${BACKUP_FILE}`);
   }
 
-  const browser = await puppeteer.launch({
-    headless: true,
+  const browser = await puppeteerExtra.launch({
+    headless: false,
     args: [
       "--no-sandbox", "--disable-setuid-sandbox",
       "--disable-blink-features=AutomationControlled",
-      "--disable-web-security", "--disable-dev-shm-usage",
+      "--disable-dev-shm-usage",
       "--window-size=1920,1080",
     ],
   });
@@ -168,30 +189,11 @@ async function main() {
   await page.setUserAgent(
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
   );
-  await page.setExtraHTTPHeaders({
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": '"Windows"',
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-  });
-
-  // Masquer webdriver
-  await page.evaluateOnNewDocument(() => {
-    Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-    // @ts-ignore
-    window.chrome = { runtime: {} };
-    Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
-    Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] });
-  });
 
   // Visiter d'abord la page d'accueil pour avoir les cookies
   console.log("\n🌐 Initialisation (chargement page d'accueil FBref)...");
   await page.goto("https://fbref.com/en/", { waitUntil: "networkidle0", timeout: 60_000 });
-  await sleep(rand(4000, 7000));
+  await sleep(rand(5000, 9000));
   console.log("   ✅ Cookies initialisés\n");
 
   const allRows: Row[] = [];
@@ -212,12 +214,15 @@ async function main() {
     }
     base = base.map(r => ({ ...r, League: league.name }));
 
-    // Tables supplémentaires
+    // Tables supplémentaires (avec pauses longues entre chaque)
     for (const { slug, label } of STAT_TYPES.slice(1)) {
       const url = urlFor(league.id, slug);
       const extra = await scrapePage(page, url, league.id, slug, label);
       if (extra.length) base = merge(base, extra);
-      await sleep(rand(10_000, 18_000));
+      // Pause furtive entre chaque table (8-15s)
+      const statPause = rand(8_000, 15_000);
+      console.log(`  ⏳ Pause furtive ${(statPause/1000).toFixed(1)}s...`);
+      await sleep(statPause);
     }
 
     // Log par blocs
@@ -226,7 +231,8 @@ async function main() {
 
     allRows.push(...base);
 
-    const pause = rand(25_000, 40_000);
+    // Pause longue entre ligues (30-50s)
+    const pause = rand(30_000, 50_000);
     console.log(`\n⏳ Pause inter-ligue : ${pause / 1000}s...`);
     await sleep(pause);
   }
@@ -240,10 +246,57 @@ async function main() {
 
   // Déduplication
   const seen = new Set<string>();
-  const deduped = allRows.filter(r => {
+  let deduped = allRows.filter(r => {
     const k = `${r.player||r.Player}_${r.team||r.Squad}`;
     return seen.has(k) ? false : (seen.add(k), true);
   });
+
+  // ─── RÉCUPÉRATION DE TOUTES LES ANCIENNES COLONNES ─────────────────
+  if (fs.existsSync(BACKUP_FILE)) {
+    try {
+      console.log(`\n  🔍 Récupération des anciennes colonnes depuis le backup...`);
+      const oldCsv = fs.readFileSync(BACKUP_FILE, "utf-8").split("\n");
+      if (oldCsv.length > 0) {
+        const headers = oldCsv[0].split(",").map(h => h.trim());
+        const pIdx = headers.findIndex(h => h === "Player" || h === "player");
+
+        if (pIdx >= 0) {
+          const oldDataMap = new Map<string, Record<string, string>>();
+          for (let i = 1; i < oldCsv.length; i++) {
+            const row = oldCsv[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || oldCsv[i].split(",");
+            if (row.length > pIdx) {
+              let pName = row[pIdx] ? row[pIdx].replace(/^"|"$/g, "").trim() : "";
+              if (pName) {
+                const oldRowData: Record<string, string> = {};
+                headers.forEach((h, idx) => {
+                  if (idx < row.length && row[idx] !== undefined) {
+                    oldRowData[h] = row[idx].replace(/^"|"$/g, "").trim();
+                  }
+                });
+                oldDataMap.set(pName, oldRowData);
+              }
+            }
+          }
+
+          deduped = deduped.map(r => {
+            const pName = r.player || r.Player || "";
+            const oldRow = oldDataMap.get(pName);
+            if (oldRow) {
+              Object.keys(oldRow).forEach(k => {
+                if (!(k in r) && k !== "Player" && k !== "player") {
+                  r[k] = oldRow[k];
+                }
+              });
+            }
+            return r;
+          });
+          console.log(`  ✅ Anciennes métriques préservées avec succès.`);
+        }
+      }
+    } catch (e) {
+      console.log(`  ⚠️ Erreur lors de la récupération des anciennes colonnes:`, e);
+    }
+  }
 
   fs.writeFileSync(OUTPUT_FILE, toCSV(deduped), "utf-8");
 
