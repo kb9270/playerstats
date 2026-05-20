@@ -860,7 +860,15 @@ function TakeOverExpandingStats() {
 export default function BentoHome() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [newsSlide, setNewsSlide] = useState(0);
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNewsSlide(prev => (prev + 1) % 2);
+    }, 20000);
+    return () => clearInterval(timer);
+  }, []);
 
   /* Data hooks */
   const { data: totwData } = useQuery<{ success: boolean; totw: any[] }>({
@@ -1557,10 +1565,10 @@ export default function BentoHome() {
           </GlassCard>
 
 
-          {/* ── CARD 9: News (Neymar Featured Article Only) ─────────────────────── */}
+          {/* ── CARD 9: News Slider (Neymar & Arsenal) ─────────────────────── */}
           <GlassCard
             style={{ 
-              gridColumn: "7 / 10", 
+              gridColumn: "7 / 13", 
               gridRow: "3 / 5", 
               padding: 0, 
               display: "flex", 
@@ -1569,235 +1577,92 @@ export default function BentoHome() {
               overflow: "hidden",
               cursor: "pointer",
             }}
-            onClick={() => setLocation("/article/neymar")}
+            onClick={() => setLocation(newsSlide === 0 ? "/article/neymar" : "/article/arsenal")}
           >
-            {/* Background Image */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "url('/assets/neymar.png')",
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              transition: "transform 0.5s ease"
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-            />
-
-            {/* Dark Gradient Overlay */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "linear-gradient(to top, rgba(10, 15, 30, 0.98) 0%, rgba(10, 15, 30, 0.6) 50%, rgba(0, 0, 0, 0.15) 100%)",
-              zIndex: 2
-            }} />
-
-            {/* Card Content */}
-            <div style={{
-              position: "relative",
-              zIndex: 3,
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-              justifyContent: "space-between",
-              padding: 24,
-              boxSizing: "border-box"
-            }}>
-              {/* Top Row */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={newsSlide}
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+                style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+              >
+                {/* Background Image */}
                 <div style={{
-                  fontSize: 9,
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 700,
-                  color: "#fff",
-                  background: "#E8344A",
-                  padding: "3px 8px",
-                  borderRadius: "3px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em"
-                }}>
-                  À LA UNE
-                </div>
-                <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: "rgba(255, 255, 255, 0.6)",
-                  letterSpacing: "0.1em"
-                }}>
-                  SO FOOT SPECIAL
-                </div>
-              </div>
+                  position: "absolute", inset: 0,
+                  backgroundImage: `url('${newsSlide === 0 ? '/assets/neymar.png' : '/assets/arsenal.png'}')`,
+                  backgroundSize: "cover",
+                  backgroundPosition: newsSlide === 0 ? "center 20%" : "center",
+                }} />
 
-              {/* Bottom Row */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
-                <h3 style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 22,
-                  fontWeight: 800,
-                  lineHeight: 1.2,
-                  color: "#fff",
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "-0.01em"
-                }}>
-                  BRÉSIL : Le retour du prince ?
-                </h3>
-                <p style={{
-                  fontFamily: "'Barlow', sans-serif",
-                  fontSize: 12,
-                  lineHeight: 1.45,
-                  color: "rgba(255, 255, 255, 0.75)",
-                  margin: "4px 0 10px 0",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden"
-                }}>
-                  À 34 ans, Neymar Jr s'apprête à faire son retour en sélection brésilienne pour le Mondial 2026. Décryptage d'une dernière danse historique entre ombre et lumière.
-                </p>
+                {/* Dark Gradient Overlay */}
                 <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#E8344A",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4
-                }}>
-                  Lire l'article de fond <Sparkles size={11} />
-                </div>
-              </div>
-            </div>
-          </GlassCard>
+                  position: "absolute", inset: 0,
+                  background: "linear-gradient(to top, rgba(10, 15, 30, 0.98) 0%, rgba(10, 15, 30, 0.6) 50%, rgba(0, 0, 0, 0.15) 100%)",
+                  zIndex: 2
+                }} />
 
-          {/* ── CARD 10: News (Arsenal Champion) ─────────────────────── */}
-          <GlassCard
-            style={{ 
-              gridColumn: "10 / 13", 
-              gridRow: "3 / 5", 
-              padding: 0, 
-              display: "flex", 
-              flexDirection: "column",
-              position: "relative",
-              overflow: "hidden",
-              cursor: "pointer",
-            }}
-            onClick={() => setLocation("/article/arsenal")}
-          >
-            {/* Background Image */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "url('/assets/arsenal.png')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              transition: "transform 0.5s ease"
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-            />
-
-            {/* Dark Gradient Overlay */}
-            <div style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: "linear-gradient(to top, rgba(10, 15, 30, 0.98) 0%, rgba(10, 15, 30, 0.6) 50%, rgba(0, 0, 0, 0.15) 100%)",
-              zIndex: 2
-            }} />
-
-            {/* Card Content */}
-            <div style={{
-              position: "relative",
-              zIndex: 3,
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
-              justifyContent: "space-between",
-              padding: 24,
-              boxSizing: "border-box"
-            }}>
-              {/* Top Row */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                {/* Card Content */}
                 <div style={{
-                  fontSize: 9,
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontWeight: 700,
-                  color: "#fff",
-                  background: "#E8344A",
-                  padding: "3px 8px",
-                  borderRadius: "3px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em"
+                  position: "relative", zIndex: 3, display: "flex", flexDirection: "column",
+                  height: "100%", justifyContent: "space-between", padding: 24, boxSizing: "border-box"
                 }}>
-                  PREMIER LEAGUE
-                </div>
-                <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  color: "rgba(255, 255, 255, 0.6)",
-                  letterSpacing: "0.1em"
-                }}>
-                  L'ÉQUIPE EXPLORE
-                </div>
-              </div>
+                  {/* Top Row */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{
+                      fontSize: 9, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
+                      color: "#fff", background: "#E8344A", padding: "3px 8px", borderRadius: "3px",
+                      textTransform: "uppercase", letterSpacing: "0.12em"
+                    }}>
+                      {newsSlide === 0 ? "À LA UNE" : "PREMIER LEAGUE"}
+                    </div>
+                    <div style={{
+                      fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800,
+                      color: "rgba(255, 255, 255, 0.6)", letterSpacing: "0.1em"
+                    }}>
+                      {newsSlide === 0 ? "SO FOOT SPECIAL" : "L'ÉQUIPE EXPLORE"}
+                    </div>
+                  </div>
 
-              {/* Bottom Row */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
-                <h3 style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 22,
-                  fontWeight: 800,
-                  lineHeight: 1.2,
-                  color: "#fff",
-                  margin: 0,
-                  textTransform: "uppercase",
-                  letterSpacing: "-0.01em"
-                }}>
-                  ARSENAL EST CHAMPION D'ANGLETERRE
-                </h3>
-                <p style={{
-                  fontFamily: "'Barlow', sans-serif",
-                  fontSize: 12,
-                  lineHeight: 1.45,
-                  color: "rgba(255, 255, 255, 0.75)",
-                  margin: "4px 0 10px 0",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden"
-                }}>
-                  Après plus de deux décennies d'attente, les Gunners retrouvent les sommets de la Premier League. Un sacre historique pour l'équipe de Mikel Arteta, couronnant un projet de longue haleine.
-                </p>
-                <div style={{
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: "#E8344A",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4
-                }}>
-                  Lire l'article complet <Sparkles size={11} />
+                  {/* Bottom Row */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+                    <h3 style={{
+                      fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800,
+                      lineHeight: 1.2, color: "#fff", margin: 0, textTransform: "uppercase", letterSpacing: "-0.01em"
+                    }}>
+                      {newsSlide === 0 ? "BRÉSIL : Le retour du prince ?" : "ARSENAL EST CHAMPION D'ANGLETERRE"}
+                    </h3>
+                    <p style={{
+                      fontFamily: "'Barlow', sans-serif", fontSize: 12, lineHeight: 1.45,
+                      color: "rgba(255, 255, 255, 0.75)", margin: "4px 0 10px 0",
+                      display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden"
+                    }}>
+                      {newsSlide === 0 
+                        ? "À 34 ans, Neymar Jr s'apprête à faire son retour en sélection brésilienne pour le Mondial 2026. Décryptage d'une dernière danse historique entre ombre et lumière." 
+                        : "Après plus de deux décennies d'attente, les Gunners retrouvent les sommets de la Premier League. Un sacre historique pour l'équipe de Mikel Arteta, couronnant un projet de longue haleine."}
+                    </p>
+                    <div style={{
+                      fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 700,
+                      color: "#E8344A", letterSpacing: "0.1em", textTransform: "uppercase",
+                      display: "flex", alignItems: "center", gap: 4
+                    }}>
+                      Lire l'article {newsSlide === 0 ? "de fond" : "complet"} <Sparkles size={11} />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Slider Dots Indicator */}
+            <div style={{ position: "absolute", top: 24, right: 24, zIndex: 4, display: "flex", gap: 6 }}>
+              {[0, 1].map(i => (
+                <div key={i} style={{ 
+                  width: i === newsSlide ? 12 : 6, height: 6, borderRadius: 3, 
+                  background: i === newsSlide ? "#E8344A" : "rgba(255,255,255,0.3)", 
+                  transition: "all 0.3s ease" 
+                }} />
+              ))}
             </div>
           </GlassCard>
 
