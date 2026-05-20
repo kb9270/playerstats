@@ -219,7 +219,7 @@ export default function ArticleNeymar() {
             Chef d'orchestre dans l'ombre des flèches
           </h2>
           <p style={{ marginBottom: 24 }}>
-            La Seleção de 2026 n'est plus celle de 2018 ou de 2022. Elle n'est plus dépendante d'un seul homme ni condamnée au soliloque de sa superstar. Porté par la vitesse foudroyante de Vinícius Júnior, le génie clinique de Rodrygo et la fougue printanière d'Endrick, le Brésil s'est doté d'une artillerie moderne et diversifiée.
+            La Seleção de 2026 n'est plus celle de 2018 ou de 2022. Elle n'est plus dépendante d'un seul homme ni condamnée au soliloque de sa superstar. Portée par la vitesse foudroyante de Vinícius Júnior, la créativité de Raphinha et la fougue printanière d'Endrick, le Brésil s'est doté d'une artillerie moderne et diversifiée.
           </p>
           <p style={{ marginBottom: 40 }}>
             Dans cette constellation, Neymar ne sera plus le dynamiteur solitaire obligé de tout créer par le dribble. Il sera le chef d'orchestre. Un numéro 10 cérébral, dictant le tempo, distillant les ballons dans le bon espace, et libérant la pression physique pour ses jeunes lieutenants. Un rôle de guide technique et de mentor taillé pour sa maturité nouvelle.
