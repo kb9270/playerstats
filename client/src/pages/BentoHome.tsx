@@ -1560,7 +1560,7 @@ export default function BentoHome() {
           {/* ── CARD 9: News (Neymar Featured Article Only) ─────────────────────── */}
           <GlassCard
             style={{ 
-              gridColumn: "7 / 13", 
+              gridColumn: "7 / 10", 
               gridRow: "3 / 5", 
               padding: 0, 
               display: "flex", 
@@ -1674,6 +1674,128 @@ export default function BentoHome() {
                   gap: 4
                 }}>
                   Lire l'article de fond <Sparkles size={11} />
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+
+          {/* ── CARD 10: News (Arsenal Champion) ─────────────────────── */}
+          <GlassCard
+            style={{ 
+              gridColumn: "10 / 13", 
+              gridRow: "3 / 5", 
+              padding: 0, 
+              display: "flex", 
+              flexDirection: "column",
+              position: "relative",
+              overflow: "hidden",
+              cursor: "pointer",
+            }}
+            onClick={() => setLocation("/article/arsenal")}
+          >
+            {/* Background Image */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundImage: "url('/assets/arsenal.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              transition: "transform 0.5s ease"
+            }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            />
+
+            {/* Dark Gradient Overlay */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "linear-gradient(to top, rgba(10, 15, 30, 0.98) 0%, rgba(10, 15, 30, 0.6) 50%, rgba(0, 0, 0, 0.15) 100%)",
+              zIndex: 2
+            }} />
+
+            {/* Card Content */}
+            <div style={{
+              position: "relative",
+              zIndex: 3,
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              justifyContent: "space-between",
+              padding: 24,
+              boxSizing: "border-box"
+            }}>
+              {/* Top Row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{
+                  fontSize: 9,
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 700,
+                  color: "#fff",
+                  background: "#E8344A",
+                  padding: "3px 8px",
+                  borderRadius: "3px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em"
+                }}>
+                  PREMIER LEAGUE
+                </div>
+                <div style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "rgba(255, 255, 255, 0.6)",
+                  letterSpacing: "0.1em"
+                }}>
+                  L'ÉQUIPE EXPLORE
+                </div>
+              </div>
+
+              {/* Bottom Row */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+                <h3 style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 22,
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                  color: "#fff",
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "-0.01em"
+                }}>
+                  ARSENAL EST CHAMPION D'ANGLETERRE
+                </h3>
+                <p style={{
+                  fontFamily: "'Barlow', sans-serif",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: "rgba(255, 255, 255, 0.75)",
+                  margin: "4px 0 10px 0",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden"
+                }}>
+                  Après plus de deux décennies d'attente, les Gunners retrouvent les sommets de la Premier League. Un sacre historique pour l'équipe de Mikel Arteta, couronnant un projet de longue haleine.
+                </p>
+                <div style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#E8344A",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4
+                }}>
+                  Lire l'article complet <Sparkles size={11} />
                 </div>
               </div>
             </div>

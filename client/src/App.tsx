@@ -22,6 +22,7 @@ import DataPipeline from "@/pages/DataPipeline";
 import NotFound from "@/pages/not-found";
 
 import ArticleNeymar from "@/pages/ArticleNeymar";
+import ArticleArsenal from "@/pages/ArticleArsenal";
 
 function Router() {
   return (
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/scout" component={ScoutMoneyball} />
       <Route path="/pipeline" component={DataPipeline} />
       <Route path="/article/neymar" component={ArticleNeymar} />
+      <Route path="/article/arsenal" component={ArticleArsenal} />
       <Route component={NotFound} />
     </Switch>
   );
