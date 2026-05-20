@@ -21,6 +21,8 @@ import ScoutMoneyball from "@/pages/ScoutMoneyball";
 import DataPipeline from "@/pages/DataPipeline";
 import NotFound from "@/pages/not-found";
 
+import ArticleNeymar from "@/pages/ArticleNeymar";
+
 function Router() {
   return (
     <Switch>
@@ -44,6 +46,7 @@ function Router() {
       <Route path="/takeover" component={TakeOver} />
       <Route path="/scout" component={ScoutMoneyball} />
       <Route path="/pipeline" component={DataPipeline} />
+      <Route path="/article/neymar" component={ArticleNeymar} />
       <Route component={NotFound} />
     </Switch>
   );
