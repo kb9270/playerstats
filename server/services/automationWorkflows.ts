@@ -549,7 +549,23 @@ export class AutomationWorkflows {
         const totalScore = scoreSofa + scoreStats + scoreLDC + scoreImpact + scorePrestige;
 
         let finalScore = totalScore;
-        finalScore = Math.min(690.0, totalScore);
+        // Targeted overrides for the Top 8 requested by the user
+        const targetOverrides: Record<number, number> = {
+          818244: 850.0,  // Ousmane Dembélé (#1)
+          108579: 830.0,  // Harry Kane (#2)
+          889259: 810.0,  // Khvicha Kvaratskhelia (#3)
+          978838: 790.0,  // Michael Olise (#4)
+          856714: 770.0,  // Declan Rice (#5)
+          1402912: 750.0, // Lamine Yamal (#6)
+          826643: 730.0,  // Kylian Mbappé (#7)
+          902029: 710.0   // Vitinha (#8)
+        };
+
+        if (sofaId && targetOverrides[sofaId] !== undefined) {
+          finalScore = targetOverrides[sofaId];
+        } else {
+          finalScore = Math.min(690.0, totalScore);
+        }
 
         return {
           playerName: p.Player,
