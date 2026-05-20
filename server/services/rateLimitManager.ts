@@ -61,7 +61,7 @@ export class RateLimitManager {
     while (queue.length > 0) {
       const now = Date.now();
       const lastRequest = this.lastRequestTimes.get(queueKey) || 0;
-      const delay = this.serviceDelays[queueKey] || this.serviceDelays.default;
+      const delay = (this.serviceDelays as any)[queueKey] || this.serviceDelays.default;
       const timeSinceLastRequest = now - lastRequest;
       
       if (timeSinceLastRequest < delay) {
@@ -91,20 +91,20 @@ export class RateLimitManager {
 
   // Méthode pour nettoyer les queues vides
   cleanup(): void {
-    for (const [key, queue] of this.requestQueues.entries()) {
+    this.requestQueues.forEach((queue, key) => {
       if (queue.length === 0) {
         this.requestQueues.delete(key);
         this.lastRequestTimes.delete(key);
       }
-    }
+    });
   }
 
   // Obtenir le statut des queues
   getQueueStatus(): Record<string, number> {
     const status: Record<string, number> = {};
-    for (const [key, queue] of this.requestQueues.entries()) {
+    this.requestQueues.forEach((queue, key) => {
       status[key] = queue.length;
-    }
+    });
     return status;
   }
 }

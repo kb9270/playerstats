@@ -183,7 +183,7 @@ export class EnhancedReportService {
     try {
       fs.chmodSync(this.pythonScriptPath, '755');
     } catch (error) {
-      console.log('Could not change script permissions:', error.message);
+      console.log('Could not change script permissions:', (error as any).message);
     }
   }
 }

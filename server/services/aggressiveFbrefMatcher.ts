@@ -181,6 +181,7 @@ export class AggressiveFbrefMatcher {
             const $ = cheerio.load(response.data);
             
             // Look for player links on team page
+            let foundFbrefId: string | null = null;
             $('a[href*="/players/"]').each((index, element) => {
               const playerLink = $(element);
               const linkText = playerLink.text().trim();
@@ -188,12 +189,13 @@ export class AggressiveFbrefMatcher {
               if (this.isGoodNameMatch(playerName, linkText)) {
                 const href = playerLink.attr('href');
                 if (href) {
-                  const fbrefId = href.split('/')[3];
-                  console.log(`Found on team page: ${linkText} -> ${fbrefId}`);
-                  return fbrefId;
+                  foundFbrefId = href.split('/')[3];
+                  console.log(`Found on team page: ${linkText} -> ${foundFbrefId}`);
+                  return false;
                 }
               }
             });
+            if (foundFbrefId) return foundFbrefId;
           } catch (pageError) {
             continue;
           }

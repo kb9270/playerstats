@@ -90,7 +90,7 @@ export default function StatsTable({ playerIds }: StatsTableProps) {
     return (value / minutes) * 90;
   };
 
-  const formatStatValue = (value: number | null, per90: boolean, minutes: number | null) => {
+  const formatStatValue = (value: any, per90: boolean, minutes: number | null) => {
     if (value === null || value === undefined) return "0";
     
     if (per90 && minutes) {

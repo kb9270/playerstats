@@ -30,7 +30,7 @@ export class OptimizedTransfermarktApi {
           this.cache.set(url, response.data);
           
           return response.data;
-        } catch (error) {
+        } catch (error: any) {
           const status = error.response?.status;
           console.log(`Attempt ${attempt} failed (${status}):`, error.message);
           

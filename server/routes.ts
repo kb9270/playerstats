@@ -27,9 +27,11 @@ import { preCachePlayerMatches, preCacheMultiplePlayers, getPreCacheProgress } f
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Limiteur de requêtes global pour l'ensemble des routes API
+  const isProd = process.env.NODE_ENV === 'production';
+
   const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 150, // Limite chaque IP à 150 requêtes par 15 minutes
+    max: isProd ? 150 : 10000, // Limite plus élevée en dev
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -41,19 +43,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Limiteur strict pour les analyses IA (appels à OpenAI / DeepSeek)
   const aiLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 heure
-    max: 15, // Limite chaque IP à 15 requêtes d'analyse par heure
+    max: isProd ? 15 : 1000,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
       success: false,
-      error: "Limite de requêtes d'analyse IA atteinte (15 par heure). Veuillez réessayer plus tard.",
+      error: "Limite de requêtes d'analyse IA atteinte. Veuillez réessayer plus tard.",
     },
   });
 
   // Limiteur extrêmement strict pour les actions d'administration (déclenchement du scraper)
   const adminLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 heure
-    max: 3, // Limite à 3 déclenchements d'administration par heure
+    max: isProd ? 3 : 1000,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -96,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const matches = await espnScoreService.getTodayMatches();
       return res.json({ success: true, matches });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Live matches error:", error);
       res.status(500).json({ error: "Failed to fetch live matches" });
     }
@@ -119,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Search] CSV Direct found: ${csvPlayers.length}`);
 
       // Map to the format expected by the frontend
-      const players = csvPlayers
+      const players: any[] = csvPlayers
         .sort((a: any, b: any) => (b.Min || 0) - (a.Min || 0))
         .map((player: any) => ({
         id: player.Rk || Math.random(),
@@ -152,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[Search] Returning ${players.length} total results`);
       return res.json(players);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Search error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -595,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })));
 
       return res.json({ player: enrichedPlayer, similar: enrichedSimilar });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Full player data error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -666,9 +668,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: e.status?.type
       }));
 
-      const sortedMatches = matches.sort((a, b) => b.date - a.date);
+      const sortedMatches = matches.sort((a: any, b: any) => b.date - a.date);
       res.json({ matches: sortedMatches });
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: 'Failed to fetch matches' });
     }
   });
@@ -720,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         actions,
         sofaId
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Match detail error:', error);
       res.status(500).json({ error: 'Failed to fetch match detail' });
     }
@@ -855,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       return res.json(enrichedLeagues);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1080,7 +1082,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keepers: fallbackKeepers()
       });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('League rankings error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -1158,7 +1160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const UCL_TOURNAMENT_ID = 7;
       const uclSeasonId = 76953; // Forced 2025/26 season
 
-      async function enrichPlayer(p: any, statKey: "goals" | "assists" | "rating"): Promise<any> {
+      const enrichPlayer = async (p: any, statKey: "goals" | "assists" | "rating"): Promise<any> => {
         // 1. Resolve photo ID from CSV
         const resolvedSofaId = await resolveSofaId(p.name, p.sofaId, allCsvPlayers);
 
@@ -1256,7 +1258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })));
 
       return res.json(enrichedPlayers);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1301,7 +1303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       enrichedTeams.sort((a, b) => b.totalGoals - a.totalGoals);
       return res.json(enrichedTeams);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1319,7 +1321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       })));
 
       return res.json(enrichedPlayers);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1358,7 +1360,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Succ: Number(p.Succ) || 0,
           Att: Number(p.Att) || 0,
           Tkl: Number(p.Tkl) || 0,
-          TklW: Number(p.TklW) || 0,
           Blocks: Number(p.Blocks) || 0,
           CarryDist: Number(p.TotDist_stats_possession) || 0,
           PrgCarryDist: Number(p.PrgDist_stats_possession) || 0,
@@ -1366,7 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           AerLost: Number(p.Lost_stats_misc) || 0,
         }));
       return res.json(filtered);
-    } catch (error) {
+    } catch (error: any) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -1403,9 +1404,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(0, 15);
 
       res.json({ success: true, news: combinedNews });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting news:', error);
       res.status(500).json({ error: "Failed to get news" });
+    }
+  });
+
+  // Generate News Article
+  app.post("/api/news/generate", async (req, res) => {
+    try {
+      const { memoryNews } = await import("./services/automationWorkflows");
+      const { csvDirectAnalyzer } = await import("./services/csvDirectAnalyzer");
+      const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+      
+      // Select a player
+      let targetPlayer = null;
+      const { playerName } = req.body || {};
+      if (playerName) {
+        targetPlayer = allPlayers.find(p => p.Player.toLowerCase() === playerName.toLowerCase());
+      }
+      
+      if (!targetPlayer) {
+        // Choose from top players or a random prominent player
+        const candidates = allPlayers.filter(p => (Number(p.Gls) || 0) + (Number(p.Ast) || 0) > 10);
+        const pool = candidates.length > 0 ? candidates : allPlayers;
+        targetPlayer = pool[Math.floor(Math.random() * pool.length)];
+      }
+
+      if (!targetPlayer) {
+        return res.status(404).json({ success: false, error: "Aucun joueur trouvé pour la génération" });
+      }
+
+      const pName = targetPlayer.Player;
+      const team = targetPlayer.Squad || targetPlayer.team || "son club";
+      const goals = Number(targetPlayer.Gls) || 0;
+      const assists = Number(targetPlayer.Ast) || 0;
+      const xg = Number(targetPlayer.xG) || 0;
+
+      // Select article type
+      const types = ['tactique', 'mercato', 'ballondor', 'masterclass'];
+      const chosenType = types[Math.floor(Math.random() * types.length)];
+      
+      let title = "";
+      let summary = "";
+      let source = "Tactical AI Scanner";
+
+      if (chosenType === 'tactique') {
+        title = `Analyse Tactique : L'impact révolutionnaire de ${pName} à ${team}`;
+        summary = `Avec ${goals} buts et ${assists} passes décisives cette saison, le milieu/attaquant redéfinit le plan de jeu de ${team}. L'analyse de ses courses progressives et de sa création d'occasions (xG accumulé de ${xg.toFixed(1)}) montre un profil ultra-complet, indispensable aux transitions offensives.`;
+        source = "Tactics Lab";
+      } else if (chosenType === 'mercato') {
+        title = `Mercato : Transfert record en vue pour ${pName} ?`;
+        summary = `Les performances stratosphériques de ${pName} sous le maillot de ${team} affolent les cellules de recrutement. Estimé à plus de 130 millions d'euros, le joueur serait sur les tablettes de trois mastodontes européens pour la saison prochaine.`;
+        source = "Foot Transferts";
+      } else if (chosenType === 'ballondor') {
+        title = `Ballon d'Or 2026 : Pourquoi ${pName} devient un candidat sérieux`;
+        summary = `Porteur d'un bilan statistique impressionnant (${goals + assists} contributions directes) et d'un leadership indéniable à ${team}, le joueur fait une entrée fracassante dans les discussions de la course au Ballon d'Or 2026.`;
+        source = "Ballon d'Or Insider";
+      } else {
+        title = `Masterclass : Le week-end historique de ${pName}`;
+        summary = `Omniprésent lors de la dernière journée de championnat, ${pName} a régalé les supporters avec une prestation notée au plus haut niveau. Une démonstration technique qui confirme son statut de superstar incontestée de ${team}.`;
+        source = "Performance Weekly";
+      }
+
+      const newsItem = {
+        id: memoryNews.length + 1000 + Math.floor(Math.random() * 10000),
+        title,
+        summary,
+        url: `/player-profile/${encodeURIComponent(pName)}`,
+        source,
+        publishedAt: new Date().toISOString()
+      };
+
+      // Add to memory news
+      memoryNews.unshift(newsItem);
+
+      // Add to DB if active
+      if (process.env.DATABASE_URL) {
+        const { db } = await import("./db");
+        if (db) {
+          const { news } = await import("@shared/schema");
+          try {
+            await db.insert(news).values({
+              title: newsItem.title,
+              summary: newsItem.summary,
+              url: newsItem.url,
+              source: newsItem.source,
+              publishedAt: newsItem.publishedAt
+            } as any);
+          } catch (e) {
+            console.error("Failed to insert generated news into DB:", e);
+          }
+        }
+      }
+
+      res.json({ success: true, article: newsItem });
+    } catch (error: any) {
+      console.error("Error generating article:", error);
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
@@ -1439,7 +1535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .limit(10);
 
       res.json({ success: true, rankings });
-    } catch (error) {
+    } catch (error: any) {
        res.status(500).json({ error: "Failed to get rankings" });
     }
   });
@@ -1496,7 +1592,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(player);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get player error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -1514,7 +1610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const stats = await storage.getPlayerStats(id, season as string);
       res.json(stats);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get player stats error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -1544,7 +1640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(report);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get scouting report error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -1556,7 +1652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertComparisonSchema.parse(req.body);
       const comparison = await storage.createComparison(validatedData);
       res.json(comparison);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
@@ -1592,7 +1688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...comparison,
         players: players.filter(p => p.player) // Filter out null players
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Get comparison error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -1611,7 +1707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedPlayer = await storage.getPlayer(id);
       res.json(updatedPlayer);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update player error:', error);
       res.status(500).json({ error: error.message || "Failed to update player data" });
     }
@@ -1638,8 +1734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get comprehensive analysis
       const comprehensiveAnalysis = await enhancedSoccerDataService.getComprehensivePlayerAnalysis(
         player.name,
-        player.team,
-        player.league
+        player.team || undefined,
+        player.league || undefined
       );
 
       let hasStats = false;
@@ -1657,13 +1753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             competition: 'Comprehensive Analysis',
             goals: keyStats.goals,
             assists: keyStats.assists,
-            shots: keyStats.shots,
-            shotsOnTarget: keyStats.shots_on_target,
-            passes: keyStats.pass_completion,
-            tackles: keyStats.tackles,
-            interceptions: keyStats.interceptions,
-            rating: comprehensiveAnalysis.current_form?.rating || 7.0,
-            source: 'enhanced_soccerdata'
+            rating: comprehensiveAnalysis.current_form?.rating || 7.0
           });
           hasStats = true;
         }
@@ -1678,7 +1768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             percentiles: comprehensiveAnalysis.percentiles,
             strengths: comprehensiveAnalysis.strengths || [],
             weaknesses: comprehensiveAnalysis.weaknesses || [],
-            overallRating: Math.round(Object.values(comprehensiveAnalysis.percentiles).reduce((a: number, b: number) => a + b, 0) / Object.keys(comprehensiveAnalysis.percentiles).length)
+            overallRating: Math.round((Object.values(comprehensiveAnalysis.percentiles) as number[]).reduce((a: number, b: number) => a + b, 0) / Object.keys(comprehensiveAnalysis.percentiles).length)
           });
           hasReport = true;
         }
@@ -1694,7 +1784,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: "Could not find comprehensive data for this player" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Refresh comprehensive data error:', error);
       res.status(500).json({ error: error.message || "Failed to refresh comprehensive data" });
     }
@@ -1759,7 +1849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`PDF sent successfully for ${player.name}`);
       res.send(pdfBuffer);
-    } catch (error) {
+    } catch (error: any) {
       console.error('PDF generation error:', error);
       res.status(500).json({ 
         error: "Failed to generate PDF report",
@@ -1787,8 +1877,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const analysis = await enhancedSoccerDataService.getComprehensivePlayerAnalysis(
         player.name,
-        player.team,
-        player.league
+        player.team || undefined,
+        player.league || undefined
       );
 
       if (analysis && analysis.success) {
@@ -1796,7 +1886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: "Comprehensive analysis not available" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting comprehensive analysis:', error);
       res.status(500).json({ error: "Failed to get comprehensive analysis" });
     }
@@ -1819,7 +1909,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: "Team analysis not available" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting team analysis:', error);
       res.status(500).json({ error: "Failed to get team analysis" });
     }
@@ -1845,7 +1935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comparison = await enhancedSoccerDataService.getPlayerComparison(
         player.name,
         player.position,
-        player.league
+        player.league || undefined
       );
 
       if (comparison && comparison.success) {
@@ -1853,7 +1943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(404).json({ error: "Position comparison not available" });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting position comparison:', error);
       res.status(500).json({ error: "Failed to get position comparison" });
     }
@@ -1877,7 +1967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate complete report with enhanced rate limiting
       const report = await enhancedReportService.generateCompletePlayerReport(
         player.name,
-        player.team,
+        player.team || undefined,
         2024
       );
 
@@ -1889,7 +1979,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           details: report?.error || "Unknown error"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating enhanced report:', error);
       res.status(500).json({ error: "Failed to generate enhanced report" });
     }
@@ -1919,7 +2009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await scraper.scrapeAndStorePlayer(nom);
           const newPlayers = await storage.searchPlayers(nom);
           player = newPlayers.length > 0 ? newPlayers[0] : null;
-        } catch (error) {
+        } catch (error: any) {
           console.log('Could not create player:', error);
         }
       }
@@ -1934,7 +2024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate enhanced report
       const report = await enhancedReportService.generateCompletePlayerReport(
         player.name,
-        player.team
+        player.team || undefined
       );
 
       if (report && report.success) {
@@ -1957,7 +2047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Impossible de générer le rapport"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in Flask-style report generation:', error);
       res.status(500).json({
         status: "error",
@@ -2007,7 +2097,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.json({ success: true, profile });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('CSV profile error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -2027,7 +2117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.json({ success: true, heatmap: heatmapData.heatmap });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('CSV heatmap error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -2043,7 +2133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const players = await csvPlayerAnalyzer.getAvailablePlayersList(limit);
 
       res.json({ success: true, players, count: players.length });
-    } catch (error) {
+    } catch (error: any) {
       console.error('CSV players list error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -2059,7 +2149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const players = await csvPlayerAnalyzer.getPlayersByTeam(teamName);
 
       res.json({ success: true, team: teamName, players, count: players.length });
-    } catch (error) {
+    } catch (error: any) {
       console.error('CSV team players error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -2073,7 +2163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const leagueStats = await csvPlayerAnalyzer.getLeagueStats();
 
       res.json({ success: true, leagues: leagueStats });
-    } catch (error) {
+    } catch (error: any) {
       console.error('CSV league stats error:', error);
       res.status(500).json({ error: "Internal server error" });
     }
@@ -2117,7 +2207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           faiblesses: profile.faiblesses
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in CSV complete report generation:', error);
       res.status(500).json({
         status: "error",
@@ -2138,7 +2228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const players = await csvDirectAnalyzer.searchPlayers(q.trim());
       res.json({ success: true, players });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching players:', error);
       res.status(500).json({ error: 'Error searching players' });
     }
@@ -2156,7 +2246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const analysis = csvDirectAnalyzer.generatePlayerAnalysis(player);
       res.json({ success: true, player, analysis });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting player analysis:', error);
       res.status(500).json({ error: 'Error getting player analysis' });
     }
@@ -2174,7 +2264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const analysis = csvDirectAnalyzer.generatePlayerAnalysis(player);
       res.json({ success: true, player, analysis });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting player analysis:', error);
       res.status(500).json({ success: false, error: 'Error getting player analysis' });
     }
@@ -2203,7 +2293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           offensive: offensiveZones
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating heatmap:', error);
       res.status(500).json({ success: false, error: 'Error generating heatmap' });
     }
@@ -2232,7 +2322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           progressivePasses: player.PrgP || 0
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating pass map:', error);
       res.status(500).json({ success: false, error: 'Error generating pass map' });
     }
@@ -2265,7 +2355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           formatted: formattedValue
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calculating market value:', error);
       res.status(500).json({ success: false, error: 'Error calculating market value' });
     }
@@ -2309,7 +2399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error comparing players:', error);
       res.status(500).json({ success: false, error: 'Error comparing players' });
     }
@@ -2320,7 +2410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await csvDirectAnalyzer.getLeagueStats();
       res.json({ success: true, stats });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting league stats:', error);
       res.status(500).json({ success: false, error: 'Failed to get league stats' });
     }
@@ -2346,7 +2436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         similar,
         count: similar.length 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error finding similar players:', error);
       res.status(500).json({ success: false, error: 'Failed to find similar players' });
     }
@@ -2433,7 +2523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         comparisons,
         message: `Comparaison avec les ${comparisons.length} joueurs les plus similaires`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in auto-compare:', error);
       res.status(500).json({ success: false, error: 'Erreur lors de la comparaison automatique' });
     }
@@ -2459,7 +2549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         weaknesses,
         suggestions
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error analyzing weaknesses:', error);
       res.status(500).json({ success: false, error: 'Failed to analyze weaknesses' });
     }
@@ -2505,7 +2595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           xA: player.xAG || 0
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI analysis:', error);
       res.status(500).json({ success: false, error: 'Failed to generate AI analysis' });
     }
@@ -2516,7 +2606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await csvDirectAnalyzer.getTeamStats();
       res.json({ success: true, stats });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting team stats:', error);
       res.status(500).json({ error: 'Error getting team stats' });
     }
@@ -2543,7 +2633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const players = await csvDirectAnalyzer.getTopScorers(Number(limit));
       res.json({ success: true, players });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting top scorers:', error);
       res.status(500).json({ error: 'Error getting top scorers' });
     }
@@ -2555,7 +2645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { limit = 10 } = req.query;
       const players = await csvDirectAnalyzer.getTopAssists(Number(limit));
       res.json({ success: true, players });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting top assists:', error);
       res.status(500).json({ error: 'Error getting top assists' });
     }
@@ -2567,7 +2657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { teamName } = req.params;
       const players = await csvDirectAnalyzer.getPlayersByTeam(teamName);
       res.json({ success: true, players });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting team players:', error);
       res.status(500).json({ error: 'Error getting team players' });
     }
@@ -2579,7 +2669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { position } = req.params;
       const players = await csvDirectAnalyzer.getPlayersByPosition(position);
       res.json({ success: true, players });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting position players:', error);
       res.status(500).json({ error: 'Error getting position players' });
     }
@@ -2595,7 +2685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const matches = await csvMatchAnalyzer.searchMatches(query);
       res.json({ success: true, matches });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching matches:', error);
       res.status(500).json({ error: "Failed to search matches" });
     }
@@ -2606,7 +2696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 20;
       const matches = await csvMatchAnalyzer.getRecentMatches(limit);
       res.json({ success: true, matches });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting recent matches:', error);
       res.status(500).json({ error: "Failed to get recent matches" });
     }
@@ -2617,7 +2707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { teamName } = req.params;
       const matches = await csvMatchAnalyzer.getMatchesByTeam(teamName);
       res.json({ success: true, matches });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting team matches:', error);
       res.status(500).json({ error: "Failed to get team matches" });
     }
@@ -2628,7 +2718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { homeTeam, awayTeam } = req.params;
       const analysis = await csvMatchAnalyzer.getMatchAnalysis(homeTeam, awayTeam);
       res.json({ success: true, analysis });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting match analysis:', error);
       res.status(500).json({ error: "Failed to get match analysis" });
     }
@@ -2638,7 +2728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await csvMatchAnalyzer.getLeagueStats();
       res.json({ success: true, stats });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting league stats:', error);
       res.status(500).json({ error: "Failed to get league stats" });
     }
@@ -2648,7 +2738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const scorers = await csvMatchAnalyzer.getTopScorers();
       res.json({ success: true, scorers });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting top scorers:', error);
       res.status(500).json({ error: "Failed to get top scorers" });
     }
@@ -2679,7 +2769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const rankings = await csvMatchAnalyzer.getEloRankings(limit);
       res.json({ success: true, rankings });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting ELO rankings:', error);
       res.status(500).json({ error: "Failed to get ELO rankings" });
     }
@@ -2705,7 +2795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set headers for HTML preview
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.send(pdfHtml);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating player PDF:', error);
       res.status(500).json({ error: 'Error generating player PDF' });
     }
@@ -2758,7 +2848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ]
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting progression analysis:', error);
       res.status(500).json({ 
         success: false, 
@@ -2876,7 +2966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           recommendation: comparison.recommendations.forRecruitment
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error comparing players:', error);
       res.status(500).json({ 
         success: false, 
@@ -2941,7 +3031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topAlternative: alternatives[0]?.name || 'Aucune alternative trouvée'
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error finding alternatives:', error);
       res.status(500).json({ 
         success: false, 
@@ -2990,8 +3080,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           minRating: targetProfile.minRating ?
             analysis.overallRating >= targetProfile.minRating : true,
           skills: targetProfile.requiredSkills ?
-            targetProfile.requiredSkills.every(skill => 
-              analysis.strengths.some(strength => 
+            targetProfile.requiredSkills.every((skill: any) => 
+              analysis.strengths.some((strength: any) => 
                 strength.toLowerCase().includes(skill.toLowerCase())
               )
             ) : true
@@ -3018,7 +3108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verdict: profileMatch.score >= 70 ? 'Recommandé' : 'Non recommandé'
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error comparing to profile:', error);
       res.status(500).json({ 
         success: false, 
@@ -3048,7 +3138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startTime: m.date
       }));
       res.json(formatted);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de la récupération des live matches:", error);
       res.status(500).json({ error: "Unable to fetch live matches" });
     }

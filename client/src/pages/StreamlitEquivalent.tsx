@@ -39,13 +39,13 @@ export default function StreamlitEquivalent() {
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
 
   // Récupérer la liste des joueurs disponibles
-  const { data: playersData } = useQuery({
+  const { data: playersData } = useQuery<any>({
     queryKey: ['/api/csv/players/list', 500],
     enabled: true
   });
 
   // Récupérer les données du joueur sélectionné
-  const { data: playerProfile, isLoading } = useQuery({
+  const { data: playerProfile, isLoading } = useQuery<any>({
     queryKey: ['/api/csv/players/profile', selectedPlayer],
     enabled: !!selectedPlayer
   });

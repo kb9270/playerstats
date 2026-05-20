@@ -59,7 +59,9 @@ export default function ScoutingReport({ report, playerId }: ScoutingReportProps
       setIsDownloading(false);
     }
   };
-  const percentiles = report.percentiles as Record<string, number>;
+  const percentiles = (report.percentiles as any) as Record<string, number> || {};
+  const strengths = (report.strengths as any) as string[] || [];
+  const weaknesses = (report.weaknesses as any) as string[] || [];
   
   // Map of stat keys to display names
   const statDisplayNames: Record<string, string> = {
@@ -242,16 +244,16 @@ export default function ScoutingReport({ report, playerId }: ScoutingReportProps
       )}
 
       {/* Strengths and Weaknesses */}
-      {(report.strengths || report.weaknesses) && (
+      {(strengths.length > 0 || weaknesses.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {report.strengths && Array.isArray(report.strengths) && report.strengths.length > 0 && (
+          {strengths.length > 0 && (
             <Card className="bg-green-500/10 border-green-500/20">
               <CardContent className="p-4">
                 <h4 className="font-semibold text-green-400 mb-3">Points Forts</h4>
                 <div className="space-y-2">
-                  {report.strengths.map((strength, index) => (
-                    <Badge key={index} variant="outline" className="border-green-500/50 text-green-400">
-                      {strength as string}
+                  {strengths.map((strength, index) => (
+                    <Badge key={index} variant="outline" className="border-green-500/50 text-green-400 mr-2">
+                      {strength}
                     </Badge>
                   ))}
                 </div>
@@ -259,14 +261,14 @@ export default function ScoutingReport({ report, playerId }: ScoutingReportProps
             </Card>
           )}
           
-          {report.weaknesses && Array.isArray(report.weaknesses) && report.weaknesses.length > 0 && (
+          {weaknesses.length > 0 && (
             <Card className="bg-red-500/10 border-red-500/20">
               <CardContent className="p-4">
                 <h4 className="font-semibold text-red-400 mb-3">Points Faibles</h4>
                 <div className="space-y-2">
-                  {report.weaknesses.map((weakness, index) => (
-                    <Badge key={index} variant="outline" className="border-red-500/50 text-red-400">
-                      {weakness as string}
+                  {weaknesses.map((weakness, index) => (
+                    <Badge key={index} variant="outline" className="border-red-500/50 text-red-400 mr-2">
+                      {weakness}
                     </Badge>
                   ))}
                 </div>

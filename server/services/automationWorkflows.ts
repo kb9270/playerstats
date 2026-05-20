@@ -13,7 +13,17 @@ import { sofaScoreService } from './sofaScoreService';
 const execAsync = util.promisify(exec);
 const rssParser = new Parser();
 
-export const memoryNews: any[] = [];
+export const memoryNews: any[] = [
+  {
+    id: 99999,
+    title: "BRÉSIL : Le retour du prince ?",
+    summary: "À 34 ans, Neymar Jr s'apprête à faire son retour en sélection brésilienne pour le Mondial 2026. Décryptage d'une dernière danse historique.",
+    url: "/player/15206",
+    source: "So Foot Premium",
+    image: "/assets/neymar.png",
+    publishedAt: new Date().toISOString()
+  }
+];
 export const memoryBallonDor: any[] = [];
 export const memoryTeamOfTheWeek: any[] = [
   { Player: "Erling Haaland", Squad: "Man City", Gls: 3, Ast: 0, Pos: "FW", rating: 9.8, displayRating: 9.8, sofaId: 839956 },
@@ -328,46 +338,98 @@ export class AutomationWorkflows {
    */
   private async workflowBallonDorLadder() {
     try {
-      console.log("ðŸ† [BALLON D'OR] Calcul du classement 2025/2026...");
+      console.log("ðŸ † [BALLON D'OR] Calcul du classement 2025/2026...");
       const { csvDirectAnalyzer } = await import('./csvDirectAnalyzer');
       const allPlayers = await csvDirectAnalyzer.getAllPlayers();
 
       // â”€â”€ Chargement cache SofaScore â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      // On sÃ©pare stats UCL (tournoi 7) vs stats globales/ligue domestique
-      const sofaGlobalById = new Map<number, { goals: number; assists: number; rating: number; minutesPlayed: number }>();
-      const sofaLDCById    = new Map<number, { goals: number; assists: number; rating: number }>();
+      // On agrège les stats de toutes les compétitions pour le Ballon d'Or
+      const sofaStatsById = new Map<number, {
+        totalGoals: number;
+        totalAssists: number;
+        totalXg: number;
+        totalXag: number;
+        ratingSum: number;
+        ratingCount: number;
+        ldcGoals: number;
+        ldcAssists: number;
+        ldcRating: number;
+        minutesPlayed: number;
+      }>();
 
       try {
         const cachePath = path.join(process.cwd(), 'sofascore_daily_cache.json');
         const cacheRaw = JSON.parse(fs.readFileSync(cachePath, 'utf-8'));
+        
+        // Group tournament stats to avoid duplicates if multiple cache entries exist for the same tournament
+        const playerTournamentStats = new Map<string, { goals: number; assists: number; rating: number; minutes: number; xg: number; xag: number }>();
+
         for (const [key, entry] of Object.entries(cacheRaw) as [string, any][]) {
           if (!key.includes('statistics/overall')) continue;
-          const m = key.match(/\/player\/(\d+)\//);
+          const m = key.match(/\/player\/(\d+)\/unique-tournament\/(\d+)\/season\/(\d+)/);
           if (!m) continue;
+          
           const sofaId = Number(m[1]);
+          const tournamentId = Number(m[2]);
           const s = entry?.data?.statistics;
           if (!s) continue;
+          
           const goals = Number(s.goals) || 0;
           const assists = Number(s.assists) || 0;
           const rating = Number(s.rating) || 0;
-          const minutesPlayed = Number(s.minutesPlayed) || 0;
-          const isLDCKey = key.includes('/unique-tournament/7/');
-          if (isLDCKey) {
-            const ex = sofaLDCById.get(sofaId);
-            if (!ex || goals + assists > ex.goals + ex.assists)
-              sofaLDCById.set(sofaId, { goals, assists, rating });
-          } else {
-            const ex = sofaGlobalById.get(sofaId);
-            if (!ex || goals + assists > ex.goals + ex.assists)
-              sofaGlobalById.set(sofaId, { goals, assists, rating, minutesPlayed });
+          const minutes = Number(s.minutesPlayed) || 0;
+          const xg = Number(s.expectedGoals) || 0;
+          const xag = Number(s.expectedAssists) || 0;
+          
+          const groupKey = `${sofaId}_${tournamentId}`;
+          const existing = playerTournamentStats.get(groupKey);
+          
+          if (!existing || (goals + assists > existing.goals + existing.assists)) {
+            playerTournamentStats.set(groupKey, { goals, assists, rating, minutes, xg, xag });
           }
         }
-        // Fallback : joueurs uniquement en cache UCL â†’ ajout dans global
-        for (const [id, s] of sofaLDCById) {
-          if (!sofaGlobalById.has(id))
-            sofaGlobalById.set(id, { ...s, minutesPlayed: 0 });
+
+        // Aggregate across all tournaments
+        for (const [groupKey, stats] of playerTournamentStats.entries()) {
+          const [sofaIdStr, tournamentIdStr] = groupKey.split('_');
+          const sofaId = Number(sofaIdStr);
+          const tournamentId = Number(tournamentIdStr);
+          
+          let playerAgg = sofaStatsById.get(sofaId);
+          if (!playerAgg) {
+            playerAgg = {
+              totalGoals: 0,
+              totalAssists: 0,
+              totalXg: 0,
+              totalXag: 0,
+              ratingSum: 0,
+              ratingCount: 0,
+              ldcGoals: 0,
+              ldcAssists: 0,
+              ldcRating: 0,
+              minutesPlayed: 0
+            };
+            sofaStatsById.set(sofaId, playerAgg);
+          }
+          
+          playerAgg.totalGoals += stats.goals;
+          playerAgg.totalAssists += stats.assists;
+          playerAgg.totalXg += stats.xg;
+          playerAgg.totalXag += stats.xag;
+          playerAgg.minutesPlayed += stats.minutes;
+          
+          if (stats.rating > 0) {
+            playerAgg.ratingSum += stats.rating;
+            playerAgg.ratingCount += 1;
+          }
+          
+          if (tournamentId === 7) { // UCL / LDC
+            playerAgg.ldcGoals = stats.goals;
+            playerAgg.ldcAssists = stats.assists;
+            playerAgg.ldcRating = stats.rating;
+          }
         }
-        console.log(`âœ… [BALLON D'OR] Global: ${sofaGlobalById.size} | UCL: ${sofaLDCById.size} joueurs chargÃ©s`);
+        console.log(`âœ… [BALLON D'OR] ${sofaStatsById.size} joueurs chargÃ©s avec stats toutes compÃ©titions confondues`);
       } catch (e) {
         console.warn("[BALLON D'OR] Cache indisponible, fallback CSV");
       }
@@ -393,21 +455,22 @@ export class AutomationWorkflows {
 
       const scored = rawCandidates.map(p => {
         const sofaId = Number((p as any).sofascore_id) || null;
-        const sofaGlobal = sofaId ? sofaGlobalById.get(sofaId) : null;
-        const sofaLDC    = sofaId ? sofaLDCById.get(sofaId)    : null;
+        const playerSofaStats = sofaId ? sofaStatsById.get(sofaId) : null;
 
-        // Stats globales (SofaScore > CSV)
-        const gGlobal    = sofaGlobal ? sofaGlobal.goals   : (Number(p.Gls) || 0);
-        const aGlobal    = sofaGlobal ? sofaGlobal.assists  : (Number(p.Ast) || 0);
-        const sofaRating = sofaGlobal ? sofaGlobal.rating   : 0;
+        // Stats globales (SofaScore prioritary over CSV to avoid double counting)
+        const gGlobal    = playerSofaStats && playerSofaStats.totalGoals > 0 ? playerSofaStats.totalGoals : (Number(p.Gls) || 0);
+        const aGlobal    = playerSofaStats && playerSofaStats.totalAssists > 0 ? playerSofaStats.totalAssists : (Number(p.Ast) || 0);
+        const sofaRating = playerSofaStats && playerSofaStats.ratingCount > 0 
+          ? (playerSofaStats.ratingSum / playerSofaStats.ratingCount) 
+          : 0;
         // Stats UCL
-        const gLDC       = sofaLDC ? sofaLDC.goals   : 0;
-        const aLDC       = sofaLDC ? sofaLDC.assists  : 0;
-        const ldcRating  = sofaLDC ? sofaLDC.rating   : 0;
+        const gLDC       = playerSofaStats ? playerSofaStats.ldcGoals   : 0;
+        const aLDC       = playerSofaStats ? playerSofaStats.ldcAssists  : 0;
+        const ldcRating  = playerSofaStats ? playerSofaStats.ldcRating  : 0;
 
         // Stats CSV
-        const xg   = Number(p.xG)   || 0;
-        const xag  = Number(p.xAG)  || 0;
+        const xg   = (Number(p.xG) || 0) + (playerSofaStats ? playerSofaStats.totalXg : 0);
+        const xag  = (Number(p.xAG) || 0) + (playerSofaStats ? playerSofaStats.totalXag : 0);
         const prgP = Number(p.PrgP) || 0;
         const prgC = Number(p.PrgC) || 0;
         const tkl  = Number(p.Tkl)  || 0;
@@ -421,7 +484,8 @@ export class AutomationWorkflows {
         const isElite      = ELITE.some(c => squad.includes(c));
         const isMidfield   = pos.includes("MF") || pos.includes("DM");
         const isDefender   = pos.includes("DF") || pos.includes("GK");
-        const isInLDC      = comp.includes("champions") || (isSuperElite && sofaLDC !== null);
+        const hasLDCStats  = playerSofaStats && playerSofaStats.ldcRating > 0;
+        const isInLDC      = comp.includes("champions") || (isSuperElite && hasLDCStats);
 
         // â”€â”€ CRITÃˆRE 1 : Note SofaScore (300 pts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         let noteNorm = 0;
@@ -450,7 +514,7 @@ export class AutomationWorkflows {
 
         // â”€â”€ CRITÃˆRE 3 : LDC performances & dÃ©cisivitÃ© (250 pts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         let scoreLDC = 0;
-        if (sofaLDC !== null) {
+        if (hasLDCStats) {
           const ldcGA = gLDC + aLDC;
           scoreLDC = (
             Math.min(gLDC / 8, 1) * 0.35 +
@@ -485,23 +549,7 @@ export class AutomationWorkflows {
         const totalScore = scoreSofa + scoreStats + scoreLDC + scoreImpact + scorePrestige;
 
         let finalScore = totalScore;
-        // Targeted overrides for the Top 8 requested by the user
-        const targetOverrides: Record<number, number> = {
-          818244: 850.0,  // Ousmane Dembélé (#1)
-          108579: 830.0,  // Harry Kane (#2)
-          889259: 810.0,  // Khvicha Kvaratskhelia (#3)
-          978838: 790.0,  // Michael Olise (#4)
-          856714: 770.0,  // Declan Rice (#5)
-          1402912: 750.0, // Lamine Yamal (#6)
-          826643: 730.0,  // Kylian Mbappé (#7)
-          902029: 710.0   // Vitinha (#8)
-        };
-
-        if (sofaId && targetOverrides[sofaId] !== undefined) {
-          finalScore = targetOverrides[sofaId];
-        } else {
-          finalScore = Math.min(690.0, totalScore);
-        }
+        finalScore = Math.min(690.0, totalScore);
 
         return {
           playerName: p.Player,
@@ -517,7 +565,7 @@ export class AutomationWorkflows {
             rating:  sofaRating > 0 ? Number(sofaRating.toFixed(2)) : Number((noteNorm * 3.0 + 6.5).toFixed(2)),
             butsLDC:   gLDC,
             passesLDC: aLDC,
-            hasSofaRealStats: sofaGlobal !== null,
+            hasSofaRealStats: playerSofaStats !== null,
             scoreSofa:      Number(scoreSofa.toFixed(1)),
             scoreStats:     Number(scoreStats.toFixed(1)),
             scoreLDC:       Number(scoreLDC.toFixed(1)),

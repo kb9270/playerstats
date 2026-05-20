@@ -11,7 +11,7 @@ export class PdfReportGenerator {
       const htmlContent = this.generateReportHTML(playerData, stats, scoutingReport);
       
       browser = await puppeteer.launch({
-        headless: 'new',
+        headless: true,
         args: [
           '--no-sandbox', 
           '--disable-setuid-sandbox',
@@ -39,7 +39,7 @@ export class PdfReportGenerator {
       });
       
       // Wait a bit more for fonts and styles to load
-      await page.waitForTimeout(2000);
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       const pdfBuffer = await page.pdf({
         format: 'A4',
@@ -56,8 +56,8 @@ export class PdfReportGenerator {
       
       console.log(`PDF generated successfully for ${playerData.name}, size: ${pdfBuffer.length} bytes`);
       
-      return pdfBuffer;
-    } catch (error) {
+      return Buffer.from(pdfBuffer);
+    } catch (error: any) {
       console.error('Error generating PDF report:', error);
       throw new Error(`PDF generation failed: ${error.message}`);
     } finally {
@@ -537,14 +537,14 @@ export class PdfReportGenerator {
         <div class="strengths">
             <h4>Points Forts</h4>
             <ul>
-                ${strengths.map(strength => `<li>${strength}</li>`).join('')}
+                ${strengths.map((strength: string) => `<li>${strength}</li>`).join('')}
                 ${strengths.length === 0 ? '<li>Aucun point fort identifié</li>' : ''}
             </ul>
         </div>
         <div class="weaknesses">
             <h4>Points à Améliorer</h4>
             <ul>
-                ${weaknesses.map(weakness => `<li>${weakness}</li>`).join('')}
+                ${weaknesses.map((weakness: string) => `<li>${weakness}</li>`).join('')}
                 ${weaknesses.length === 0 ? '<li>Aucun point faible majeur identifié</li>' : ''}
             </ul>
         </div>

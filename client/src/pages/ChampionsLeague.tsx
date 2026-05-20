@@ -261,24 +261,24 @@ export default function ChampionsLeague() {
   // 4-4-2 Formation logic (Manual distribution as requested)
   const all = totwPlayers.slice(0, 11);
   
-  const attackers = all.filter(p => ["FW", "F", "ST", "ATT"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
-  const goalies = all.filter(p => ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
-  const defenders = all.filter(p => ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+  const attackers = all.filter((p: any) => ["FW", "F", "ST", "ATT"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+  const goalies = all.filter((p: any) => ["G", "GK", "K"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
+  const defenders = all.filter((p: any) => ["D", "DF", "B", "DEF"].some(tag => p.Pos?.toUpperCase() === tag || p.Pos?.toUpperCase().includes(tag)));
 
-  const finalGk = all.find(p => p.Player?.includes("Neuer")) || goalies[0] || all[0];
+  const finalGk = all.find((p: any) => p.Player?.includes("Neuer")) || goalies[0] || all[0];
   
-  const lb = all.find(p => p.Player?.includes("Davies")) || defenders[0];
-  const cb1 = all.find(p => p.Player?.includes("Saliba")) || defenders[1];
-  const cb2 = all.find(p => p.Player?.includes("Pacho")) || defenders[2];
-  const rb = all.find(p => p.Player?.includes("White")) || defenders[3];
+  const lb = all.find((p: any) => p.Player?.includes("Davies")) || defenders[0];
+  const cb1 = all.find((p: any) => p.Player?.includes("Saliba")) || defenders[1];
+  const cb2 = all.find((p: any) => p.Player?.includes("Pacho")) || defenders[2];
+  const rb = all.find((p: any) => p.Player?.includes("White")) || defenders[3];
   const finalDf = [lb, cb1, cb2, rb];
 
-  const fwLeft = all.find(p => p?.Player?.includes("Dembélé")) || attackers[0];
-  const fwRight = all.find(p => p?.Player?.includes("Kane")) || attackers[1];
+  const fwLeft = all.find((p: any) => p?.Player?.includes("Dembélé")) || attackers[0];
+  const fwRight = all.find((p: any) => p?.Player?.includes("Kane")) || attackers[1];
   const finalFw = [fwLeft, fwRight].filter(Boolean);
 
-  const usedIds = new Set([finalGk, ...finalDf, ...finalFw].filter(Boolean).map(p => p?.Player || ""));
-  const finalMf = all.filter(p => p && !usedIds.has(p.Player || "")).slice(0, 4);
+  const usedIds = new Set([finalGk, ...finalDf, ...finalFw].filter(Boolean).map((p: any) => p?.Player || ""));
+  const finalMf = all.filter((p: any) => p && !usedIds.has(p.Player || "")).slice(0, 4);
 
   const tabs = [
     { id: "totw",     label: "ÉQUIPE DU TOUR", icon: <Star size={16}/> },

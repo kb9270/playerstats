@@ -128,7 +128,28 @@ export class CSVDirectAnalyzer {
     
     return lines.slice(1).filter(line => line.trim()).map((line, idx) => {
       const cleanLine = line.replace(/\r$/, '');
-      const values = this.parseCSVLine(cleanLine);
+      let values = this.parseCSVLine(cleanLine);
+
+      // Fix for unquoted double/triple positions (e.g. FW,MF) causing column shift
+      const validPositions = ['FW', 'MF', 'DF', 'GK'];
+      if (values.length > 3 && validPositions.includes(values[3])) {
+        const positions: string[] = [values[3]];
+        let nextIdx = 4;
+        while (nextIdx < values.length && validPositions.includes(values[nextIdx])) {
+          positions.push(values[nextIdx]);
+          nextIdx++;
+        }
+        if (positions.length > 1) {
+          const mergedPosition = positions.join(',');
+          values.splice(3, positions.length, mergedPosition);
+          // Pad the empty keeper columns (around index 39) to keep the length aligned
+          const padCount = positions.length - 1;
+          for (let p = 0; p < padCount; p++) {
+            values.splice(39, 0, '');
+          }
+        }
+      }
+
       const player: any = {};
 
       headers.forEach((header, index) => {

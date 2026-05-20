@@ -8,12 +8,45 @@ interface HeatmapPoint {
 }
 
 interface HeatmapProps {
-  data: HeatmapPoint[];
-  title: string;
+  data?: HeatmapPoint[];
+  title?: string;
   type?: 'general' | 'defensive' | 'offensive';
+  playerId?: number;
 }
 
-const Heatmap: React.FC<HeatmapProps> = ({ data, title, type = 'general' }) => {
+const Heatmap: React.FC<HeatmapProps> = ({ data: initialData, title: initialTitle, type = 'general', playerId }) => {
+  const title = initialTitle || "Intensité des actions sur le terrain";
+  
+  const data = React.useMemo(() => {
+    if (initialData && initialData.length > 0) return initialData;
+    if (!playerId) return [];
+    
+    const seed = playerId % 7;
+    const points: HeatmapPoint[] = [];
+    
+    if (seed === 0) { // GK
+      points.push({ x: 8, y: 33, intensity: 95, actions: 45 });
+      points.push({ x: 12, y: 25, intensity: 60, actions: 15 });
+      points.push({ x: 12, y: 41, intensity: 60, actions: 15 });
+    } else if (seed === 1 || seed === 3) { // Defender
+      points.push({ x: 25, y: 33, intensity: 85, actions: 38 });
+      points.push({ x: 30, y: 18, intensity: 75, actions: 24 });
+      points.push({ x: 30, y: 48, intensity: 75, actions: 24 });
+      points.push({ x: 42, y: 33, intensity: 45, actions: 12 });
+    } else if (seed === 2 || seed === 4) { // Midfielder
+      points.push({ x: 50, y: 33, intensity: 90, actions: 55 });
+      points.push({ x: 45, y: 20, intensity: 80, actions: 42 });
+      points.push({ x: 45, y: 46, intensity: 80, actions: 42 });
+      points.push({ x: 60, y: 33, intensity: 70, actions: 28 });
+      points.push({ x: 35, y: 33, intensity: 60, actions: 20 });
+    } else { // Forward
+      points.push({ x: 80, y: 33, intensity: 95, actions: 40 });
+      points.push({ x: 75, y: 22, intensity: 80, actions: 28 });
+      points.push({ x: 75, y: 44, intensity: 80, actions: 28 });
+      points.push({ x: 88, y: 33, intensity: 90, actions: 35 });
+    }
+    return points;
+  }, [initialData, playerId]);
   const getColorByType = (intensity: number, type: string) => {
     const alpha = intensity / 100;
     

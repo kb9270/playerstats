@@ -180,6 +180,89 @@ Be specific, professional, and provide actionable insights based on the statisti
       return null;
     }
   }
+
+  async enhancePlayerData(playerName: string): Promise<any> {
+    const fallbackPlayer = {
+      name: playerName,
+      fullName: playerName,
+      age: 28,
+      nationality: "Unknown",
+      position: "FW",
+      team: "Unknown",
+      league: "Unknown",
+      marketValue: 10000000,
+      contractEnd: "2026",
+      height: 1.80,
+      foot: "right",
+      photoUrl: null,
+      fbrefId: null,
+      transfermarktId: null,
+      sofascoreId: null,
+    };
+
+    if (!this.openaiApiKey) {
+      return fallbackPlayer;
+    }
+
+    try {
+      const prompt = `Create a realistic profile for the football player "${playerName}". 
+Provide:
+- fullName
+- age (integer)
+- nationality
+- position (one of: Forward, Winger, Attacking Midfield, Midfielder, Defensive Midfielder, Defender, Goalkeeper)
+- team
+- league
+- marketValue (integer in Euros)
+- contractEnd (string, e.g. "2027")
+- height (float in meters, e.g. 1.75)
+- foot (one of: right, left, both)
+
+Format your response as a valid JSON object matching these keys:
+{
+  "fullName": "...",
+  "age": 28,
+  "nationality": "...",
+  "position": "...",
+  "team": "...",
+  "league": "...",
+  "marketValue": 10000000,
+  "contractEnd": "2027",
+  "height": 1.75,
+  "foot": "right"
+}`;
+
+      const response = await axios.post(`${this.baseUrl}/chat/completions`, {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a football scout. Respond ONLY with the requested JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.5
+      }, {
+        headers: {
+          'Authorization': `Bearer ${this.openaiApiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const parsed = JSON.parse(response.data.choices[0].message.content);
+      return {
+        ...fallbackPlayer,
+        ...parsed
+      };
+    } catch (error) {
+      console.error("Error enhancing player data with AI:", error);
+      return fallbackPlayer;
+    }
+  }
 }
 
 export const aiService = new AIAnalysisService();

@@ -34,7 +34,6 @@ interface Player {
   Succ: number;
   Att: number;
   Tkl: number;
-  TklW: number;
   Blocks: number;
   CarryDist: number;
   PrgCarryDist: number;

@@ -86,11 +86,23 @@ class SofaScoreService {
     }
     
     // Cache miss or expired
-    console.log(`🌐 [SofaScore Net] FETCH via Proxy: ${path}`);
     const fullUrl = `https://api.sofascore.com/api/v1${path}`;
     const proxyUrl = `http://localhost:8001/?url=${encodeURIComponent(fullUrl)}`;
     
-    const response = await this.axiosInstance.get(proxyUrl);
+    let response;
+    try {
+      console.log(`🌐 [SofaScore Net] Trying FETCH via Proxy: ${path}`);
+      response = await this.axiosInstance.get(proxyUrl);
+    } catch (e: any) {
+      console.warn(`⚠️ [SofaScore Net] Proxy failed (${e.message}), trying direct FETCH to ${fullUrl}...`);
+      try {
+        response = await this.axiosInstance.get(fullUrl);
+      } catch (directErr: any) {
+        console.error(`❌ [SofaScore Net] Direct FETCH also failed:`, directErr.message);
+        throw directErr;
+      }
+    }
+    
     this.dailyCache.set(path, { timestamp: Date.now(), data: response.data });
     this.saveCacheToDisk();
     return response;
@@ -365,7 +377,7 @@ class SofaScoreService {
       // Look back at 20 matches to find 5 with valid ratings
       const recentMatches = events.slice(-20).reverse();
       
-      const ratingPromises = recentMatches.map(async (e) => {
+      const ratingPromises = recentMatches.map(async (e: any) => {
         try {
           const resp = await this.fetchWithCache(`/event/${e.id}/player/${sofaId}/statistics`);
           if (!resp || !resp.data || !resp.data.statistics?.rating) return null;

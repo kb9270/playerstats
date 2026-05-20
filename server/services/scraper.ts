@@ -1,5 +1,4 @@
 import { storage } from "../storage";
-import { fbrefApi } from "./footballApi";
 import { transfermarktApi } from "./transfermarktApi";
 import { optimizedTransfermarktApi } from "./optimizedTransfermarktApi";
 import { fbrefScraper } from "./fbrefScraper";
@@ -218,9 +217,9 @@ export class FootballDataScraper {
           try {
             fbrefId = await aggressiveFbrefMatcher.findPlayerByMultipleStrategies(
               player.name,
-              player.team,
-              player.nationality,
-              player.age
+              player.team || undefined,
+              player.nationality || undefined,
+              player.age || undefined
             );
             
             if (fbrefId) {

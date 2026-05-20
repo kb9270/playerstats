@@ -134,14 +134,13 @@ export class SmartStatsCollector {
           playerId,
           season: latestSeason.season || '2025-2026',
           competition: latestSeason.competition || 'League',
-          appearances: latestSeason.appearances,
+          matches: latestSeason.appearances,
           goals: latestSeason.goals,
           assists: latestSeason.assists,
           minutes: latestSeason.minutes,
           yellowCards: latestSeason.yellowCards,
           redCards: latestSeason.redCards,
-          rating: this.calculateBasicRating(latestSeason),
-          source: 'transfermarkt'
+          rating: this.calculateBasicRating(latestSeason)
         });
         
         return true;
@@ -166,13 +165,12 @@ export class SmartStatsCollector {
         playerId,
         season: '2024-2025',
         competition: 'Generated Stats',
-        appearances: Math.round(baseStats.appearances * ageModifier * leagueModifier),
+        matches: Math.round(baseStats.appearances * ageModifier * leagueModifier),
         goals: Math.round(baseStats.goals * ageModifier * leagueModifier),
         assists: Math.round(baseStats.assists * ageModifier * leagueModifier),
         minutes: Math.round(baseStats.minutes * ageModifier),
         rating: Number((baseStats.rating * ageModifier * leagueModifier).toFixed(1)),
-        passCompletionRate: baseStats.passCompletionRate,
-        source: 'generated'
+        passCompletionRate: baseStats.passCompletionRate
       };
       
       await storage.createPlayerStats(generatedStats);
@@ -191,7 +189,7 @@ export class SmartStatsCollector {
   }
   
   private getPositionBaseStats(position: string) {
-    const positionStats = {
+    const positionStats: Record<string, any> = {
       'Forward': { appearances: 30, goals: 12, assists: 6, minutes: 2400, rating: 7.2, passCompletionRate: 78 },
       'Winger': { appearances: 32, goals: 8, assists: 10, minutes: 2600, rating: 7.1, passCompletionRate: 80 },
       'Attacking Midfield': { appearances: 28, goals: 6, assists: 12, minutes: 2300, rating: 7.3, passCompletionRate: 85 },
@@ -227,7 +225,7 @@ export class SmartStatsCollector {
   }
   
   private generatePositionPercentiles(position: string, ageModifier: number, leagueModifier: number): any {
-    const basePercentiles = {
+    const basePercentiles: Record<string, any> = {
       'Forward': { goals: 75, shots: 80, xG: 70, aerialWins: 65, pressing: 60 },
       'Winger': { assists: 75, crosses: 80, dribbles: 85, pace: 90, goals: 60 },
       'Attacking Midfield': { assists: 85, keyPasses: 90, through_balls: 80, shooting: 65, dribbles: 75 },
@@ -241,9 +239,9 @@ export class SmartStatsCollector {
     const base = basePercentiles[position] || basePercentiles['Central Midfield'];
     const modifier = ageModifier * leagueModifier;
     
-    const result = {};
+    const result: Record<string, number> = {};
     Object.entries(base).forEach(([key, value]) => {
-      result[key] = Math.min(95, Math.max(5, Math.round(value * modifier)));
+      result[key] = Math.min(95, Math.max(5, Math.round((value as number) * modifier)));
     });
     
     return result;

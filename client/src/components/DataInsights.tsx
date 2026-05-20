@@ -9,7 +9,7 @@ interface InsightProps {
 
 // ── Generate insights from raw player data ─────────────────
 function generateInsights(p: any): Array<{ type: "positive" | "negative" | "neutral" | "warning"; title: string; text: string; metric?: string }> {
-  const insights = [];
+  const insights: Array<{ type: "positive" | "negative" | "neutral" | "warning"; title: string; text: string; metric?: string }> = [];
 
   const gls = Number(p.Gls) || 0;
   const xG = Number(p.xG) || 0;

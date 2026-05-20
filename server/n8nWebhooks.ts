@@ -15,7 +15,7 @@ export function registerN8nWebhooks(app: Express) {
       }
 
       // Check if player exists
-      let player = await db.query.players.findFirst({
+      let player = await (db as any).query.players.findFirst({
         where: eq(players.name, player_name)
       });
 
@@ -29,8 +29,8 @@ export function registerN8nWebhooks(app: Express) {
       }
 
       // Upsert stats for this season
-      const existingStat = await db.query.playerStats.findFirst({
-         where: (ps) => eq(ps.playerId, player.id!) && eq(ps.season, season)
+      const existingStat = await (db as any).query.playerStats.findFirst({
+         where: (ps: any) => eq(ps.playerId, player.id!) && eq(ps.season, season)
       });
 
       if (existingStat) {
@@ -70,7 +70,7 @@ export function registerN8nWebhooks(app: Express) {
        }
 
        // Upsert mechanism based on URL
-       const existingNews = await db.query.news.findFirst({
+       const existingNews = await (db as any).query.news.findFirst({
          where: eq(news.url, url)
        });
 
@@ -104,7 +104,7 @@ export function registerN8nWebhooks(app: Express) {
         // We clean up the old week's rankings safely
         // In this implementation, we simply append or upsert. Let's do a simple loop.
         for (const item of rankings) {
-            let player = await db.query.players.findFirst({
+            let player = await (db as any).query.players.findFirst({
                where: eq(players.name, item.player_name)
             });
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight, Search, X, Play, Clock, Star, TrendingUp, Shield, BarChart3, ChevronRight, Menu, Zap, Trophy, Users, Activity, Newspaper, Target, Crosshair, Globe } from "lucide-react";
+import { ArrowUpRight, Search, X, Play, Clock, Star, TrendingUp, Shield, BarChart3, ChevronRight, Menu, Zap, Trophy, Users, Activity, Newspaper, Target, Crosshair, Globe, Sparkles } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import NavBar from "@/components/NavBar";
 
@@ -859,6 +859,7 @@ function TakeOverExpandingStats() {
 /* ─── Main BentoHome page ─────────────────────────────── */
 export default function BentoHome() {
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isNeymarModalOpen, setIsNeymarModalOpen] = useState(false);
   const [, setLocation] = useLocation();
 
   /* Data hooks */
@@ -1556,49 +1557,322 @@ export default function BentoHome() {
           </GlassCard>
 
 
-          {/* ── CARD 9: News ─────────────────────── */}
-
+          {/* ── CARD 9: News (Neymar Featured Article Only) ─────────────────────── */}
           <GlassCard
-            style={{ gridColumn: "7 / 13", gridRow: "3 / 4", padding: 24 }}
+            style={{ 
+              gridColumn: "7 / 13", 
+              gridRow: "3 / 5", 
+              padding: 0, 
+              display: "flex", 
+              flexDirection: "column",
+              position: "relative",
+              overflow: "hidden",
+              cursor: "pointer",
+              height: "100%"
+            }}
+            onClick={() => setIsNeymarModalOpen(true)}
           >
+            {/* Background Image */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundImage: "url('/assets/neymar.png')",
+              backgroundSize: "cover",
+              backgroundPosition: "center 20%",
+              transition: "transform 0.5s ease"
+            }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <Newspaper size={13} style={{ color: "#E8344A" }} />
-              <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase" }}>Actualités</span>
-              <span style={{
-                marginLeft: "auto", fontSize: 9, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700,
-                color: "#E8344A", background: "rgba(232,52,74,0.1)", border: "1px solid rgba(232,52,74,0.2)",
-                padding: "2px 8px", borderRadius: 100, letterSpacing: "0.1em",
-              }}>Live</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              {news.slice(0, 3).map((n: any, i: number) => (
-                <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                  <div style={{
-                    padding: "10px 0",
-                    borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.05)" : "none",
-                    transition: "padding-left 0.2s ease",
-                  }}
-                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.paddingLeft = "6px"}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.paddingLeft = "0"}
-                  >
-                    <div style={{ fontSize: 9, fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, color: "#E8344A", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
-                      {n.source || "Football"}
-                    </div>
-                    <div style={{ fontSize: 13, fontFamily: "'Barlow', sans-serif", fontWeight: 600, lineHeight: 1.4, color: "rgba(255,255,255,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {n.title}
-                    </div>
-                  </div>
-                </a>
-              ))}
-              {news.length === 0 && [...Array(3)].map((_, i) => (
-                <div key={i} style={{ padding: "10px 0", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
-                  <div style={{ height: 10, width: "25%", borderRadius: 3, marginBottom: 6 }} className="shimmer" />
-                  <div style={{ height: 13, width: "85%", borderRadius: 3 }} className="shimmer" />
+            {/* Dark Gradient Overlay */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "linear-gradient(to top, rgba(10, 15, 30, 0.98) 0%, rgba(10, 15, 30, 0.6) 50%, rgba(0, 0, 0, 0.15) 100%)",
+              zIndex: 2
+            }} />
+
+            {/* Card Content */}
+            <div style={{
+              position: "relative",
+              zIndex: 3,
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
+              justifyContent: "space-between",
+              padding: 24,
+              boxSizing: "border-box"
+            }}>
+              {/* Top Row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{
+                  fontSize: 9,
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 700,
+                  color: "#fff",
+                  background: "#E8344A",
+                  padding: "3px 8px",
+                  borderRadius: "3px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em"
+                }}>
+                  À LA UNE
                 </div>
-              ))}
+                <div style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "rgba(255, 255, 255, 0.6)",
+                  letterSpacing: "0.1em"
+                }}>
+                  SO FOOT SPECIAL
+                </div>
+              </div>
+
+              {/* Bottom Row */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: "auto" }}>
+                <h3 style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 22,
+                  fontWeight: 800,
+                  lineHeight: 1.2,
+                  color: "#fff",
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: "-0.01em"
+                }}>
+                  BRÉSIL : Le retour du prince ?
+                </h3>
+                <p style={{
+                  fontFamily: "'Barlow', sans-serif",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: "rgba(255, 255, 255, 0.75)",
+                  margin: "4px 0 10px 0",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden"
+                }}>
+                  À 34 ans, Neymar Jr s'apprête à faire son retour en sélection brésilienne pour le Mondial 2026. Décryptage d'une dernière danse historique entre ombre et lumière.
+                </p>
+                <div style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#E8344A",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4
+                }}>
+                  Lire l'article de fond <Sparkles size={11} />
+                </div>
+              </div>
             </div>
           </GlassCard>
+
+          {/* Neymar Article Reader Modal */}
+          {isNeymarModalOpen && (
+            <div 
+              style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(0, 0, 0, 0.85)",
+                backdropFilter: "blur(8px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 9999,
+                padding: 16
+              }}
+              onClick={() => setIsNeymarModalOpen(false)}
+            >
+              <div 
+                style={{
+                  backgroundColor: "#0d1527",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: 16,
+                  width: "100%",
+                  maxWidth: 680,
+                  maxHeight: "90vh",
+                  overflowY: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  position: "relative",
+                  boxShadow: "0 20px 40px rgba(0, 0, 0, 0.6)"
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Header Image */}
+                <div style={{
+                  position: "relative",
+                  width: "100%",
+                  height: 250,
+                  backgroundImage: "url('/assets/neymar.png')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center 20%"
+                }}>
+                  {/* Dark overlay inside image */}
+                  <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "linear-gradient(to top, #0d1527 0%, rgba(13, 21, 39, 0.4) 60%, rgba(0, 0, 0, 0.3) 100%)"
+                  }} />
+                  {/* Close button */}
+                  <button 
+                    onClick={() => setIsNeymarModalOpen(false)}
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                      background: "rgba(0, 0, 0, 0.6)",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 32,
+                      height: 32,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "background 0.2s"
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.backgroundColor = "rgba(232, 52, 74, 0.8)"}
+                    onMouseLeave={e => e.currentTarget.style.backgroundColor = "rgba(0, 0, 0, 0.6)"}
+                  >
+                    <X size={16} />
+                  </button>
+                  {/* Title on Header */}
+                  <div style={{
+                    position: "absolute",
+                    bottom: 16,
+                    left: 24,
+                    right: 24
+                  }}>
+                    <div style={{
+                      fontSize: 10,
+                      fontFamily: "'Barlow Condensed', sans-serif",
+                      fontWeight: 700,
+                      color: "#E8344A",
+                      letterSpacing: "0.15em",
+                      textTransform: "uppercase",
+                      marginBottom: 6
+                    }}>
+                      So Foot Premium • Analyse Exclusive
+                    </div>
+                    <h2 style={{
+                      fontFamily: "'Barlow Condensed', sans-serif",
+                      fontSize: 32,
+                      fontWeight: 900,
+                      color: "#fff",
+                      margin: 0,
+                      textTransform: "uppercase",
+                      lineHeight: 1.1
+                    }}>
+                      BRÉSIL : Le retour du prince ?
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Article Content */}
+                <div style={{
+                  padding: "24px 32px 32px 32px",
+                  fontFamily: "'Barlow', sans-serif",
+                  lineHeight: 1.6,
+                  color: "rgba(255, 255, 255, 0.85)",
+                  fontSize: 15
+                }}>
+                  {/* Introduction */}
+                  <p style={{
+                    fontSize: 17,
+                    fontWeight: 600,
+                    lineHeight: 1.55,
+                    color: "#fff",
+                    marginBottom: 20,
+                    borderLeft: "3px solid #E8344A",
+                    paddingLeft: 16
+                  }}>
+                    Le peuple brésilien retient son souffle. Après des mois d'une agonie physique silencieuse, marquée par cette terrible rupture des ligaments croisés antérieurs sous le ciel lourd de Montevideo, et un exil doré mais contesté dans le désert saoudien d'Al-Hilal, Neymar da Silva Santos Júnior s'apprête à revêtir la tunique sacrée de la Seleção. Pour beaucoup, c'est l'étincelle ultime. Le retour de l'artiste déchu, venu réclamer sa couronne avant la grande messe nord-américaine de 2026.
+                  </p>
+
+                  {/* Section 1 */}
+                  <h3 style={{
+                    fontFamily: "'Barlow Condensed', sans-serif",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#fff",
+                    textTransform: "uppercase",
+                    marginTop: 24,
+                    marginBottom: 10,
+                    letterSpacing: "0.02em"
+                  }}>
+                    Le défi physique et mental : La résilience à 34 ans
+                  </h3>
+                  <p style={{ marginBottom: 16 }}>
+                    À 34 ans (l'âge qu'il aura lors du tournoi), après tant de cicatrices, d'opérations et de soirées d'amertume, la question brûle les lèvres : Neymar a-t-il encore les jambes et le coffre pour le très haut niveau international ? Le football moderne n'attend pas ; il broie les nostalgiques et les corps fatigués. 
+                  </p>
+                  <p style={{ marginBottom: 20 }}>
+                    Pourtant, chez Ney, la résilience n'est pas un vain mot. C'est un moteur intime, alimenté par le désir viscéral de laver l'affront des échecs passés. Ses séances de rééducation spartiates, partagées sur ses réseaux, témoignent d'un homme qui refuse d'abdiquer devant l'usure du temps. Son retour sur les terrains est un défi lancé à la science et à ses détracteurs.
+                  </p>
+
+                  {/* Section 2 */}
+                  <h3 style={{
+                    fontFamily: "'Barlow Condensed', sans-serif",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#fff",
+                    textTransform: "uppercase",
+                    marginTop: 24,
+                    marginBottom: 10,
+                    letterSpacing: "0.02em"
+                  }}>
+                    Le nouveau rôle : Chef d'orchestre dans l'ombre des flèches
+                  </h3>
+                  <p style={{ marginBottom: 16 }}>
+                    La Seleção de 2026 n'est plus celle de 2018 ou de 2022. Elle n'est plus dépendante d'un seul homme ni condamnée au soliloque de sa superstar. Porté par la vitesse foudroyante de Vinícius Júnior, le génie clinique de Rodrygo et la fougue printanière d'Endrick, le Brésil s'est doté d'une artillerie moderne et diversifiée.
+                  </p>
+                  <p style={{ marginBottom: 20 }}>
+                    Dans cette constellation, Neymar ne sera plus le dynamiteur solitaire obligé de tout créer par le dribble. Il sera le chef d'orchestre. Un numéro 10 cérébral, dictant le tempo, distillant les ballons dans le bon espace, et libérant la pression physique pour ses jeunes lieutenants. Un rôle de guide technique et de mentor taillé pour sa maturité nouvelle.
+                  </p>
+
+                  {/* Section 3 */}
+                  <h3 style={{
+                    fontFamily: "'Barlow Condensed', sans-serif",
+                    fontSize: 20,
+                    fontWeight: 800,
+                    color: "#fff",
+                    textTransform: "uppercase",
+                    marginTop: 24,
+                    marginBottom: 10,
+                    letterSpacing: "0.02em"
+                  }}>
+                    La dernière danse : L'obsession de l'étoile
+                  </h3>
+                  <p style={{ marginBottom: 16 }}>
+                    Cette Coupe du Monde 2026 sonne irrémédiablement comme le crépuscule d'une idole polarisante. C'est l'obsession d'une vie, le rêve d'une sixième étoile brodée sur le maillot jaune. Au-delà des critiques sur son exil saoudien et son hygiène de vie, Neymar sait que l'histoire ne retient que les vainqueurs de la finale du dimanche. 
+                  </p>
+                  <p style={{ marginBottom: 0 }}>
+                    Gagner en Amérique du Nord serait sa rédemption absolue, celle qui le placerait définitivement au panthéon du football brésilien aux côtés des géants. C'est la dernière danse d'un prince qui refuse de laisser le trône vide sans avoir livré son combat le plus noble.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
 
           {/* ── LEAGUES ROW (5 Widgets) ────────────────── */}

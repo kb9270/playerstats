@@ -67,35 +67,35 @@ export default function BeautifulCSVDashboard() {
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
 
   // Données de base
-  const { data: leagueStats } = useQuery({
+  const { data: leagueStats } = useQuery<any>({
     queryKey: ['/api/csv-direct/leagues'],
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const { data: teamStats } = useQuery({
+  const { data: teamStats } = useQuery<any>({
     queryKey: ['/api/csv-direct/teams'],
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: topScorers } = useQuery({
+  const { data: topScorers } = useQuery<any>({
     queryKey: ['/api/csv-direct/top-scorers', 5],
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: topAssists } = useQuery({
+  const { data: topAssists } = useQuery<any>({
     queryKey: ['/api/csv-direct/top-assists', 5],
     staleTime: 5 * 60 * 1000,
   });
 
   // Recherche
-  const { data: searchResults, isLoading: isSearching } = useQuery({
+  const { data: searchResults, isLoading: isSearching } = useQuery<any>({
     queryKey: [`/api/csv-direct/search?q=${encodeURIComponent(searchQuery)}`],
     enabled: searchQuery.length > 2 && searchQuery.trim().length > 0,
     staleTime: 30 * 1000, // 30 secondes
   });
 
   // Analyse du joueur sélectionné
-  const { data: playerAnalysis, isLoading: isLoadingAnalysis } = useQuery({
+  const { data: playerAnalysis, isLoading: isLoadingAnalysis } = useQuery<any>({
     queryKey: ['/api/csv-direct/player', selectedPlayer],
     enabled: !!selectedPlayer,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -378,7 +378,7 @@ export default function BeautifulCSVDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      {Object.entries(playerAnalysis.analysis.percentiles).map(([stat, value]) => (
+                      {Object.entries(playerAnalysis.analysis.percentiles as Record<string, number>).map(([stat, value]: [string, number]) => (
                         <div key={stat} className="space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="font-medium text-lg capitalize">{stat.replace(/([A-Z])/g, ' $1')}</span>
@@ -431,7 +431,7 @@ export default function BeautifulCSVDashboard() {
                             Forces
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {playerAnalysis.analysis.strengths.map((strength, index) => (
+                            {playerAnalysis.analysis.strengths.map((strength: string, index: number) => (
                               <Badge key={index} variant="outline" className="border-green-200 text-green-700 dark:border-green-800 dark:text-green-300">
                                 {strength}
                               </Badge>
@@ -447,7 +447,7 @@ export default function BeautifulCSVDashboard() {
                             Points d'amélioration
                           </h4>
                           <div className="flex flex-wrap gap-2">
-                            {playerAnalysis.analysis.weaknesses.map((weakness, index) => (
+                            {playerAnalysis.analysis.weaknesses.map((weakness: string, index: number) => (
                               <Badge key={index} variant="outline" className="border-red-200 text-red-700 dark:border-red-800 dark:text-red-300">
                                 {weakness}
                               </Badge>

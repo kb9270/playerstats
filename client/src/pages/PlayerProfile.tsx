@@ -15,17 +15,17 @@ export default function PlayerProfile() {
   const { id } = useParams();
   const playerId = parseInt(id as string);
 
-  const { data: player, isLoading: playerLoading, error: playerError } = useQuery({
+  const { data: player, isLoading: playerLoading, error: playerError } = useQuery<any>({
     queryKey: [`/api/players/${playerId}`],
     enabled: !isNaN(playerId),
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: [`/api/players/${playerId}/stats`],
     enabled: !isNaN(playerId),
   });
 
-  const { data: scoutingReport, isLoading: scoutingLoading } = useQuery({
+  const { data: scoutingReport, isLoading: scoutingLoading } = useQuery<any>({
     queryKey: [`/api/players/${playerId}/scouting`],
     enabled: !isNaN(playerId),
   });

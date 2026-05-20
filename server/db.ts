@@ -7,7 +7,7 @@ neonConfig.webSocketConstructor = ws;
 
 // DATABASE_URL is optional - if not set, the app runs in memory-only mode
 export let pool: Pool | null = null;
-export let db: ReturnType<typeof drizzle> | null = null;
+export let db: any = null;
 
 if (process.env.DATABASE_URL) {
   pool = new Pool({ connectionString: process.env.DATABASE_URL });

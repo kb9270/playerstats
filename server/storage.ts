@@ -57,25 +57,28 @@ class MemoryStorage implements IStorage {
   private seedData() {
     const now = new Date();
 
-    const seedPlayers: Omit<Player, 'id'>[] = [
-      { name: "Moses Simon", fullName: "Moses Daddy-Ajala Simon", age: 29, nationality: "Nigerian", position: "AILIER GAUCHE", team: "FC NANTES", league: "Ligue 1", marketValue: 12000000, contractEnd: "JUIN 2026", height: 1.68, foot: "DROIT", photoUrl: null, fbrefId: "moses-simon", transfermarktId: null, lastUpdated: now },
-      { name: "Kylian Mbappé", fullName: "Kylian Mbappé Lottin", age: 26, nationality: "French", position: "ATTAQUANT", team: "Real Madrid", league: "La Liga", marketValue: 180000000, contractEnd: "JUIN 2029", height: 1.78, foot: "DROIT", photoUrl: null, fbrefId: "kylian-mbappe", transfermarktId: null, lastUpdated: now },
-      { name: "Mohamed-Ali Cho", fullName: "Mohamed-Ali Cho", age: 21, nationality: "French", position: "AILIER DROIT", team: "OGC Nice", league: "Ligue 1", marketValue: 25000000, contractEnd: "JUIN 2027", height: 1.75, foot: "GAUCHE", photoUrl: null, fbrefId: "mohamed-ali-cho", transfermarktId: null, lastUpdated: now },
-      { name: "Zuriko Davitashvili", fullName: "Zuriko Davitashvili", age: 24, nationality: "Georgian", position: "AILIER GAUCHE", team: "AS Saint-Étienne", league: "Ligue 1", marketValue: 8000000, contractEnd: "JUIN 2027", height: 1.73, foot: "GAUCHE", photoUrl: null, fbrefId: "zuriko-davitashvili", transfermarktId: null, lastUpdated: now },
-      { name: "Dilane Bakwa", fullName: "Dilane Bakwa", age: 22, nationality: "French", position: "AILIER DROIT", team: "RC Strasbourg", league: "Ligue 1", marketValue: 15000000, contractEnd: "JUIN 2026", height: 1.80, foot: "GAUCHE", photoUrl: null, fbrefId: "dilane-bakwa", transfermarktId: null, lastUpdated: now },
+    const seedPlayers: (Omit<Player, 'id'> & {id?: number})[] = [
+      { id: 868812, name: "Vinícius Júnior", fullName: "Vinícius José Paixão de Oliveira Júnior", age: 24, nationality: "Brazilian", position: "AILIER GAUCHE", team: "Real Madrid", league: "La Liga", marketValue: 200000000, contractEnd: "JUIN 2027", height: 1.76, foot: "DROIT", photoUrl: "https://api.sofascore.app/api/v1/player/868812/image", fbrefId: "vinicius-junior", transfermarktId: null, lastUpdated: now, sofascoreId: 868812 },
+      { name: "Moses Simon", fullName: "Moses Daddy-Ajala Simon", age: 29, nationality: "Nigerian", position: "AILIER GAUCHE", team: "FC NANTES", league: "Ligue 1", marketValue: 12000000, contractEnd: "JUIN 2026", height: 1.68, foot: "DROIT", photoUrl: null, fbrefId: "moses-simon", transfermarktId: null, lastUpdated: now, sofascoreId: null },
+      { name: "Kylian Mbappé", fullName: "Kylian Mbappé Lottin", age: 26, nationality: "French", position: "ATTAQUANT", team: "Real Madrid", league: "La Liga", marketValue: 180000000, contractEnd: "JUIN 2029", height: 1.78, foot: "DROIT", photoUrl: null, fbrefId: "kylian-mbappe", transfermarktId: null, lastUpdated: now, sofascoreId: null },
+      { name: "Mohamed-Ali Cho", fullName: "Mohamed-Ali Cho", age: 21, nationality: "French", position: "AILIER DROIT", team: "OGC Nice", league: "Ligue 1", marketValue: 25000000, contractEnd: "JUIN 2027", height: 1.75, foot: "GAUCHE", photoUrl: null, fbrefId: "mohamed-ali-cho", transfermarktId: null, lastUpdated: now, sofascoreId: null },
+      { name: "Zuriko Davitashvili", fullName: "Zuriko Davitashvili", age: 24, nationality: "Georgian", position: "AILIER GAUCHE", team: "AS Saint-Étienne", league: "Ligue 1", marketValue: 8000000, contractEnd: "JUIN 2027", height: 1.73, foot: "GAUCHE", photoUrl: null, fbrefId: "zuriko-davitashvili", transfermarktId: null, lastUpdated: now, sofascoreId: null },
+      { name: "Dilane Bakwa", fullName: "Dilane Bakwa", age: 22, nationality: "French", position: "AILIER DROIT", team: "RC Strasbourg", league: "Ligue 1", marketValue: 15000000, contractEnd: "JUIN 2026", height: 1.80, foot: "GAUCHE", photoUrl: null, fbrefId: "dilane-bakwa", transfermarktId: null, lastUpdated: now, sofascoreId: null },
     ];
 
     const statsBase = { starts: null, goalsNonPenalty: null, penaltyGoals: null, penaltyAttempts: null, yellowCards: 0, redCards: 0, xG: null, xA: null, progressiveCarries: null, progressivePassesReceived: null, passesCompleted: null, passesAttempted: null, passCompletionRate: null, finalThirdPasses: null, penaltyAreaPasses: null, tacklesWon: null, tacklesAttempted: null, interceptions: null, blocks: null, clearances: null, aerialsWon: null, aerialsAttempted: null, dribblesAttempted: null, touches: null, touchesPenaltyArea: null, dispossessed: null, miscontrols: null, lastUpdated: now };
 
     const seedStats: Omit<PlayerStats, 'id' | 'playerId'>[] = [
-      { season: "2026-2027", competition: "Ligue 1", matches: 33, minutes: 2677, goals: 8, assists: 10, progressivePasses: 5.07, keyPasses: 10, crosses: 7.66, dribblesCompleted: 2.24, rating: 7.24, shots: null, shotsOnTarget: null, passes: null, tackles: null, ...statsBase },
-      { season: "2026-2027", competition: "La Liga", matches: 28, minutes: 2456, goals: 18, assists: 5, progressivePasses: 2.1, keyPasses: 2.8, crosses: 1.2, dribblesCompleted: 3.4, rating: 8.2, shots: null, shotsOnTarget: null, passes: null, tackles: null, ...statsBase },
-      { season: "2026-2027", competition: "Ligue 1", matches: 25, minutes: 1890, goals: 5, assists: 3, progressivePasses: 4.50, keyPasses: 2.83, crosses: 2.83, dribblesCompleted: 1.11, rating: 6.8, shots: null, shotsOnTarget: null, passes: null, tackles: null, ...statsBase },
-      { season: "2026-2027", competition: "Ligue 1", matches: 28, minutes: 2145, goals: 6, assists: 4, progressivePasses: 3.18, keyPasses: 2.81, crosses: 2.81, dribblesCompleted: 1.54, rating: 6.9, shots: null, shotsOnTarget: null, passes: null, tackles: null, ...statsBase },
-      { season: "2026-2027", competition: "Ligue 1", matches: 31, minutes: 2387, goals: 7, assists: 8, progressivePasses: 3.86, keyPasses: 5.51, crosses: 5.51, dribblesCompleted: 1.80, rating: 7.1, shots: null, shotsOnTarget: null, passes: null, tackles: null, ...statsBase },
+      { season: "2026-2027", competition: "La Liga", matches: 30, minutes: 2650, goals: 21, assists: 11, progressivePasses: 4.8, keyPasses: 3.2, crosses: 1.5, dribblesCompleted: 4.1, rating: 8.9, ...statsBase }, // Vinicius
+      { season: "2026-2027", competition: "Ligue 1", matches: 33, minutes: 2677, goals: 8, assists: 10, progressivePasses: 5.07, keyPasses: 10, crosses: 7.66, dribblesCompleted: 2.24, rating: 7.24, ...statsBase },
+      { season: "2026-2027", competition: "La Liga", matches: 28, minutes: 2456, goals: 18, assists: 5, progressivePasses: 2.1, keyPasses: 2.8, crosses: 1.2, dribblesCompleted: 3.4, rating: 8.2, ...statsBase },
+      { season: "2026-2027", competition: "Ligue 1", matches: 25, minutes: 1890, goals: 5, assists: 3, progressivePasses: 4.50, keyPasses: 2.83, crosses: 2.83, dribblesCompleted: 1.11, rating: 6.8, ...statsBase },
+      { season: "2026-2027", competition: "Ligue 1", matches: 28, minutes: 2145, goals: 6, assists: 4, progressivePasses: 3.18, keyPasses: 2.81, crosses: 2.81, dribblesCompleted: 1.54, rating: 6.9, ...statsBase },
+      { season: "2026-2027", competition: "Ligue 1", matches: 31, minutes: 2387, goals: 7, assists: 8, progressivePasses: 3.86, keyPasses: 5.51, crosses: 5.51, dribblesCompleted: 1.80, rating: 7.1, ...statsBase },
     ];
 
     const seedReports: { percentiles: any; strengths: string[]; weaknesses: string[]; overallRating: number; }[] = [
+      { percentiles: { goals: 98, assists: 95, keyPasses: 89, progressivePasses: 82, dribblesCompleted: 99, crosses: 70, passCompletionRate: 85, tacklesWon: 20, interceptions: 15 }, strengths: ["Dribbles", "Vitesse", "Finition", "Créativité"], weaknesses: ["Jeu défensif", "Jeu aérien"], overallRating: 95 }, // Vinicius
       { percentiles: { goals: 26, assists: 88, keyPasses: 66, progressivePasses: 93, dribblesCompleted: 93, crosses: 94, passCompletionRate: 91, tacklesWon: 32, interceptions: 24 }, strengths: ["Passes décisives", "Dribbles réussis", "Centres", "Possessions progressives"], weaknesses: ["Actions défensives", "Limiter le déchet"], overallRating: 73 },
       { percentiles: { goals: 95, assists: 78, keyPasses: 85, progressivePasses: 72, dribblesCompleted: 88, crosses: 45, passCompletionRate: 82, tacklesWon: 15, interceptions: 12 }, strengths: ["Buts", "Vitesse", "Dribbles", "Finition"], weaknesses: ["Jeu défensif", "Jeu aérien"], overallRating: 92 },
       { percentiles: { goals: 59, assists: 22, keyPasses: 59, progressivePasses: 66, dribblesCompleted: 71, crosses: 47, passCompletionRate: 65, tacklesWon: 35, interceptions: 30 }, strengths: ["Vitesse", "Dribbles", "Progression"], weaknesses: ["Passes décisives", "Régularité"], overallRating: 65 },
@@ -84,11 +87,11 @@ class MemoryStorage implements IStorage {
     ];
 
     seedPlayers.forEach((p, i) => {
-      const id = this.nextPlayerId++;
+      const id = p.id || this.nextPlayerId++;
       this.players.set(id, { ...p, id });
 
       const sId = this.nextStatsId++;
-      this.playerStats.set(sId, { ...seedStats[i], id: sId, playerId: id, shots: null, shotsOnTarget: null, passes: null, tackles: null });
+      this.playerStats.set(sId, { ...seedStats[i], id: sId, playerId: id } as PlayerStats);
 
       const rId = this.nextReportId++;
       this.scoutingReports.set(rId, { id: rId, playerId: id, season: "2026-2027", competition: seedStats[i].competition, position: p.position || "Inconnu", lastUpdated: now, ...seedReports[i] });

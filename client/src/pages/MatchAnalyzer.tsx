@@ -14,37 +14,37 @@ export default function MatchAnalyzer() {
   const [selectedAwayTeam, setSelectedAwayTeam] = useState("");
 
   // Recent matches
-  const { data: recentMatches, isLoading: loadingRecent } = useQuery({
+  const { data: recentMatches, isLoading: loadingRecent } = useQuery<any>({
     queryKey: ['/api/matches/recent'],
     enabled: true
   });
 
   // League stats
-  const { data: leagueStats, isLoading: loadingLeagues } = useQuery({
+  const { data: leagueStats, isLoading: loadingLeagues } = useQuery<any>({
     queryKey: ['/api/matches/leagues'],
     enabled: true
   });
 
   // Top scorers
-  const { data: topScorers, isLoading: loadingScorers } = useQuery({
+  const { data: topScorers, isLoading: loadingScorers } = useQuery<any>({
     queryKey: ['/api/matches/top-scorers'],
     enabled: true
   });
 
   // ELO rankings
-  const { data: eloRankings, isLoading: loadingElo } = useQuery({
+  const { data: eloRankings, isLoading: loadingElo } = useQuery<any>({
     queryKey: ['/api/matches/elo-rankings'],
     enabled: true
   });
 
   // Search matches
-  const { data: searchResults, isLoading: searchLoading } = useQuery({
+  const { data: searchResults, isLoading: searchLoading } = useQuery<any>({
     queryKey: ['/api/matches/search', searchQuery],
     enabled: searchQuery.length > 2
   });
 
   // Match analysis
-  const { data: matchAnalysis, isLoading: analysisLoading } = useQuery({
+  const { data: matchAnalysis, isLoading: analysisLoading } = useQuery<any>({
     queryKey: ['/api/matches/analysis', selectedHomeTeam, selectedAwayTeam],
     enabled: selectedHomeTeam.length > 0 && selectedAwayTeam.length > 0
   });
