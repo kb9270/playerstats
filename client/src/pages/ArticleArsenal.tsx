@@ -158,7 +158,7 @@ export default function ArticleArsenal() {
               fontWeight: 900,
               color: "#E8344A"
             }}>A</span>
-            près plus de deux décennies de disette, de quasi-réussites frustrantes, et de reconstructions inachevées, l'attente est enfin terminée. Le ciel de Londres s'est teinté de rouge et blanc. Les Gunners d'Arsenal, sous la houlette méticuleuse et passionnée de Mikel Arteta, ont finalement brisé l'hégémonie de Manchester City pour s'adjuger le titre tant convoité de champions de Premier League. Un accomplissement majuscule qui vient couronner un projet construit sur la patience, la jeunesse et une identité de jeu inébranlable.
+            près plus de deux décennies de disette, de quasi-réussites frustrantes, et de reconstructions inachevées, l'attente est enfin terminée. Le ciel de Londres s'est teinté de rouge et blanc. C'est à distance que les Gunners d'Arsenal ont été sacrés, Manchester City ayant concédé un match nul inattendu sur la pelouse de Bournemouth au terme d'une rencontre maîtrisée de bout en bout par les Cherries. Un accomplissement majuscule qui vient couronner un projet construit sur la patience, déclenchant des scènes de célébration populaires extraordinaires dans les rues d'Islington.
           </p>
 
           <hr style={{ border: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)", margin: "40px 0" }} />
@@ -222,7 +222,7 @@ export default function ArticleArsenal() {
             Le titre d'Arsenal n'est pas l'œuvre d'un seul homme. C'est la symbiose parfaite d'un collectif où chaque rouage a joué sa partition à la perfection. La défense de fer incarnée par le duo Saliba-Gabriel, protégé par l'infatigable Declan Rice, a été la fondation de ce succès.
           </p>
           <p style={{ marginBottom: 40 }}>
-            Mais c'est devant que la magie a opéré. Martin Ødegaard, capitaine exemplaire, a dicté le tempo tout au long de la saison, épaulé par un Bukayo Saka irrésistible sur son aile droite. La solidité et l'expérience acquise lors des saisons précédentes ont permis aux Gunners de ne pas craquer dans le sprint final, gérant la pression avec une maturité impressionnante.
+            Mais c'est devant que la magie a opéré. Martin Ødegaard, capitaine exemplaire, a dicté le tempo tout au long de la saison. Il a été parfaitement épaulé par un Bukayo Saka irrésistible, la percussion électrique d'Eberechi Eze, et surtout, le sens du but clinique et dévastateur de Viktor Gyökeres. La solidité et l'expérience acquise lors des saisons précédentes ont permis aux Gunners de ne pas craquer dans le sprint final, gérant la pression avec une maturité impressionnante.
           </p>
 
           {/* Section 3 */}
@@ -242,7 +242,7 @@ export default function ArticleArsenal() {
             Pour les supporters d'Arsenal, les fantômes des Invicibles de 2004 peuvent enfin reposer en paix. Cette nouvelle génération a écrit sa propre histoire. L'explosion de joie au coup de sifflet final n'était que la libération de vingt années de frustration accumulée.
           </p>
           <p style={{ marginBottom: 40 }}>
-            Et maintenant ? Ce titre de Premier League ressemble moins à un aboutissement qu'à un point de départ. Arsenal s'est installé au sommet du football anglais, et au vu de la jeunesse et de la soif de victoire de cet effectif, ils comptent bien y rester. La couronne est de retour dans le Nord de Londres, et l'Europe est prévenue.
+            Et maintenant ? Ce titre de Premier League permet aux joueurs de Mikel Arteta de faire le plein absolu de confiance. Un état d'esprit de conquérants qui tombe à pic, puisqu'un défi titanesque les attend très bientôt : la grande finale de la Ligue des Champions face au Paris Saint-Germain. La couronne est de retour dans le Nord de Londres, et l'Europe entière est prévenue.
           </p>
           
           {/* Author Tag */}
