@@ -158,7 +158,7 @@ export default function ArticleNeymar() {
               fontWeight: 900,
               color: "#E8344A"
             }}>L</span>
-            e peuple brésilien retient son souffle. Après des mois d'une agonie physique silencieuse, marquée par cette terrible rupture des ligaments croisés antérieurs sous le ciel lourd de Montevideo, et un exil doré mais contesté dans le désert saoudien d'Al-Hilal, Neymar da Silva Santos Júnior s'apprête à revêtir la tunique sacrée de la Seleção. Pour beaucoup, c'est l'étincelle ultime. Le retour de l'artiste déchu, venu réclamer sa couronne avant la grande messe nord-américaine de 2026.
+            e peuple brésilien retient son souffle. Après des mois d'une agonie physique silencieuse, marquée par cette terrible rupture des ligaments croisés antérieurs sous le ciel lourd de Montevideo, et un retour triomphant mais sous pression dans son club formateur de Santos, Neymar da Silva Santos Júnior s'apprête à revêtir la tunique sacrée de la Seleção. Pour beaucoup, c'est l'étincelle ultime. Le retour de l'artiste déchu, venu réclamer sa couronne avant la grande messe nord-américaine de 2026.
           </p>
 
           <hr style={{ border: 0, height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)", margin: "40px 0" }} />
@@ -239,7 +239,7 @@ export default function ArticleNeymar() {
             La dernière danse : L'obsession de l'étoile
           </h2>
           <p style={{ marginBottom: 24 }}>
-            Cette Coupe du Monde 2026 sonne irrémédiablement comme le crépuscule d'une idole polarisante. C'est l'obsession d'une vie, le rêve d'une sixième étoile brodée sur le maillot jaune. Au-delà des critiques sur son exil saoudien et son hygiène de vie, Neymar sait que l'histoire ne retient que les vainqueurs de la finale du dimanche. 
+            Cette Coupe du Monde 2026 sonne irrémédiablement comme le crépuscule d'une idole polarisante. C'est l'obsession d'une vie, le rêve d'une sixième étoile brodée sur le maillot jaune. Au-delà des critiques sur son état de forme et son hygiène de vie, Neymar sait que l'histoire ne retient que les vainqueurs de la finale du dimanche. 
           </p>
           <p style={{ marginBottom: 40 }}>
             Gagner en Amérique du Nord serait sa rédemption absolue, celle qui le placerait définitivement au panthéon du football brésilien aux côtés des géants. C'est la dernière danse d'un prince qui refuse de laisser le trône vide sans avoir livré son combat le plus noble.
