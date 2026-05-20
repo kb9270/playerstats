@@ -278,13 +278,4 @@ export default function ArticleArsenal() {
       
     </div>
   );
-}iv>
-             </div>
-          </div>
-
-        </div>
-      </div>
-      
-    </div>
-  );
 }
