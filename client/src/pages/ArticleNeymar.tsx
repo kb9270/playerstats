@@ -32,15 +32,14 @@ export default function ArticleNeymar() {
         backgroundImage: "url('/assets/neymar.png')",
         backgroundSize: "cover",
         backgroundPosition: "center top",
-        zIndex: -2,
-        filter: "brightness(0.6) contrast(1.1)"
+        zIndex: -2
       }} />
 
-      {/* Dynamic Gradient Overlay that fades to dark green at the bottom */}
+      {/* Dynamic Gradient Overlay */}
       <div style={{
         position: "fixed",
         top: 0, left: 0, right: 0, bottom: 0,
-        background: "linear-gradient(to bottom, rgba(5, 10, 5, 0.1) 0%, rgba(5, 15, 5, 0.8) 50%, rgba(0, 10, 2, 0.98) 100%)",
+        background: "linear-gradient(to bottom, transparent 0%, rgba(5, 10, 5, 0.4) 40%, #020A02 75%, #020A02 100%)",
         zIndex: -1,
       }} />
 
@@ -139,18 +138,10 @@ export default function ArticleNeymar() {
         </motion.div>
       </div>
 
-      {/* Main Content Area - Glassmorphism style integrating with the poster */}
+      {/* Main Content Area */}
       <div style={{ width: "100%", maxWidth: 840, padding: "0 24px 100px 24px", position: "relative", zIndex: 10 }}>
         
         <div style={{
-          background: "rgba(5, 15, 5, 0.6)",
-          backdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(253, 225, 0, 0.2)",
-          borderLeft: "1px solid rgba(253, 225, 0, 0.1)",
-          borderRight: "1px solid rgba(253, 225, 0, 0.1)",
-          borderRadius: "24px 24px 0 0",
-          padding: "60px 48px",
-          boxShadow: "0 -20px 50px rgba(0,0,0,0.5)",
           fontFamily: "'Barlow', sans-serif",
           lineHeight: 1.8,
           color: "rgba(255, 255, 255, 0.9)",
