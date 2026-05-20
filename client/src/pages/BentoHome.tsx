@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { ArrowUpRight, Search, X, Play, Clock, Star, TrendingUp, Shield, BarChart3, ChevronRight, Menu, Zap, Trophy, Users, Activity, Newspaper, Target, Crosshair, Globe, Sparkles } from "lucide-react";
+import { ArrowUpRight, Search, X, Play, Clock, Star, TrendingUp, Shield, BarChart3, ChevronLeft, ChevronRight, Menu, Zap, Trophy, Users, Activity, Newspaper, Target, Crosshair, Globe, Sparkles } from "lucide-react";
 import PlayerAvatar from "@/components/PlayerAvatar";
 import NavBar from "@/components/NavBar";
 
@@ -1663,6 +1663,20 @@ export default function BentoHome() {
                   transition: "all 0.3s ease" 
                 }} />
               ))}
+            </div>
+
+            {/* Slider Controls */}
+            <div 
+              style={{ position: "absolute", top: "50%", left: 16, zIndex: 5, transform: "translateY(-50%)", cursor: "pointer", background: "rgba(0,0,0,0.3)", borderRadius: "50%", padding: 6, backdropFilter: "blur(4px)" }}
+              onClick={(e) => { e.stopPropagation(); setNewsSlide(prev => (prev === 0 ? 1 : 0)); }}
+            >
+              <ChevronLeft size={20} color="#fff" />
+            </div>
+            <div 
+              style={{ position: "absolute", top: "50%", right: 16, zIndex: 5, transform: "translateY(-50%)", cursor: "pointer", background: "rgba(0,0,0,0.3)", borderRadius: "50%", padding: 6, backdropFilter: "blur(4px)" }}
+              onClick={(e) => { e.stopPropagation(); setNewsSlide(prev => (prev === 0 ? 1 : 0)); }}
+            >
+              <ChevronRight size={20} color="#fff" />
             </div>
           </GlassCard>
 
