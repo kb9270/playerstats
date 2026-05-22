@@ -998,6 +998,25 @@ export default function TakeOver() {
               transition={{ ...SPRING_SMOOTH, delay: 0.4 }}
               className="relative"
             >
+              {/* Google Inc. Music Notes Animation floating next to the avatar */}
+              <div style={{
+                position: "absolute",
+                top: -30,
+                right: -30,
+                width: 140,
+                height: 140,
+                pointerEvents: "none",
+                zIndex: 10,
+                opacity: 0.95,
+                mixBlendMode: "screen"
+              }}>
+                <img 
+                  src="https://cdnl.iconscout.com/lottie/free/thumb/free-musical-notes-animation-gif-download-12152464.gif" 
+                  alt="Google Music Notes" 
+                  style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              </div>
+
               <div className="w-64 h-64 md:w-80 md:h-80 rounded-full border-4 border-[#D4AF37] p-2 bg-black/40 shadow-[0_0_60px_rgba(212,175,55,0.3)]">
                 <PlayerAvatar
                   playerName={dynamicMatchData.playerName}

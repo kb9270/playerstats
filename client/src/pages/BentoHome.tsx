@@ -1097,15 +1097,33 @@ export default function BentoHome() {
             }}
           >
             {/* Décoration Baroque & Musique */}
-            <div style={{ position: "absolute", top: -20, right: -20, opacity: 0.1, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", top: -20, right: -20, opacity: 0.15, pointerEvents: "none" }}>
                {/* Clé de sol géante en filigrane */}
                <svg width="250" height="350" viewBox="0 0 100 200" fill="none">
                  <path d="M40 180 C10 180 10 150 30 140 C50 130 70 140 70 160 C70 180 30 180 30 110 C30 40 80 40 80 80 C80 100 50 110 50 80 C50 60 70 60 70 80 C70 120 40 120 40 180" stroke="#D4AF37" strokeWidth="3" fill="none" strokeLinecap="round"/>
                </svg>
             </div>
-            {/* Notes volantes */}
-            <motion.div animate={{ y: [0, -10, 0], opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 4, repeat: Infinity }} style={{ position: "absolute", top: 30, right: 120, fontSize: 32, color: "#D4AF37" }}>♪</motion.div>
-            <motion.div animate={{ y: [0, -15, 0], opacity: [0.2, 0.6, 0.2] }} transition={{ duration: 5, repeat: Infinity, delay: 1 }} style={{ position: "absolute", bottom: 60, left: 30, fontSize: 40, color: "#D4AF37" }}>♫</motion.div>
+            {/* Google Inc. Music Notes Animation */}
+            <div style={{ 
+              position: "absolute", 
+              top: 10, 
+              right: 10, 
+              width: 130, 
+              height: 130, 
+              pointerEvents: "none", 
+              zIndex: 3, 
+              opacity: 0.9,
+              mixBlendMode: "screen"
+            }}>
+              <img 
+                src="https://cdnl.iconscout.com/lottie/free/thumb/free-musical-notes-animation-gif-download-12152464.gif" 
+                alt="Notes de musique Google Inc." 
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+            </div>
+            {/* Notes volantes secondaires */}
+            <motion.div animate={{ y: [0, -20, 0], x: [0, 5, 0], opacity: [0.4, 0.8, 0.4] }} transition={{ duration: 6, repeat: Infinity }} style={{ position: "absolute", top: 120, right: 150, fontSize: 24, color: "#D4AF37" }}>♪</motion.div>
+            <motion.div animate={{ y: [0, -25, 0], x: [0, -5, 0], opacity: [0.3, 0.7, 0.3] }} transition={{ duration: 7, repeat: Infinity, delay: 1.5 }} style={{ position: "absolute", bottom: 80, left: 20, fontSize: 28, color: "#D4AF37" }}>♫</motion.div>
 
             <div style={{ padding: "30px", height: "100%", display: "flex", flexDirection: "column", position: "relative", zIndex: 2 }}>
               
