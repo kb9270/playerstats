@@ -1118,7 +1118,12 @@ export default function BentoHome() {
               <img 
                 src="https://cdnl.iconscout.com/lottie/free/thumb/free-musical-notes-animation-gif-download-12152464.gif" 
                 alt="Notes de musique Google Inc." 
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                style={{ 
+                  width: "100%", 
+                  height: "100%", 
+                  objectFit: "contain",
+                  filter: "sepia(100%) saturate(800%) hue-rotate(10deg) brightness(1.2) contrast(1.1)"
+                }}
               />
             </div>
             {/* Notes volantes secondaires */}
