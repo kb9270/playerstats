@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: playerstats
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # User will need to add this in the Render dashboard from Neon
