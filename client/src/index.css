@@ -1397,3 +1397,146 @@ table th {
   text-shadow: 0 0 10px rgba(211, 1, 12, 0.4);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — Essential Smartphone Optimizations
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤1024px) ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .pl-ui-container,
+  .l1-ui-container,
+  .ll-ui-container,
+  .sa-ui-container,
+  .bl-ui-container {
+    max-width: 100% !important;
+  }
+}
+
+/* ── Mobile (≤640px) ──────────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Global touch target sizing */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Fix iOS background-attachment: fixed not supported */
+  [style*="background-attachment: fixed"],
+  [style*="backgroundAttachment"] {
+    background-attachment: scroll !important;
+  }
+
+  /* League widgets full width */
+  .pl-ui-container,
+  .l1-ui-container,
+  .ll-ui-container,
+  .sa-ui-container,
+  .bl-ui-container {
+    max-width: 100% !important;
+    border-radius: 14px !important;
+  }
+
+  /* Widget internals */
+  .widget {
+    border-radius: 14px !important;
+  }
+  .widget-header {
+    padding: 14px 14px 0 !important;
+  }
+  .widget-body {
+    padding: 10px 14px 14px !important;
+  }
+  .widget-title {
+    font-size: 12px !important;
+  }
+
+  /* Score badges */
+  .score-badge {
+    font-size: 12px !important;
+    padding: 3px 6px !important;
+    min-width: 36px !important;
+  }
+
+  /* Search modal */
+  .search-input {
+    height: 44px !important;
+    font-size: 14px !important;
+    padding: 0 48px 0 16px !important;
+  }
+
+  /* UCL TOTW widget pitch tokens — scale down */
+  .ton-widget-ldc {
+    min-height: 200px !important;
+  }
+
+  /* Data sources strip */
+  .data-sources-strip {
+    gap: 16px !important;
+  }
+
+  /* Hero section adjustments */
+  .hero-subtitle {
+    font-size: 14px !important;
+  }
+}
+
+/* ── Small Mobile (≤480px) ────────────────────────────────── */
+@media (max-width: 480px) {
+  /* League widget rows compact */
+  .pl-ui-row,
+  .l1-ui-row,
+  .ll-ui-row,
+  .sa-ui-row,
+  .bl-ui-row {
+    height: 38px !important;
+    font-size: 0.8rem !important;
+    padding: 0 14px !important;
+  }
+
+  .pl-ui-header,
+  .l1-ui-header,
+  .ll-ui-header,
+  .sa-ui-header,
+  .bl-ui-header {
+    padding: 14px 16px !important;
+  }
+
+  /* DA value boxes smaller */
+  .da-value-box {
+    font-size: 18px !important;
+    padding: 3px 10px !important;
+  }
+
+  /* Table cells compact */
+  table th, table td {
+    font-size: 10px !important;
+    padding: 6px 8px !important;
+  }
+}
+
+/* ── Article pages mobile ─────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Article hero text */
+  .article-hero h1 {
+    font-size: 36px !important;
+    line-height: 1.1 !important;
+  }
+
+  /* Article content width */
+  .article-content {
+    padding: 0 16px 60px 16px !important;
+    font-size: 16px !important;
+  }
+
+  /* Article blockquotes */
+  .article-content blockquote,
+  .article-content [style*="borderLeft"] {
+    padding: 20px 24px !important;
+    margin: 32px 0 !important;
+  }
+
+  /* Article headings */
+  .article-content h2 {
+    font-size: 26px !important;
+  }
+}

@@ -1035,6 +1035,7 @@ export default function BentoHome() {
             onClick={() => setSearchOpen(true)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            className="bento-search-btn"
             style={{
               display: "inline-flex", alignItems: "center", gap: 12,
               padding: "14px 28px",
@@ -1825,6 +1826,10 @@ export default function BentoHome() {
       <style>{`
         @media (max-width: 1024px) {
           .bento-grid { grid-template-columns: repeat(6, 1fr) !important; }
+          .bento-grid > * {
+            grid-column: 1 / -1 !important;
+            grid-row: auto !important;
+          }
         }
         @media (max-width: 1200px) {
           .leagues-container { grid-template-columns: repeat(3, 1fr) !important; }
@@ -1833,11 +1838,40 @@ export default function BentoHome() {
           .leagues-container { grid-template-columns: repeat(2, 1fr) !important; }
         }
         @media (max-width: 640px) {
-          .bento-grid { grid-template-columns: 1fr !important; }
+          .bento-grid {
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+          }
+          .bento-grid > * {
+            grid-column: 1 / -1 !important;
+            grid-row: auto !important;
+            min-height: auto !important;
+          }
         }
         @media (max-width: 480px) {
           .leagues-container { grid-template-columns: 1fr !important; }
         }
+
+        /* ── Mobile Hero & Search ─────────────────── */
+        @media (max-width: 640px) {
+          .bento-search-btn {
+            min-width: 0 !important;
+            width: 100% !important;
+            padding: 12px 16px !important;
+            font-size: 13px !important;
+          }
+          .bento-search-btn kbd {
+            display: none !important;
+          }
+        }
+
+        /* ── Mobile Card Internals ────────────────── */
+        @media (max-width: 640px) {
+          .bento-grid > div {
+            border-radius: 14px !important;
+          }
+        }
+
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>

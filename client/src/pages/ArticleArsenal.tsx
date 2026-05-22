@@ -21,7 +21,6 @@ export default function ArticleArsenal() {
       backgroundImage: "url('/assets/arsenal.png')",
       backgroundSize: "cover",
       backgroundPosition: "center top",
-      backgroundAttachment: "fixed",
       backgroundRepeat: "no-repeat"
     }}>
       {/* Dégradé par dessus l'image */}
@@ -68,7 +67,7 @@ export default function ArticleArsenal() {
           animate={{ opacity: isScrolled ? 0 : 1, pointerEvents: isScrolled ? "none" : "auto" }}
           onClick={() => setLocation("/")}
           style={{
-            position: "fixed", top: 32, left: 32, zIndex: 999,
+            position: "fixed", top: 16, left: 16, zIndex: 999,
             background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
             border: "1px solid rgba(212,175,55,0.3)", color: "#D4AF37",
             borderRadius: "50%", width: 44, height: 44,
@@ -84,14 +83,14 @@ export default function ArticleArsenal() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            style={{ maxWidth: 840, padding: "0 40px", textAlign: "center" }}
+            style={{ maxWidth: 840, padding: "0 20px", textAlign: "center" }}
           >
             <div style={{ display: "inline-block", padding: "6px 16px", background: "rgba(212,175,55,0.15)", border: "1px solid rgba(212,175,55,0.4)", color: "#D4AF37", fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 24, borderRadius: 30 }}>
               Premier League Champions
             </div>
             <h1 style={{
               fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: "clamp(42px, 6vw, 80px)", fontWeight: 900, color: "#fff",
+              fontSize: "clamp(32px, 6vw, 80px)", fontWeight: 900, color: "#fff",
               margin: 0, textTransform: "uppercase", lineHeight: 1.05,
               letterSpacing: "-0.02em", textShadow: "0 4px 30px rgba(0,0,0,0.9)"
             }}>
