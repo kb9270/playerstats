@@ -1644,7 +1644,7 @@ export default function BentoHome() {
                       fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800,
                       color: "rgba(255, 255, 255, 0.6)", letterSpacing: "0.1em"
                     }}>
-                      {newsSlide === 0 ? "SO FOOT SPECIAL" : "L'ÉQUIPE EXPLORE"}
+                      PAR KHALIL
                     </div>
                   </div>
 
@@ -1795,6 +1795,29 @@ export default function BentoHome() {
           {["FBref", "Opta", "Transfermarkt", "SofaScore", "ESPN"].map(src => (
             <span key={src} style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase" }}>{src}</span>
           ))}
+        </motion.div>
+
+        {/* Footer Disclaimer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3, duration: 0.8 }}
+          style={{
+            textAlign: "center",
+            marginTop: 32,
+            padding: "0 24px 32px 24px",
+            color: "rgba(255, 255, 255, 0.4)",
+            fontFamily: "'Barlow', sans-serif",
+            fontSize: 12,
+            lineHeight: 1.6,
+            maxWidth: 600,
+            marginLeft: "auto",
+            marginRight: "auto"
+          }}
+        >
+          Ce site est un projet universitaire et constitue le portfolio de <strong>Khalil Mouidi Bakoukou</strong>.
+          <br />
+          Les données présentées sont utilisées exclusivement dans un cadre académique et non à des fins commerciales.
         </motion.div>
       </div>
 

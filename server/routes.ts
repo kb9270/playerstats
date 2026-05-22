@@ -1447,24 +1447,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let title = "";
       let summary = "";
-      let source = "Tactical AI Scanner";
+      let source = "Khalil";
 
       if (chosenType === 'tactique') {
         title = `Analyse Tactique : L'impact révolutionnaire de ${pName} à ${team}`;
         summary = `Avec ${goals} buts et ${assists} passes décisives cette saison, le milieu/attaquant redéfinit le plan de jeu de ${team}. L'analyse de ses courses progressives et de sa création d'occasions (xG accumulé de ${xg.toFixed(1)}) montre un profil ultra-complet, indispensable aux transitions offensives.`;
-        source = "Tactics Lab";
+        source = "Khalil";
       } else if (chosenType === 'mercato') {
         title = `Mercato : Transfert record en vue pour ${pName} ?`;
         summary = `Les performances stratosphériques de ${pName} sous le maillot de ${team} affolent les cellules de recrutement. Estimé à plus de 130 millions d'euros, le joueur serait sur les tablettes de trois mastodontes européens pour la saison prochaine.`;
-        source = "Foot Transferts";
+        source = "Khalil";
       } else if (chosenType === 'ballondor') {
         title = `Ballon d'Or 2026 : Pourquoi ${pName} devient un candidat sérieux`;
         summary = `Porteur d'un bilan statistique impressionnant (${goals + assists} contributions directes) et d'un leadership indéniable à ${team}, le joueur fait une entrée fracassante dans les discussions de la course au Ballon d'Or 2026.`;
-        source = "Ballon d'Or Insider";
+        source = "Khalil";
       } else {
         title = `Masterclass : Le week-end historique de ${pName}`;
         summary = `Omniprésent lors de la dernière journée de championnat, ${pName} a régalé les supporters avec une prestation notée au plus haut niveau. Une démonstration technique qui confirme son statut de superstar incontestée de ${team}.`;
-        source = "Performance Weekly";
+        source = "Khalil";
       }
 
       const newsItem = {

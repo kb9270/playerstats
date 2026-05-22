@@ -100,7 +100,7 @@ export default function ArticleNeymar() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 28, color: "rgba(255,255,255,0.7)", fontFamily: "'Barlow', sans-serif", fontSize: 14 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={16} color="#FDE100" /> 5 min de lecture</span>
               <span style={{ color: "#009B3A" }}>|</span>
-              <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Par La Rédaction</span>
+              <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Par Khalil</span>
             </div>
           </motion.div>
         </div>
@@ -154,9 +154,9 @@ export default function ArticleNeymar() {
 
           {/* Auteur */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 64, paddingTop: 32, borderTop: "1px solid rgba(253,225,0,0.2)" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #009B3A, #004D1D)", border: "2px solid #FDE100", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#fff" }}>LR</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #009B3A, #004D1D)", border: "2px solid #FDE100", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#fff" }}>K</div>
             <div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", textTransform: "uppercase" }}>La Rédaction</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", textTransform: "uppercase" }}>Khalil</div>
               <div style={{ fontSize: 13, color: "rgba(253,225,0,0.8)" }}>Expert Football Sud-Américain</div>
             </div>
           </div>

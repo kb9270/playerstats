@@ -100,7 +100,7 @@ export default function ArticleArsenal() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, marginTop: 28, color: "rgba(255,255,255,0.7)", fontFamily: "'Barlow', sans-serif", fontSize: 14 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={16} color="#D4AF37" /> 6 min de lecture</span>
               <span style={{ color: "#D4AF37" }}>|</span>
-              <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Par La Rédaction</span>
+              <span style={{ textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>Par Khalil</span>
             </div>
           </motion.div>
         </div>
@@ -154,9 +154,9 @@ export default function ArticleArsenal() {
 
           {/* Auteur */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 64, paddingTop: 32, borderTop: "1px solid rgba(212,175,55,0.2)" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #D4AF37, #8A7322)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#111" }}>LE</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg, #D4AF37, #8A7322)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 18, color: "#111" }}>K</div>
             <div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", textTransform: "uppercase" }}>L'Équipe Explore</div>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 700, color: "#fff", textTransform: "uppercase" }}>Khalil</div>
               <div style={{ fontSize: 13, color: "rgba(212,175,55,0.8)" }}>Grand Format Premier League</div>
             </div>
           </div>

@@ -19,7 +19,7 @@ export const memoryNews: any[] = [
     title: "BRÉSIL : Le retour du prince ?",
     summary: "À 34 ans, Neymar Jr s'apprête à faire son retour en sélection brésilienne pour le Mondial 2026. Décryptage d'une dernière danse historique.",
     url: "/player/15206",
-    source: "So Foot Premium",
+    source: "Khalil",
     image: "/assets/neymar.png",
     publishedAt: new Date().toISOString()
   }
@@ -263,7 +263,7 @@ export class AutomationWorkflows {
               title: item.title,
               summary: item.contentSnippet || item.content || "Aucun rÃ©sumÃ©",
               url: item.link,
-              source: feed.title || "L'Equipe",
+              source: "Khalil",
               publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString()
             };
 
@@ -297,14 +297,14 @@ export class AutomationWorkflows {
           title: "Mercato : Kylian MbappÃ© confirme son leadership au Real Madrid",
           summary: "Une analyse tactique sur l'intÃ©gration parfaite de la star franÃ§aise dans le systÃ¨me 2025/2026...",
           url: "https://example.com/mbappe",
-          source: "Foot Mercato",
+          source: "Khalil",
           publishedAt: new Date().toISOString()
         }, {
           id: 2,
           title: "Ballon d'Or 2025/2026 : Vers un duel haletant",
           summary: "Les premiÃ¨res semaines de la saison montrent des performances historiques des favoris.",
           url: "https://example.com/ballondor",
-          source: "L'Equipe",
+          source: "Khalil",
           publishedAt: new Date(Date.now() - 3600000).toISOString()
         });
         nouvellesAjoutees += 2;
