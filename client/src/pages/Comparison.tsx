@@ -136,6 +136,11 @@ function PlayerSearch({ onAdd, disabled }: { onAdd: (p: any) => void; disabled: 
 
   const { data: results, isLoading: searching } = useQuery<any[]>({
     queryKey: [`/api/players/search?q=${dq}`],
+    queryFn: async ({ queryKey }) => {
+      const res = await fetch(queryKey[0] as string);
+      if (!res.ok) throw new Error("Search failed");
+      return res.json();
+    },
     enabled: dq.length > 2,
     staleTime: 60_000,
   });
@@ -202,6 +207,11 @@ export default function Comparison() {
   const qResults = useQueries({
     queries: slots.map(name => ({
       queryKey: [`/api/csv-direct/player/${encodeURIComponent(name ?? "")}/full`],
+      queryFn: async ({ queryKey }) => {
+        const res = await fetch(queryKey[0] as string);
+        if (!res.ok) throw new Error("Failed to load player stats");
+        return res.json();
+      },
       enabled: !!name,
       staleTime: 5 * 60_000,
       retry: 1,
