@@ -87,19 +87,25 @@ class SofaScoreService {
     
     // Cache miss or expired
     const fullUrl = `https://api.sofascore.com/api/v1${path}`;
-    const proxyUrl = `http://localhost:8001/?url=${encodeURIComponent(fullUrl)}`;
+    const proxyUrl1 = `https://corsproxy.io/?${encodeURIComponent(fullUrl)}`;
+    const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(fullUrl)}`;
     
     let response;
     try {
-      console.log(`🌐 [SofaScore Net] Trying FETCH via Proxy: ${path}`);
-      response = await this.axiosInstance.get(proxyUrl);
+      console.log(`🌐 [SofaScore Net] Trying FETCH via Proxy 1: ${path}`);
+      response = await this.axiosInstance.get(proxyUrl1);
     } catch (e: any) {
-      console.warn(`⚠️ [SofaScore Net] Proxy failed (${e.message}), trying direct FETCH to ${fullUrl}...`);
+      console.warn(`⚠️ [SofaScore Net] Proxy 1 failed, trying Proxy 2...`);
       try {
-        response = await this.axiosInstance.get(fullUrl);
-      } catch (directErr: any) {
-        console.error(`❌ [SofaScore Net] Direct FETCH also failed:`, directErr.message);
-        throw directErr;
+        response = await this.axiosInstance.get(proxyUrl2);
+      } catch (e2: any) {
+        console.warn(`⚠️ [SofaScore Net] Proxy 2 failed, trying direct FETCH to ${fullUrl}...`);
+        try {
+          response = await this.axiosInstance.get(fullUrl);
+        } catch (directErr: any) {
+          console.error(`❌ [SofaScore Net] Direct FETCH also failed:`, directErr.message);
+          throw directErr;
+        }
       }
     }
     
@@ -398,7 +404,7 @@ class SofaScoreService {
             tournament: e.tournament?.name || 'Match',
             match: `${homeTeam?.shortName || '?'} ${e.homeScore?.current ?? ''}-${e.awayScore?.current ?? ''} ${awayTeam?.shortName || '?'}`,
             opponentName: opponent?.shortName || opponent?.name || '?',
-            opponentLogo: `https://api.sofascore.app/api/v1/team/${opponent?.id}/image`,
+            opponentLogo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${opponent?.id}/image`)}`,
             opponentId: opponent?.id
           };
         } catch {
@@ -569,13 +575,13 @@ class SofaScoreService {
             name: event.homeTeam.name,
             shortName: event.homeTeam.shortName,
             id: event.homeTeam.id,
-            logo: `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`
+            logo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`)}`
           },
           awayTeam: {
             name: event.awayTeam.name,
             shortName: event.awayTeam.shortName,
             id: event.awayTeam.id,
-            logo: `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`
+            logo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`)}`
           },
           homeScore: event.homeScore?.current,
           awayScore: event.awayScore?.current,
