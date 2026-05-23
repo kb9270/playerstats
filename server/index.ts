@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import cron from 'node-cron';
+import { kaggleUpdater } from "./services/kaggleUpdater";
 import { automationWorkflows } from "./services/automationWorkflows";
 
 const app = express();
@@ -8,7 +10,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Initialize Backend Workflows (Stats, News RSS, Ballon d'Or)
-automationWorkflows.startScheduledJobs(); 
+automationWorkflows.startScheduledJobs();
+
+// Planifier la mise à jour Kaggle tous les lundis à 03h00 du matin
+cron.schedule('0 3 * * 1', () => {
+  console.log('[Cron] Déclenchement de la mise à jour automatique Kaggle...');
+  kaggleUpdater.updateDataset();
+}); 
 
 app.use((req, res, next) => {
   const start = Date.now();

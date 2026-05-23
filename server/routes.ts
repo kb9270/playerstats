@@ -93,6 +93,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin route to force Kaggle Dataset Update instantly
+  app.post("/api/admin/force-update-kaggle", adminLimiter, async (req, res) => {
+    try {
+      console.log("🚀 [ADMIN] Déclenchement manuel de la mise à jour Kaggle");
+      const { kaggleUpdater } = await import("./services/kaggleUpdater");
+      const success = await kaggleUpdater.updateDataset();
+      
+      if (success) {
+        res.json({ success: true, message: "Mise à jour Kaggle terminée avec succès !" });
+      } else {
+        res.status(500).json({ success: false, error: "Échec du téléchargement Kaggle" });
+      }
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
   // ── Live Matches via ESPN ───────────────────────────────────────────
   app.get("/api/live/matches", async (req, res) => {
     try {
