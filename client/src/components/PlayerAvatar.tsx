@@ -96,9 +96,8 @@ export default function PlayerAvatar({
 }: PlayerAvatarProps) {
   const s = SIZE_MAP[size];
   
-  // If we have sofaId, we use it directly for the image, proxied to avoid 403
-  const rawSofaUrl = sofaId ? `https://api.sofascore.app/api/v1/player/${sofaId}/image` : null;
-  const sofaUrl = rawSofaUrl ? `https://corsproxy.io/?${encodeURIComponent(rawSofaUrl)}` : null;
+  // If we have sofaId, we use it directly for the image
+  const sofaUrl = sofaId ? `https://api.sofascore.app/api/v1/player/${sofaId}/image` : null;
   const { headshot: lazyHeadshot } = useLazyHeadshot(playerName, teamName, providedHeadshot || sofaUrl);
   
   const headshot = sofaUrl || lazyHeadshot;
@@ -119,6 +118,7 @@ export default function PlayerAvatar({
         <img
           src={headshot}
           alt={playerName}
+          referrerPolicy="no-referrer"
           className={`w-full h-full ${shapeClass} object-cover object-[center_12%] bg-gray-800 border border-gray-700/50 block scale-[1.15] translate-y-[5%]`}
           onError={(e) => {
             // Fallback to silhouette on broken image
@@ -144,6 +144,7 @@ export default function PlayerAvatar({
         <img
           src={logo}
           alt={teamName || ""}
+          referrerPolicy="no-referrer"
           className={`absolute -bottom-1 -right-1 ${s.badge} object-contain bg-gray-950 rounded-full border border-gray-800 p-0.5`}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />

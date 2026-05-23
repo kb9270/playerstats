@@ -404,7 +404,7 @@ class SofaScoreService {
             tournament: e.tournament?.name || 'Match',
             match: `${homeTeam?.shortName || '?'} ${e.homeScore?.current ?? ''}-${e.awayScore?.current ?? ''} ${awayTeam?.shortName || '?'}`,
             opponentName: opponent?.shortName || opponent?.name || '?',
-            opponentLogo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${opponent?.id}/image`)}`,
+            opponentLogo: `https://api.sofascore.app/api/v1/team/${opponent?.id}/image`,
             opponentId: opponent?.id
           };
         } catch {
@@ -575,13 +575,13 @@ class SofaScoreService {
             name: event.homeTeam.name,
             shortName: event.homeTeam.shortName,
             id: event.homeTeam.id,
-            logo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`)}`
+            logo: `https://api.sofascore.app/api/v1/team/${event.homeTeam.id}/image`
           },
           awayTeam: {
             name: event.awayTeam.name,
             shortName: event.awayTeam.shortName,
             id: event.awayTeam.id,
-            logo: `https://corsproxy.io/?${encodeURIComponent(`https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`)}`
+            logo: `https://api.sofascore.app/api/v1/team/${event.awayTeam.id}/image`
           },
           homeScore: event.homeScore?.current,
           awayScore: event.awayScore?.current,
