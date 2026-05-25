@@ -1558,7 +1558,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ success: true, rankings });
     } catch (error: any) {
-       res.status(500).json({ error: "Failed to get rankings" });
+      console.error("[Ballon d'Or] Database error, falling back to memory:", error.message);
+      const { memoryBallonDor } = await import("./services/automationWorkflows");
+      res.json({ success: true, rankings: memoryBallonDor });
     }
   });
 
