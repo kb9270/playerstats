@@ -58,6 +58,7 @@ class SofaScoreService {
   }
 
   public axiosInstance = axios.create({
+    timeout: 400, // Extremely FAST timeout (400ms)! Don't let Render freeze for 18 seconds!
     headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
       "Accept": "application/json, text/plain, */*",
@@ -73,7 +74,6 @@ class SofaScoreService {
       "Referer": "https://www.sofascore.com/",
       "Connection": "keep-alive"
     },
-    timeout: 4000 // 4 seconds max to avoid hanging the UI
   });
 
   public async fetchWithCache(path: string) {
