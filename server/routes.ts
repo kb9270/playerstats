@@ -153,6 +153,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headshot: null // Instant search - don't blocks for headshot. Profile will load it.
       }));
 
+      // 1. Local players (DB disabled to speed up search)
+      const localPlayers: any[] = [];
+
       localPlayers.forEach(p => {
         if (!players.find((m: any) => m.name?.toLowerCase() === p.name?.toLowerCase())) {
           players.push({
