@@ -40,18 +40,18 @@ const METRICS_MIL = [
 ];
 
 const METRICS_DEF = [
-  { key: "TklW", label: "Tacles R.",     cat: "DEF" },
-  { key: "Int",  label: "Interc.",       cat: "DEF" },
-  { key: "Cmp%", label: "Passes %",      cat: "CRE" },
-  { key: "PrgP", label: "Passes Prog.",  cat: "CRE" },
-  { key: "Crs",  label: "Centres",       cat: "CRE" },
-  { key: "CrdY", label: "C. Jaunes",     cat: "DEF" },
-  { key: "Fls",  label: "Fautes",        cat: "DEF" },
-  { key: "Gls",  label: "Buts",          cat: "ATT" },
-  { key: "Ast",  label: "Passes Dec.",   cat: "ATT" },
-  { key: "xG",   label: "xG",            cat: "ATT" },
-  { key: "MP",   label: "Matchs",        cat: "PHY" },
-  { key: "Min",  label: "Minutes",       cat: "PHY" },
+  { key: "TklW",  label: "Tacles R.",     cat: "DEF" },
+  { key: "Int",   label: "Interc.",       cat: "DEF" },
+  { key: "Blk",   label: "Tirs Bloq.",    cat: "DEF" },
+  { key: "CS",    label: "Clean Sheets",  cat: "DEF" },
+  { key: "Cmp%",  label: "Passes %",      cat: "CRE" },
+  { key: "PrgP",  label: "Passes Prog.",  cat: "CRE" },
+  { key: "Duels", label: "Duels Gagn.",   cat: "PHY" },
+  { key: "AerWon",label: "Aeriens G.",    cat: "PHY" },
+  { key: "CrdY",  label: "C. Jaunes",     cat: "DEF" },
+  { key: "Fls",   label: "Fautes",        cat: "DEF" },
+  { key: "MP",    label: "Matchs",        cat: "PHY" },
+  { key: "Min",   label: "Minutes",       cat: "PHY" },
 ];
 
 const getMetricsForPos = (posStr: string) => {

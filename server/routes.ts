@@ -424,6 +424,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (sofaStats.keyPasses !== undefined) cp.PrgP = sofaStats.keyPasses;
         if (sofaStats.totalPasses !== undefined) cp.Att = sofaStats.totalPasses;
         if (sofaStats.accuratePasses !== undefined) cp.Cmp = sofaStats.accuratePasses;
+        
+        // Defensive Stats Additions
+        if (sofaStats.cleanSheet !== undefined) cp.CS = sofaStats.cleanSheet;
+        if (sofaStats.blockedScoringAttempt !== undefined) cp.Blk = sofaStats.blockedScoringAttempt;
+        if (sofaStats.duelsWon !== undefined) cp.Duels = sofaStats.duelsWon;
+        if (sofaStats.aerialDuelsWon !== undefined) cp.AerWon = sofaStats.aerialDuelsWon;
+
         if (sofaStats.successfulDribbles !== undefined && sofaStats.totalDribbles !== undefined) {
           cp['Succ%'] = sofaStats.totalDribbles > 0 ? (sofaStats.successfulDribbles / sofaStats.totalDribbles * 100) : 0;
         }
