@@ -8,25 +8,64 @@ import NavBar from "@/components/NavBar";
 
 const PLAYER_COLORS = ["#e8344a", "#6366f1", "#10b981", "#f59e0b"];
 const CAT_COLORS: Record<string, string> = { ATT: "#e8344a", CRE: "#6366f1", DEF: "#10b981", PHY: "#f59e0b" };
-const METRICS = [
+
+const METRICS_ATT = [
   { key: "Gls",  label: "Buts",          cat: "ATT" },
-  { key: "Ast",  label: "Passes Dec.",   cat: "ATT" },
   { key: "xG",   label: "xG",            cat: "ATT" },
+  { key: "Ast",  label: "Passes Dec.",   cat: "ATT" },
   { key: "xAG",  label: "xAG",           cat: "ATT" },
   { key: "Sh",   label: "Tirs",          cat: "ATT" },
+  { key: "Succ", label: "Dribbles R.",   cat: "CRE" },
   { key: "PrgC", label: "Portees Prog.", cat: "CRE" },
+  { key: "Cmp%", label: "Passes %",      cat: "CRE" },
   { key: "PrgP", label: "Passes Prog.",  cat: "CRE" },
-  { key: "Cmp%", label: "Pass %",        cat: "CRE" },
-  { key: "TklW", label: "Tacles",        cat: "DEF" },
-  { key: "Int",  label: "Interc.",       cat: "DEF" },
+  { key: "TklW", label: "Tacles R.",     cat: "DEF" },
   { key: "MP",   label: "Matchs",        cat: "PHY" },
   { key: "Min",  label: "Minutes",       cat: "PHY" },
 ];
+
+const METRICS_MIL = [
+  { key: "PrgP", label: "Passes Prog.",  cat: "CRE" },
+  { key: "Cmp%", label: "Passes %",      cat: "CRE" },
+  { key: "Att",  label: "Passes Tent.",  cat: "CRE" },
+  { key: "Ast",  label: "Passes Dec.",   cat: "ATT" },
+  { key: "xAG",  label: "xAG",           cat: "ATT" },
+  { key: "TklW", label: "Tacles R.",     cat: "DEF" },
+  { key: "Int",  label: "Interc.",       cat: "DEF" },
+  { key: "Gls",  label: "Buts",          cat: "ATT" },
+  { key: "xG",   label: "xG",            cat: "ATT" },
+  { key: "Fls",  label: "Fautes",        cat: "DEF" },
+  { key: "MP",   label: "Matchs",        cat: "PHY" },
+  { key: "Min",  label: "Minutes",       cat: "PHY" },
+];
+
+const METRICS_DEF = [
+  { key: "TklW", label: "Tacles R.",     cat: "DEF" },
+  { key: "Int",  label: "Interc.",       cat: "DEF" },
+  { key: "Cmp%", label: "Passes %",      cat: "CRE" },
+  { key: "PrgP", label: "Passes Prog.",  cat: "CRE" },
+  { key: "Crs",  label: "Centres",       cat: "CRE" },
+  { key: "CrdY", label: "C. Jaunes",     cat: "DEF" },
+  { key: "Fls",  label: "Fautes",        cat: "DEF" },
+  { key: "Gls",  label: "Buts",          cat: "ATT" },
+  { key: "Ast",  label: "Passes Dec.",   cat: "ATT" },
+  { key: "xG",   label: "xG",            cat: "ATT" },
+  { key: "MP",   label: "Matchs",        cat: "PHY" },
+  { key: "Min",  label: "Minutes",       cat: "PHY" },
+];
+
+const getMetricsForPos = (posStr: string) => {
+  const p = (posStr || "").toUpperCase();
+  if (p.includes("DF") || p.includes("CB") || p.includes("LB") || p.includes("RB")) return METRICS_DEF;
+  if (p.includes("MF") || p.includes("CM") || p.includes("DM")) return METRICS_MIL;
+  return METRICS_ATT; // FW, AM, Winger, Default
+};
+
 const f = (v: any) => isNaN(Number(v)) ? 0 : +Number(v).toFixed(2);
 
 // ── Radar SVG ─────────────────────────────────────────────────
-function RadarChart({ players }: { players: any[] }) {
-  const mets = METRICS.slice(0, 8);
+function RadarChart({ players, metrics }: { players: any[], metrics: any[] }) {
+  const mets = metrics.slice(0, 8);
   const N = mets.length;
   const CX = 190, CY = 190, R = 145;
   const angles = mets.map((_, i) => (i / N) * 2 * Math.PI - Math.PI / 2);
@@ -78,7 +117,7 @@ function RadarChart({ players }: { players: any[] }) {
 }
 
 // ── Bar row ───────────────────────────────────────────────────
-function MetricBars({ players, metric }: { players: any[]; metric: typeof METRICS[0] }) {
+function MetricBars({ players, metric }: { players: any[]; metric: any }) {
   const vals = players.map(p => f(p[metric.key]));
   const maxV = Math.max(...vals, 0.01);
   const bestIdx = vals.indexOf(Math.max(...vals));
@@ -134,11 +173,11 @@ function PlayerSearch({ onAdd, disabled }: { onAdd: (p: any) => void; disabled: 
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  const { data: results, isLoading: searching } = useQuery<any[]>({
+  const { data: results, isLoading: searching, error } = useQuery<any[]>({
     queryKey: [`/api/players/search?q=${dq}`],
     queryFn: async ({ queryKey }) => {
       const res = await fetch(queryKey[0] as string);
-      if (!res.ok) throw new Error("Search failed");
+      if (!res.ok) throw new Error(`API Error ${res.status}`);
       return res.json();
     },
     enabled: dq.length > 2,
@@ -169,7 +208,8 @@ function PlayerSearch({ onAdd, disabled }: { onAdd: (p: any) => void; disabled: 
               borderRadius: 14, overflow: "hidden", boxShadow: "0 12px 40px rgba(0,0,0,0.8)",
               maxHeight: 300, overflowY: "auto" }}>
             {searching && <div style={{ padding: 16, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>Recherche...</div>}
-            {!searching && (!results || results.length === 0) && (
+            {error && <div style={{ padding: 16, fontSize: 12, color: "#e8344a" }}>Erreur: {(error as any).message}</div>}
+            {!searching && !error && (!results || results.length === 0) && (
               <div style={{ padding: 16, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>Aucun resultat pour "{dq}"</div>
             )}
             {!searching && results && results.slice(0, 8).map((p: any) => (
@@ -221,6 +261,8 @@ export default function Comparison() {
   const fullPlayers = qResults
     .map((r, i) => (slots[i] ? (r.data as any)?.player : null))
     .filter(Boolean);
+
+  const activeMetrics = getMetricsForPos(fullPlayers[0]?.Pos || "");
 
   const isLoading = qResults.some((r, i) => !!slots[i] && r.isLoading);
 
@@ -324,10 +366,10 @@ export default function Comparison() {
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "center" }}>
                 <div style={{ flex: "0 0 auto" }}>
-                  <RadarChart players={fullPlayers} />
+                  <RadarChart players={fullPlayers} metrics={activeMetrics} />
                 </div>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  {METRICS.slice(0, 8).map((m, i) => {
+                  {activeMetrics.slice(0, 8).map((m, i) => {
                     const vals = fullPlayers.map((p: any) => f(p[m.key]));
                     const maxV = Math.max(...vals, 0.01);
                     const bestIdx = vals.indexOf(Math.max(...vals));
@@ -387,7 +429,7 @@ export default function Comparison() {
             </div>
 
             {cats.map(cat => {
-              const catMets = METRICS.filter(m => m.cat === cat);
+              const catMets = activeMetrics.filter(m => m.cat === cat);
               return (
                 <div key={cat} style={{ marginBottom: 28 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
@@ -428,7 +470,7 @@ export default function Comparison() {
                     </tr>
                   </thead>
                   <tbody>
-                    {METRICS.map((m, ri) => {
+                    {activeMetrics.map((m, ri) => {
                       const vals = fullPlayers.map((p: any) => f(p[m.key]));
                       const maxV = Math.max(...vals);
                       return (
