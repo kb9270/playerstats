@@ -153,16 +153,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headshot: null // Instant search - don't blocks for headshot. Profile will load it.
       }));
 
-      // Also search local storage (DB) to merge results
-      let localPlayers: any[] = [];
-      try {
-        localPlayers = await storage.searchPlayers(query);
-        console.log(`[Search] Local DB count: ${localPlayers?.length || 0}`);
-      } catch (err) {
-        console.warn(`[Search] DB search failed, skipping DB results:`, err);
-      }
-
-      // Merge results avoiding exact duplicates by name
       localPlayers.forEach(p => {
         if (!players.find((m: any) => m.name?.toLowerCase() === p.name?.toLowerCase())) {
           players.push({
