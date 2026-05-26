@@ -9,7 +9,7 @@ export class OptimizedTransfermarktApi {
     'Accept': 'application/json',
   };
 
-  private async makeRequest(url: string, retries = 3): Promise<any> {
+  private async makeRequest(url: string, retries = 1): Promise<any> {
     // Check cache first
     if (this.cache.has(url)) {
       console.log(`Cache hit for: ${url}`);
@@ -23,7 +23,7 @@ export class OptimizedTransfermarktApi {
           
           const response = await axios.get(url, {
             headers: this.headers,
-            timeout: 15000,
+            timeout: 2000, // FAST timeout! 2 seconds max
           });
 
           // Cache successful responses
@@ -34,14 +34,8 @@ export class OptimizedTransfermarktApi {
           const status = error.response?.status;
           console.log(`Attempt ${attempt} failed (${status}):`, error.message);
           
-          if (status === 429) {
-            const delay = 3000 * attempt; // 3s, 6s, 9s...
-            console.log(`Rate limited, waiting ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          } else if (attempt === retries) {
+          if (attempt === retries) {
             throw error;
-          } else {
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
           }
         }
       }
