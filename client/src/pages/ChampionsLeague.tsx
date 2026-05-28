@@ -148,9 +148,28 @@ const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: strin
           padding: 2,
           boxShadow: "0 6px 16px rgba(0,0,0,0.5)",
           zIndex: 30,
-          border: "1.5px solid #0043ff"
+          border: "1.5px solid #0043ff",
+          overflow: "hidden"
         }}>
-          <img src={teamLogo} alt={player.Squad} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <img 
+            src={teamLogo} 
+            alt={player.Squad} 
+            style={{ width: "100%", height: "100%", objectFit: "contain" }} 
+            onError={(e) => {
+              const el = e.target as HTMLImageElement;
+              el.style.display = "none";
+              const parent = el.parentElement;
+              if (parent && !parent.querySelector('.club-fallback')) {
+                 parent.style.background = "linear-gradient(135deg, #1e3a8a, #3b82f6)";
+                 parent.style.padding = "0";
+                 const div = document.createElement('div');
+                 div.className = "club-fallback";
+                 div.style.cssText = "width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:bold; font-family:'Inter',sans-serif;";
+                 div.innerText = (player.Squad || player.team || "???").substring(0, 3).toUpperCase();
+                 parent.appendChild(div);
+              }
+            }}
+          />
         </div>
       )}
 
