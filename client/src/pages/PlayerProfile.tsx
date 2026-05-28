@@ -192,6 +192,52 @@ export default function PlayerProfile() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Forme Récente (Matchs) */}
+            <Card className="stats-card">
+              <CardHeader>
+                <CardTitle className="flex items-center text-2xl">
+                  <BarChart3 className="w-6 h-6 text-stats-accent mr-3" />
+                  FORME RÉCENTE
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {playerLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                ) : player?.recentForm && player.recentForm.length > 0 ? (
+                  <div className="space-y-3">
+                    {player.recentForm.map((match: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 border border-gray-700/50">
+                        <div className="flex flex-col">
+                          <span className="text-sm text-gray-400">
+                            {new Date(match.date * 1000).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                          </span>
+                          <span className="font-medium text-white">
+                            {match.isHome ? "vs" : "@"} {match.opponent?.name || "Adversaire"}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <span className="text-lg font-bold text-gray-300">
+                            {match.isHome ? `${match.homeScore} - ${match.awayScore}` : `${match.awayScore} - ${match.homeScore}`}
+                          </span>
+                          <div className={`px-3 py-1 rounded-md font-bold text-white ${match.rating >= 8.0 ? 'bg-stats-green' : match.rating >= 7.0 ? 'bg-stats-blue' : match.rating >= 6.0 ? 'bg-yellow-600' : 'bg-red-600'}`}>
+                            {match.rating.toFixed(1)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    Aucun match récent disponible
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Right Column */}
