@@ -124,7 +124,16 @@ const UCLPlayerCard = ({ player, top, left, onClick }: { player: any; top: strin
   if (!player) return null;
   const squadNormalized = (player.Squad || player.team || "").toLowerCase().trim();
   const teamId = player.teamId || CLUB_IDS[squadNormalized] || 0;
-  const teamLogo = teamId ? `https://api.sofascore.app/api/v1/team/${teamId}/image` : null;
+  
+  const FOTMOB_IDS: Record<string, number> = {
+    "bayern munich": 9823, "arsenal": 9825, "psg": 9847, "liverpool": 8650, "napoli": 9875
+  };
+  const fmId = FOTMOB_IDS[squadNormalized];
+  
+  // Use FotMob images if hardcoded, otherwise fallback to SofaScore
+  const teamLogo = fmId 
+    ? `https://images.fotmob.com/image_resources/logo/teamlogo/${fmId}.png` 
+    : (teamId ? `https://api.sofascore.app/api/v1/team/${teamId}/image` : null);
 
   return (
     <motion.div
