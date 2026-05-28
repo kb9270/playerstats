@@ -99,12 +99,43 @@ class SofaScoreService {
       try {
         response = await this.axiosInstance.get(proxyUrl2);
       } catch (e2: any) {
-        console.warn(`⚠️ [SofaScore Net] Proxy 2 failed, trying direct FETCH to ${fullUrl}...`);
+        console.warn(`🛜 [SofaScore Net] Proxy 2 failed, trying direct FETCH to ${fullUrl}...`);
         try {
           response = await this.axiosInstance.get(fullUrl);
         } catch (directErr: any) {
           console.error(`❌ [SofaScore Net] Direct FETCH also failed:`, directErr.message);
-          throw directErr;
+          
+          // ULTIMATE FALLBACK: SCRAPENINJA
+          const scrapNinjaKey = process.env.SCRAPNINJA_API_KEY;
+          if (scrapNinjaKey) {
+             console.log(`🥷 [SofaScore Net] Attempting ULTIMATE fallback with ScrapeNinja for ${fullUrl}...`);
+             try {
+                const snResp = await this.axiosInstance.post("https://scrapeninja.apiroad.net/v2/scrape-js", {
+                   url: fullUrl,
+                   method: "GET",
+                   retryNum: 1,
+                   geo: "fr"
+                }, {
+                   headers: {
+                      "x-rapidapi-host": "scrapeninja.apiroad.net",
+                      "x-rapidapi-key": scrapNinjaKey,
+                      "Content-Type": "application/json"
+                   }
+                });
+                
+                if (snResp.data && snResp.data.body) {
+                   response = { data: JSON.parse(snResp.data.body) };
+                   console.log(`✅ [SofaScore Net] ScrapeNinja succeeded!`);
+                } else {
+                   throw new Error("ScrapeNinja returned empty body");
+                }
+             } catch (snErr: any) {
+                console.error(`❌ [SofaScore Net] ScrapeNinja also failed:`, snErr.message);
+                throw directErr; // throw original error
+             }
+          } else {
+             throw directErr;
+          }
         }
       }
     }
