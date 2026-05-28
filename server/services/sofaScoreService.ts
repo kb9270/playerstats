@@ -1,6 +1,14 @@
 import axios from "axios";
 import fs from "fs";
 import path from "path";
+import Database from 'better-sqlite3';
+
+let offlineDb: any = null;
+try {
+  offlineDb = new Database('offline_matches.sqlite', { readonly: true, fileMustExist: true });
+} catch (e) {
+  // DB might not exist yet
+}
 
 export interface SofaPlayer {
   player: {
@@ -407,6 +415,22 @@ class SofaScoreService {
   }
 
   async getPlayerMatchRatings(sofaId: number, playerTeamId?: number) {
+    if (offlineDb) {
+      try {
+        const stmt = offlineDb.prepare('SELECT recent_matches FROM player_data WHERE sofa_id = ?');
+        const row = stmt.get(sofaId);
+        if (row && row.recent_matches) {
+          const matches = JSON.parse(row.recent_matches);
+          if (matches && matches.length > 0) {
+            console.log(`[SofaScore Offline DB] Retrieved ${matches.length} matches for player ${sofaId}`);
+            return matches;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[SofaScore Offline DB] Error reading match ratings for ${sofaId}: ${err.message}`);
+      }
+    }
+
     try {
       const events = await this.getPlayerLastEvents(sofaId);
       if (!events || events.length === 0) return [];
