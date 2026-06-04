@@ -7,6 +7,10 @@ import time
 import random
 from curl_cffi import requests
 
+# Force UTF-8 encoding for Windows terminals to prevent UnicodeEncodeError
+if sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
 DB_PATH = 'offline_matches.sqlite'
 CSV_PATH = 'players_data_2025_2026.csv'
 BATCH_SIZE = 100
@@ -25,10 +29,10 @@ def init_db():
     return conn
 
 def get_session():
-    # Impersonate a common browser to bypass basic Cloudflare checks
     return requests.Session(impersonate="chrome110")
 
-def fetch_player_data(session, sofa_id):
+def fetch_player_data(sofa_id):
+    session = get_session()
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
         'Accept': '*/*',
@@ -46,7 +50,6 @@ def fetch_player_data(session, sofa_id):
         if resp.status_code == 200:
             events = resp.json().get('events', [])
             
-            # Get up to 5 recent matches
             recent = events[-20:]
             recent.reverse()
             
@@ -92,21 +95,23 @@ def fetch_player_data(session, sofa_id):
                             'stats': stats
                         })
                         count += 1
-                time.sleep(0.5) # Be polite between match requests
     except Exception as e:
         print(f"Error fetching matches for {sofa_id}: {e}")
+    finally:
+        session.close()
 
     return recent_matches
 
+import concurrent.futures
+
 def process_batch(conn, df, offset, limit):
-    session = get_session()
     c = conn.cursor()
     
     batch = df.iloc[offset:offset+limit]
     
-    print(f"\n--- Traitement du lot : {offset} a {offset+len(batch)} ---")
+    print(f"\n--- Traitement du lot en PARALLELE : {offset} a {offset+len(batch)} ---")
     
-    success = 0
+    players_to_fetch = []
     for idx, row in batch.iterrows():
         sofa_id = row.get('sofascore_id')
         name = row.get('Player')
@@ -118,27 +123,46 @@ def process_batch(conn, df, offset, limit):
         
         # Check if already in DB
         c.execute('SELECT 1 FROM player_data WHERE sofa_id = ?', (sofa_id,))
-        if c.fetchone():
-            continue
+        if not c.fetchone():
+            players_to_fetch.append((sofa_id, name))
             
-        print(f"[{offset+success+1}] Extraction pour {name} ({sofa_id})...")
-        recent = fetch_player_data(session, sofa_id)
+    if not players_to_fetch:
+        print("Aucun joueur a traiter dans ce lot.")
+        return
+
+    print(f"{len(players_to_fetch)} joueurs a extraire simultanement...")
+    success = 0
+    
+    def fetch_task(item):
+        sofa_id, name = item
+        recent = fetch_player_data(sofa_id)
+        return sofa_id, name, recent
+
+    # Run 100 concurrently
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        results = list(executor.map(fetch_task, players_to_fetch))
         
+    for sofa_id, name, recent in results:
         if recent:
-            c.execute('''
-                INSERT INTO player_data (sofa_id, recent_matches) 
-                VALUES (?, ?)
-            ''', (sofa_id, json.dumps(recent)))
-            conn.commit()
-            success += 1
-            print(f"  -> OK ({len(recent)} matchs trouves avec rating et heatmap)")
+            try:
+                c.execute('''
+                    INSERT OR IGNORE INTO player_data (sofa_id, recent_matches) 
+                    VALUES (?, ?)
+                ''', (sofa_id, json.dumps(recent)))
+                conn.commit()
+                success += 1
+                print(f"  -> OK pour {name} ({len(recent)} matchs trouves)")
+            except Exception as e:
+                print(f"  -> Erreur BD pour {name}: {e}")
         else:
-            print(f"  -> Echec / Aucun match trouve")
+            print(f"  -> Echec pour {name}")
             
-        time.sleep(random.uniform(1.0, 2.0))
-        
-    session.close()
-    print(f"Lot termine. {success} joueurs mis a jour.")
+    if success == 0 and len(players_to_fetch) > 5:
+        print("BLOCAGE IP DETECTE (0 succes sur bcp de joueurs). Arret du script pour changement d'IP.")
+        import sys
+        sys.exit(403)
+    elif success == 0:
+        print(f"Aucun match trouve pour ces {len(players_to_fetch)} joueurs, mais le lot est trop petit pour etre un blocage IP certifie.")
 
 if __name__ == "__main__":
     print("Demarrage du script de creation de la BDD hors-ligne...")

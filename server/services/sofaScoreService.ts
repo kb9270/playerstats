@@ -414,6 +414,27 @@ class SofaScoreService {
      }
   }
 
+  async getPlayerMatchDetails(sofaId: number, eventId: number) {
+    if (offlineDb) {
+      try {
+        const stmt = offlineDb.prepare('SELECT stats, heatmap, shotmap, passes, actions FROM player_match_details WHERE player_id = ? AND event_id = ?');
+        const row = stmt.get(sofaId, eventId);
+        if (row) {
+          return {
+            stats: row.stats ? JSON.parse(row.stats) : null,
+            heatmap: row.heatmap ? JSON.parse(row.heatmap) : [],
+            shotmap: row.shotmap ? JSON.parse(row.shotmap) : [],
+            passes: row.passes ? JSON.parse(row.passes) : [],
+            actions: row.actions ? JSON.parse(row.actions) : []
+          };
+        }
+      } catch (err: any) {
+        console.warn(`[SofaScore Offline DB] Error reading match details for player ${sofaId}, match ${eventId}: ${err.message}`);
+      }
+    }
+    return null;
+  }
+
   async getPlayerMatchRatings(sofaId: number, playerTeamId?: number) {
     if (offlineDb) {
       try {
@@ -423,7 +444,26 @@ class SofaScoreService {
           const matches = JSON.parse(row.recent_matches);
           if (matches && matches.length > 0) {
             console.log(`[SofaScore Offline DB] Retrieved ${matches.length} matches for player ${sofaId}`);
-            return matches;
+            // Normalize offline matches to match the expected live format keys
+            return matches.map((m: any) => {
+              const opponentId = m.opponent?.id || m.opponentId;
+              const opponentName = m.opponent?.name || m.opponentName || '?';
+              return {
+                eventId: m.eventId,
+                rating: typeof m.rating === 'number' ? m.rating : parseFloat(m.rating || '0'),
+                date: m.date,
+                tournament: m.tournament || 'Match',
+                match: m.match || '',
+                opponentName,
+                opponentLogo: m.opponentLogo || (opponentId ? `https://api.sofascore.app/api/v1/team/${opponentId}/image` : ''),
+                opponentId,
+                isHome: m.isHome,
+                homeScore: m.homeScore,
+                awayScore: m.awayScore,
+                heatmap: m.heatmap || [],
+                stats: m.stats || {}
+              };
+            });
           }
         }
       } catch (err: any) {
