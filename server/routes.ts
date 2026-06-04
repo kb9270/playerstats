@@ -795,6 +795,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // ── END HARDCODED ─────────────────────────────────────────────────────
 
+      // ── TRY OFFLINE DB FIRST (works on Render where SofaScore API is blocked)
+      const offlineMatches = await sofaScoreService.getPlayerMatchRatings(sofaId);
+      if (offlineMatches && offlineMatches.length > 0) {
+        console.log(`[Matches] Using ${offlineMatches.length} offline matches for player ${sofaId}`);
+        
+        // Look up the player's team name from CSV data
+        let playerTeamName = '—';
+        let playerTeamId = 0;
+        try {
+          const allPlayers = await csvDirectAnalyzer.getAllPlayers();
+          const csvP = allPlayers.find((p: any) => String(p.sofascore_id) === String(sofaId));
+          if (csvP) {
+            playerTeamName = csvP.Squad || '—';
+          }
+        } catch (e) { /* ignore lookup errors */ }
+        
+        const matches = offlineMatches.map((m: any) => {
+          const opponentId = m.opponentId || m.opponent?.id;
+          const opponentName = m.opponentName || m.opponent?.name || '?';
+          const opponentLogo = m.opponentLogo || (opponentId ? `https://api.sofascore.app/api/v1/team/${opponentId}/image` : '');
+          // The offline data stores opponent + isHome, so we need to reconstruct homeTeam/awayTeam
+          if (m.isHome) {
+            return {
+              eventId: m.eventId,
+              date: m.date,
+              homeTeam: { name: playerTeamName, id: playerTeamId, logo: '' },
+              awayTeam: { name: opponentName, id: opponentId, logo: opponentLogo },
+              homeScore: m.homeScore,
+              awayScore: m.awayScore,
+              tournament: m.tournament || 'Match',
+              status: 'finished'
+            };
+          } else {
+            return {
+              eventId: m.eventId,
+              date: m.date,
+              homeTeam: { name: opponentName, id: opponentId, logo: opponentLogo },
+              awayTeam: { name: playerTeamName, id: playerTeamId, logo: '' },
+              homeScore: m.homeScore,
+              awayScore: m.awayScore,
+              tournament: m.tournament || 'Match',
+              status: 'finished'
+            };
+          }
+        });
+        const sortedMatches = matches.sort((a: any, b: any) => b.date - a.date);
+        return res.json({ matches: sortedMatches });
+      }
+
+      // ── LIVE API FALLBACK ──
       const events = await sofaScoreService.getPlayerLastEvents(sofaId);
 
       const matches = events.map((e: any) => ({
