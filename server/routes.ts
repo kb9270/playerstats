@@ -800,7 +800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (offlineMatches && offlineMatches.length > 0) {
         console.log(`[Matches] Using ${offlineMatches.length} offline matches for player ${sofaId}`);
         
-        // Look up the player's team name from CSV data
+        // Look up the player's team name from CSV data (fallback)
         let playerTeamName = '—';
         let playerTeamId = 0;
         try {
@@ -812,10 +812,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (e) { /* ignore lookup errors */ }
         
         const matches = offlineMatches.map((m: any) => {
+          // If the DB has the full homeTeam/awayTeam (upgraded format)
+          if (m.homeTeam && m.awayTeam) {
+            return {
+              eventId: m.eventId,
+              date: m.date,
+              homeTeam: m.homeTeam,
+              awayTeam: m.awayTeam,
+              homeScore: m.homeScore,
+              awayScore: m.awayScore,
+              tournament: m.tournament || 'Match',
+              status: m.status || 'finished'
+            };
+          }
+          
+          // Legacy format fallback
           const opponentId = m.opponentId || m.opponent?.id;
           const opponentName = m.opponentName || m.opponent?.name || '?';
           const opponentLogo = m.opponentLogo || (opponentId ? `https://api.sofascore.app/api/v1/team/${opponentId}/image` : '');
-          // The offline data stores opponent + isHome, so we need to reconstruct homeTeam/awayTeam
+          
           if (m.isHome) {
             return {
               eventId: m.eventId,
