@@ -34,6 +34,31 @@ class EnhancedPlayerAnalyzer:
         try:
             if os.path.exists(self.csv_path):
                 self.df = pd.read_csv(self.csv_path)
+                
+                # Check for historical dataset and merge missing columns like Node server
+                hist_path = "players_data-2024_2025_1751387048911.csv"
+                if os.path.exists(hist_path):
+                    hist_df = pd.read_csv(hist_path)
+                    
+                    import unicodedata
+                    def norm_str(s):
+                        if not isinstance(s, str):
+                            return ""
+                        s = ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
+                        return s.strip().lower()
+                    
+                    hist_df['norm_name'] = hist_df['Player'].apply(norm_str)
+                    hist_df = hist_df.drop_duplicates(subset=['norm_name'])
+                    
+                    self.df['norm_name'] = self.df['Player'].apply(norm_str)
+                    
+                    cols_to_merge = ['xG', 'xAG', 'npxG', 'PrgP', 'PrgC', 'PrgR']
+                    for col in cols_to_merge:
+                        if col not in self.df.columns and col in hist_df.columns:
+                            mapping = dict(zip(hist_df['norm_name'], hist_df[col]))
+                            self.df[col] = self.df['norm_name'].map(mapping)
+                    
+                    self.df = self.df.drop(columns=['norm_name'])
             else:
                 print(f"⚠ Fichier CSV non trouvé: {self.csv_path}")
                 self.df = pd.DataFrame()
@@ -61,10 +86,11 @@ class EnhancedPlayerAnalyzer:
     
     def get_player_complete_profile(self, player_name, team=None):
         """Génère le profil complet d'un joueur"""
-        player_data = self.search_player(player_name, team)
-        if not player_data:
+        players = self.search_player(player_name, team)
+        if not players:
             return {"error": f"Joueur '{player_name}' non trouvé"}
         
+        player_data = players[0]
         self.current_player = player_data
         
         # Informations personnelles
@@ -91,12 +117,12 @@ class EnhancedPlayerAnalyzer:
         
         # Statistiques avancées
         stats_avancees = {
-            "xG": float(player_data['xG']) if pd.notna(player_data['xG']) else 0.0,
-            "xA": float(player_data['xAG']) if pd.notna(player_data['xAG']) else 0.0,
-            "npxG": float(player_data['npxG']) if pd.notna(player_data['npxG']) else 0.0,
-            "passes_progressives": int(player_data['PrgP']) if pd.notna(player_data['PrgP']) else 0,
-            "courses_progressives": int(player_data['PrgC']) if pd.notna(player_data['PrgC']) else 0,
-            "receptions_progressives": int(player_data['PrgR']) if pd.notna(player_data['PrgR']) else 0
+            "xG": float(player_data.get('xG', 0.0)) if pd.notna(player_data.get('xG')) else 0.0,
+            "xA": float(player_data.get('xAG', 0.0)) if pd.notna(player_data.get('xAG')) else 0.0,
+            "npxG": float(player_data.get('npxG', 0.0)) if pd.notna(player_data.get('npxG')) else 0.0,
+            "passes_progressives": int(player_data.get('PrgP', 0)) if pd.notna(player_data.get('PrgP')) else 0,
+            "courses_progressives": int(player_data.get('PrgC', 0)) if pd.notna(player_data.get('PrgC')) else 0,
+            "receptions_progressives": int(player_data.get('PrgR', 0)) if pd.notna(player_data.get('PrgR')) else 0
         }
         
         # Analyse des performances
@@ -132,10 +158,10 @@ class EnhancedPlayerAnalyzer:
         if minutes > 0:
             factor = 90 / minutes
             per_90_stats = {
-                "buts_par_90": round(float(player_data['Gls'] or 0) * factor, 2),
-                "passes_d_par_90": round(float(player_data['Ast'] or 0) * factor, 2),
-                "xG_par_90": round(float(player_data['xG'] or 0) * factor, 2),
-                "xA_par_90": round(float(player_data['xAG'] or 0) * factor, 2)
+                "buts_par_90": round(float(player_data.get('Gls') if pd.notna(player_data.get('Gls')) else 0) * factor, 2),
+                "passes_d_par_90": round(float(player_data.get('Ast') if pd.notna(player_data.get('Ast')) else 0) * factor, 2),
+                "xG_par_90": round(float(player_data.get('xG') if pd.notna(player_data.get('xG')) else 0) * factor, 2),
+                "xA_par_90": round(float(player_data.get('xAG') if pd.notna(player_data.get('xAG')) else 0) * factor, 2)
             }
         
         return {
@@ -265,8 +291,8 @@ class EnhancedPlayerAnalyzer:
     
     def calculate_offensive_efficiency(self, player_data):
         """Calcule l'efficacité offensive"""
-        goals = float(player_data['Gls'] or 0)
-        xG = float(player_data['xG'] or 0)
+        goals = float(player_data.get('Gls') or 0)
+        xG = float(player_data.get('xG') or 0)
         
         if xG > 0:
             efficiency = (goals / xG) * 100
@@ -361,7 +387,7 @@ def main():
         player_data = analyzer.search_player(player_name)
         
         if player_data:
-            heatmap_data = analyzer.generate_heatmap_data(player_data)
+            heatmap_data = analyzer.generate_heatmap_data(player_data[0])
             print(json.dumps({"heatmap": heatmap_data}))
         else:
             print(json.dumps({"error": "Joueur non trouvé"}))
