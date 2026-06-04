@@ -814,6 +814,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const matches = offlineMatches.map((m: any) => {
           // If the DB has the full homeTeam/awayTeam (upgraded format)
           if (m.homeTeam && m.awayTeam) {
+            let isHome = true;
+            if (playerTeamName && playerTeamName !== '—') {
+              const homeStr = m.homeTeam.name?.toLowerCase() || '';
+              const awayStr = m.awayTeam.name?.toLowerCase() || '';
+              const pStr = playerTeamName.toLowerCase();
+              
+              if (awayStr.includes(pStr) || pStr.includes(awayStr) || 
+                  (m.awayTeam.shortName && pStr.includes(m.awayTeam.shortName.toLowerCase()))) {
+                isHome = false;
+              } else if (homeStr.includes(pStr) || pStr.includes(homeStr) || 
+                         (m.homeTeam.shortName && pStr.includes(m.homeTeam.shortName.toLowerCase()))) {
+                isHome = true;
+              } else {
+                const firstWord = pStr.split(' ')[0];
+                if (firstWord.length > 3 && awayStr.includes(firstWord)) {
+                  isHome = false;
+                }
+              }
+            }
+            
+            const opponent = isHome ? m.awayTeam : m.homeTeam;
+
             return {
               eventId: m.eventId,
               date: m.date,
@@ -822,7 +844,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               homeScore: m.homeScore,
               awayScore: m.awayScore,
               tournament: m.tournament || 'Match',
-              status: m.status || 'finished'
+              status: m.status || 'finished',
+              opponentName: opponent?.name || 'Adversaire',
+              opponentLogo: opponent?.id ? `https://api.sofascore.app/api/v1/team/${opponent.id}/image` : '',
+              isHome: isHome,
+              rating: m.stats?.rating || m.rating || 0,
+              heatmap: m.heatmap || [],
+              stats: m.stats || {}
             };
           }
           
