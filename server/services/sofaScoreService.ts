@@ -460,6 +460,8 @@ class SofaScoreService {
                 isHome: m.isHome,
                 homeScore: m.homeScore,
                 awayScore: m.awayScore,
+                homeTeam: m.homeTeam,
+                awayTeam: m.awayTeam,
                 heatmap: m.heatmap || [],
                 stats: m.stats || {}
               };
