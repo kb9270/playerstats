@@ -846,7 +846,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               tournament: m.tournament || 'Match',
               status: m.status || 'finished',
               opponentName: opponent?.name || 'Adversaire',
-              opponentLogo: opponent?.id ? `https://api.sofascore.app/api/v1/team/${opponent.id}/image` : '',
+              opponentLogo: espnImageService.getTeamLogo(opponent?.name || ''),
               isHome: isHome,
               rating: m.stats?.rating || m.rating || 0,
               heatmap: m.heatmap || [],
