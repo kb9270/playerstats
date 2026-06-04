@@ -47,9 +47,12 @@ export class CSVPlayerAnalyzer {
 
   private async runPythonScript(args: string[]): Promise<any> {
     return new Promise((resolve, reject) => {
-      console.log(`[CSVAnalyzer] Spawning: py -3 ${this.pythonScriptPath} ${args.join(' ')}`);
-      // Use 'py' with -3 for Windows compatibility
-      const python = spawn('py', ['-3', this.pythonScriptPath, ...args]);
+      const isWindows = process.platform === 'win32';
+      const pythonCmd = isWindows ? 'py' : 'python3';
+      const pythonArgs = isWindows ? ['-3', this.pythonScriptPath, ...args] : [this.pythonScriptPath, ...args];
+      
+      console.log(`[CSVAnalyzer] Spawning: ${pythonCmd} ${pythonArgs.join(' ')}`);
+      const python = spawn(pythonCmd, pythonArgs);
       
       let stdout = '';
       let stderr = '';
