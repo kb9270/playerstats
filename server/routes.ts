@@ -102,6 +102,84 @@ function generateSyntheticHeatmap(position: string): Array<{x: number; y: number
   }));
 }
 
+function fallbackIsHomeStrCheck(m: any, playerTeamName: string): boolean {
+  if (!playerTeamName || playerTeamName === '—') return true;
+  const homeStr = m.homeTeam?.name?.toLowerCase() || '';
+  const awayStr = m.awayTeam?.name?.toLowerCase() || '';
+  const pStr = playerTeamName.toLowerCase();
+  
+  if (awayStr.includes(pStr) || pStr.includes(awayStr) || 
+      (m.awayTeam?.shortName && pStr.includes(m.awayTeam.shortName.toLowerCase()))) {
+    return false;
+  } else if (homeStr.includes(pStr) || pStr.includes(homeStr) || 
+             (m.homeTeam?.shortName && pStr.includes(m.homeTeam.shortName.toLowerCase()))) {
+    return true;
+  } else {
+    const firstWord = pStr.split(' ')[0];
+    if (firstWord.length > 3 && awayStr.includes(firstWord)) return false;
+  }
+  return true;
+}
+
+function mapMatchesWithOpponent(matches: any[], playerTeamName?: string): any[] {
+  if (!matches || !matches.length) return [];
+  
+  // 1. Calculate the most common team ID across all matches (this is definitely the player's team!)
+  const teamCounts: Record<number, number> = {};
+  for (const m of matches) {
+    if (m.homeTeam?.id) teamCounts[m.homeTeam.id] = (teamCounts[m.homeTeam.id] || 0) + 1;
+    if (m.awayTeam?.id) teamCounts[m.awayTeam.id] = (teamCounts[m.awayTeam.id] || 0) + 1;
+  }
+  let bestTeamId = 0;
+  let maxCount = 0;
+  for (const id in teamCounts) {
+    if (teamCounts[id] > maxCount) {
+      maxCount = teamCounts[id];
+      bestTeamId = Number(id);
+    }
+  }
+
+  // 2. Map matches
+  return matches.map((m: any) => {
+    if (m.homeTeam && m.awayTeam) {
+      let isHome = true;
+      
+      if (bestTeamId) {
+        // Robust check: Is the player's primary team the home team?
+        if (m.homeTeam.id === bestTeamId) isHome = true;
+        else if (m.awayTeam.id === bestTeamId) isHome = false;
+        else {
+          // Fallback if player played for national team or transferred recently
+          isHome = fallbackIsHomeStrCheck(m, playerTeamName || '');
+        }
+      } else {
+        isHome = fallbackIsHomeStrCheck(m, playerTeamName || '');
+      }
+      
+      const opponent = isHome ? m.awayTeam : m.homeTeam;
+      
+      // Inject logos into the homeTeam and awayTeam objects so frontend lists work correctly
+      const homeLogo = espnImageService.getTeamLogo(m.homeTeam?.name || '');
+      const awayLogo = espnImageService.getTeamLogo(m.awayTeam?.name || '');
+      
+      return {
+        ...m,
+        homeTeam: { ...m.homeTeam, logo: homeLogo },
+        awayTeam: { ...m.awayTeam, logo: awayLogo },
+        opponentName: opponent?.name || 'Adversaire',
+        opponentLogo: espnImageService.getTeamLogo(opponent?.name || ''),
+        isHome: isHome,
+        rating: m.stats?.rating || m.rating || 0
+      };
+    }
+    // Old format fallback
+    return {
+      ...m,
+      opponentLogo: espnImageService.getTeamLogo(m.opponentName || m.opponent?.name || '')
+    };
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Limiteur de requêtes global pour l'ensemble des routes API
   const isProd = process.env.NODE_ENV === 'production';
@@ -350,42 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId);
             if (matchRatings && matchRatings.length > 0) {
               const playerTeamName = (csvPlayer as any).Squad || '—';
-              const mappedRatings = matchRatings.map((m: any) => {
-                if (m.homeTeam && m.awayTeam) {
-                  let isHome = true;
-                  if (playerTeamName && playerTeamName !== '—') {
-                    const homeStr = m.homeTeam.name?.toLowerCase() || '';
-                    const awayStr = m.awayTeam.name?.toLowerCase() || '';
-                    const pStr = playerTeamName.toLowerCase();
-                    
-                    if (awayStr.includes(pStr) || pStr.includes(awayStr) || 
-                        (m.awayTeam.shortName && pStr.includes(m.awayTeam.shortName.toLowerCase()))) {
-                      isHome = false;
-                    } else if (homeStr.includes(pStr) || pStr.includes(homeStr) || 
-                               (m.homeTeam.shortName && pStr.includes(m.homeTeam.shortName.toLowerCase()))) {
-                      isHome = true;
-                    } else {
-                      const firstWord = pStr.split(' ')[0];
-                      if (firstWord.length > 3 && awayStr.includes(firstWord)) {
-                        isHome = false;
-                      }
-                    }
-                  }
-                  const opponent = isHome ? m.awayTeam : m.homeTeam;
-                  return {
-                    ...m,
-                    opponentName: opponent?.name || 'Adversaire',
-                    opponentLogo: espnImageService.getTeamLogo(opponent?.name || ''),
-                    isHome: isHome,
-                    rating: m.stats?.rating || m.rating || 0
-                  };
-                }
-                return {
-                  ...m,
-                  opponentLogo: espnImageService.getTeamLogo(m.opponentName || m.opponent?.name || '')
-                };
-              });
-              (csvPlayer as any)._matchRatings = mappedRatings;
+              (csvPlayer as any)._matchRatings = mapMatchesWithOpponent(matchRatings, playerTeamName);
             }
           } catch (e: any) {
             console.warn(`[Match Ratings Fallback] Error fetching match ratings for ${sofaId}:`, e.message);
@@ -847,78 +890,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (e) { /* ignore lookup errors */ }
         
-        const matches = offlineMatches.map((m: any) => {
-          // If the DB has the full homeTeam/awayTeam (upgraded format)
-          if (m.homeTeam && m.awayTeam) {
-            let isHome = true;
-            if (playerTeamName && playerTeamName !== '—') {
-              const homeStr = m.homeTeam.name?.toLowerCase() || '';
-              const awayStr = m.awayTeam.name?.toLowerCase() || '';
-              const pStr = playerTeamName.toLowerCase();
-              
-              if (awayStr.includes(pStr) || pStr.includes(awayStr) || 
-                  (m.awayTeam.shortName && pStr.includes(m.awayTeam.shortName.toLowerCase()))) {
-                isHome = false;
-              } else if (homeStr.includes(pStr) || pStr.includes(homeStr) || 
-                         (m.homeTeam.shortName && pStr.includes(m.homeTeam.shortName.toLowerCase()))) {
-                isHome = true;
-              } else {
-                const firstWord = pStr.split(' ')[0];
-                if (firstWord.length > 3 && awayStr.includes(firstWord)) {
-                  isHome = false;
-                }
-              }
-            }
-            
-            const opponent = isHome ? m.awayTeam : m.homeTeam;
-
-            return {
-              eventId: m.eventId,
-              date: m.date,
-              homeTeam: m.homeTeam,
-              awayTeam: m.awayTeam,
-              homeScore: m.homeScore,
-              awayScore: m.awayScore,
-              tournament: m.tournament || 'Match',
-              status: m.status || 'finished',
-              opponentName: opponent?.name || 'Adversaire',
-              opponentLogo: espnImageService.getTeamLogo(opponent?.name || ''),
-              isHome: isHome,
-              rating: m.stats?.rating || m.rating || 0,
-              heatmap: m.heatmap || [],
-              stats: m.stats || {}
-            };
-          }
-          
-          // Legacy format fallback
-          const opponentId = m.opponentId || m.opponent?.id;
-          const opponentName = m.opponentName || m.opponent?.name || '?';
-          const opponentLogo = m.opponentLogo || (opponentId ? `https://api.sofascore.app/api/v1/team/${opponentId}/image` : '');
-          
-          if (m.isHome) {
-            return {
-              eventId: m.eventId,
-              date: m.date,
-              homeTeam: { name: playerTeamName, id: playerTeamId, logo: '' },
-              awayTeam: { name: opponentName, id: opponentId, logo: opponentLogo },
-              homeScore: m.homeScore,
-              awayScore: m.awayScore,
-              tournament: m.tournament || 'Match',
-              status: 'finished'
-            };
-          } else {
-            return {
-              eventId: m.eventId,
-              date: m.date,
-              homeTeam: { name: opponentName, id: opponentId, logo: opponentLogo },
-              awayTeam: { name: playerTeamName, id: playerTeamId, logo: '' },
-              homeScore: m.homeScore,
-              awayScore: m.awayScore,
-              tournament: m.tournament || 'Match',
-              status: 'finished'
-            };
-          }
-        });
+        const matches = mapMatchesWithOpponent(offlineMatches, playerTeamName);
         const sortedMatches = matches.sort((a: any, b: any) => b.date - a.date);
         return res.json({ matches: sortedMatches });
       }
