@@ -428,7 +428,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId);
             if (matchRatings && matchRatings.length > 0) {
               const playerTeamName = (csvPlayer as any).Squad || '—';
-              (csvPlayer as any)._matchRatings = mapMatchesWithOpponent(matchRatings, playerTeamName);
+              const mapped = mapMatchesWithOpponent(matchRatings, playerTeamName);
+              // ALWAYS sort by date descending to get the truly most recent matches
+              (csvPlayer as any)._matchRatings = mapped.sort((a: any, b: any) => b.date - a.date);
             }
           } catch (e: any) {
             console.warn(`[Match Ratings Fallback] Error fetching match ratings for ${sofaId}:`, e.message);
