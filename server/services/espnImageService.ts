@@ -167,8 +167,11 @@ export class ESPNImageService {
     if (this.teamLogoCache[normalised]) return this.teamLogoCache[normalised];
     // 3. Partial match: cached key contains the query or vice-versa
     for (const [key, value] of Object.entries(this.teamLogoCache)) {
-      if (lower.includes(key) || key.includes(lower)) return value;
-      if (normalised.length > 3 && (normalised.includes(key) || key.includes(normalised))) return value;
+      // Prevent short abbreviations (like "che" for Chelsea) from matching inside words like "münchen"
+      if (key.length > 5) {
+        if (lower.includes(key) || key.includes(lower)) return value;
+        if (normalised.length > 3 && (normalised.includes(key) || key.includes(normalised))) return value;
+      }
     }
     return null;
   }
