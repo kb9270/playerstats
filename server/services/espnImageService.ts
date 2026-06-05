@@ -7,7 +7,7 @@ import { sofaScoreService } from './sofaScoreService.ts';
 // Logos are pre-cached at startup (fast synchronous lookup forever after).
 // Headshots are fetched lazily, deduplicated, and cached persistently on disk.
 
-const LEAGUES = ['eng.1', 'esp.1', 'fra.1', 'ger.1', 'ita.1', 'ned.1', 'por.1'];
+const LEAGUES = ['eng.1', 'esp.1', 'fra.1', 'ger.1', 'ita.1', 'ned.1', 'por.1', 'fifa.world'];
 
 // Normalise a team name for fuzzy matching
 function norm(s: string): string {
@@ -44,6 +44,7 @@ const ALIAS: Record<string, string[]> = {
   "ss lazio":           ["lazio"],
   "as roma":            ["roma"],
   "hellas verona":      ["verona"],
+  "bayern munich":      ["bayern münchen", "bayern munchen", "fc bayern", "bayern"],
   "borussia dortmund":  ["dortmund", "bvb"],
   "borussia mönchengladbach": ["gladbach", "m'gladbach"],
   "bayer leverkusen":   ["leverkusen"],
