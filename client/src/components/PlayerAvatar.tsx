@@ -97,7 +97,7 @@ export default function PlayerAvatar({
   const s = SIZE_MAP[size];
   
   // If we have sofaId, we use it directly for the image
-  const sofaUrl = sofaId ? `https://api.sofascore.app/api/v1/player/${sofaId}/image` : null;
+  const sofaUrl = sofaId ? `/players/${sofaId}.png` : null;
   const { headshot: lazyHeadshot } = useLazyHeadshot(playerName, teamName, providedHeadshot || sofaUrl);
   
   const headshot = sofaUrl || lazyHeadshot;
@@ -152,5 +152,6 @@ export default function PlayerAvatar({
     </div>
   );
 }
+
 
 
