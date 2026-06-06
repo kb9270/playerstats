@@ -65,6 +65,7 @@ export class CSVDirectAnalyzer {
   private historicalCsvPath = path.join(process.cwd(), 'players_data-2024_2025_1751387048911.csv');
   private playersData: PlayerData[] = [];
   private historicalData: PlayerData[] = [];
+  private truePercentilesData: Record<string, any> = {};
   private loaded = false;
 
   constructor() {
@@ -93,6 +94,16 @@ export class CSVDirectAnalyzer {
       // 3. Fusionner les données pour compléter les stats manquantes
       this.playersData = this.mergeDatasets(currentData, historicalData);
       this.historicalData = historicalData;
+
+      // Load true percentiles
+      const tpPath = path.join(process.cwd(), 'true_percentiles.csv');
+      if (fs.existsSync(tpPath)) {
+        const tpData = await this.readAndParseCsv(tpPath);
+        tpData.forEach((p: any) => {
+          if (p.Player) this.truePercentilesData[String(p.Player).toLowerCase().trim()] = p;
+        });
+        console.log(`Loaded ${Object.keys(this.truePercentilesData).length} players from true percentiles dataset`);
+      }
       
       this.loaded = true;
     } catch (error) {
@@ -284,6 +295,17 @@ export class CSVDirectAnalyzer {
       normalize(player.Player).includes(searchTerm) ||
       normalize(player.Squad).includes(searchTerm)
     ).slice(0, 20);
+  }
+
+  public getHardcodedPercentile(playerName: string, stat: string): number | null {
+    if (!playerName) return null;
+    const nameKey = playerName.toLowerCase().trim();
+    const p = this.truePercentilesData[nameKey];
+    if (p && p[stat] !== undefined && p[stat] !== null && p[stat] !== '') {
+      const val = Number(p[stat]);
+      if (!isNaN(val) && val >= 0 && val <= 100) return Math.round(val);
+    }
+    return null;
   }
 
   async getPlayerByName(name: string): Promise<PlayerData | null> {
@@ -903,3 +925,6 @@ export class CSVDirectAnalyzer {
 }
 
 export const csvDirectAnalyzer = new CSVDirectAnalyzer();
+
+
+

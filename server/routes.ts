@@ -670,6 +670,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const computeRealPercentile = (playerVal: number, column: string, per90: boolean = false): number => {
+          const hVal = csvDirectAnalyzer.getHardcodedPercentile(String((csvPlayer as any).Player), column);
+          if (hVal !== null) return hVal;
+
         if (playerVal === null || playerVal === undefined || isNaN(playerVal)) return -1; // -1 = no data
         const mins = Number((csvPlayer as any).Min) || 1;
         const pVal = per90 ? (playerVal / (mins / 90)) : playerVal;
@@ -3594,5 +3597,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
 
 
