@@ -59,6 +59,8 @@ const ALIAS: Record<string, string[]> = {
   "1. fc köln":         ["koln", "köln"],
   "tsg hoffenheim":     ["hoffenheim"],
   "sport lisbon":       ["sporting cp", "sporting"],
+  "stade brestois 29":  ["stade brestois", "brest"],
+  "stade brestois":     ["brest"],
   "sl benfica":         ["benfica"],
   "porto":              ["fc porto"],
   "braga":              ["sc braga"],
@@ -251,3 +253,4 @@ export class ESPNImageService {
 }
 
 export const espnImageService = new ESPNImageService();
+

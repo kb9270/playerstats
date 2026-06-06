@@ -705,7 +705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })(),
         foot: physicalStats.foot || (csvPlayer as any).foot || "DROIT",
         logo: espnImageService.getTeamLogo(team),
-        headshot: await espnImageService.getPlayerHeadshot((csvPlayer as any).Player, team),
+        headshot: await espnImageService.getPlayerHeadshot((csvPlayer as any).Player, team, (csvPlayer as any).sofascore_id),
         recentForm: (() => {
           const realRatings = (csvPlayer as any)._matchRatings;
           if (realRatings && realRatings.length > 0) {
@@ -814,7 +814,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedSimilar = await Promise.all(similar.map(async (p: any) => ({
         ...p,
         logo: espnImageService.getTeamLogo(p.Squad),
-        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad, p.sofascore_id)
       })));
 
       return res.json({ player: enrichedPlayer, similar: enrichedSimilar });
@@ -1624,7 +1624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedPlayers = await Promise.all(players.map(async (p: any) => ({
         ...p,
         logo: espnImageService.getTeamLogo(p.Squad),
-        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad, p.sofascore_id)
       })));
 
       return res.json(enrichedPlayers);
@@ -1687,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedPlayers = await Promise.all(players.map(async (p: any) => ({
         ...p,
         logo: espnImageService.getTeamLogo(p.Squad),
-        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad)
+        headshot: await espnImageService.getPlayerHeadshot(p.Player, p.Squad, p.sofascore_id)
       })));
 
       return res.json(enrichedPlayers);
@@ -3533,7 +3533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Fetch from ESPN (one HTTP call, cached afterward)
-      const headshot = await espnImageService.getPlayerHeadshot(player, team);
+      const headshot = await espnImageService.getPlayerHeadshot(player, team, req.query.sofaId as string);
       return res.json({ headshot: headshot || null, logo });
     } catch {
       return res.json({ headshot: null, logo: null });
@@ -3594,3 +3594,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+
