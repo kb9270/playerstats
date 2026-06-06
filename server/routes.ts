@@ -766,12 +766,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
              const prgp = Number(cp.PrgP);
              if (prgp > 0) addMetric('PASSES PROGRESSIVES', computeRealPercentile(prgp, 'PrgP', true), 'CRÉATION');
              addMetric('PASSES DÉC.', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'ATTAQUE');
-             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', true), 'ATTAQUE');
 
            } else if (isMid) {
              // ── MILIEU ──────────────────────────────────────────────
              addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
-             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
+             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', true), 'CRÉATION');
              const cmpPct = Number(cp['Cmp%']);
              if (cmpPct > 0) addMetric('RÉUSSITE PASSES (%)', computeRealPercentile(cmpPct, 'Cmp%', false), 'CRÉATION');
              const prgp = Number(cp.PrgP);
@@ -781,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
              addMetric('TACLES', computeRealPercentile(tklw, 'TklW', true), 'DÉFENSE');
              addMetric('INTERCEPTIONS', computeRealPercentile(Number(cp.Int) || 0, 'Int', true), 'DÉFENSE');
              addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
-             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', true), 'ATTAQUE');
              const prgc = Number(cp.PrgC);
              if (prgc > 0) addMetric('PORTÉES PROGRESSIVES', computeRealPercentile(prgc, 'PrgC', true), 'STYLE');
              const succPct = Number(cp['Succ%']);
@@ -790,13 +790,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
            } else {
              // ── ATTAQUANT (défaut) ─────────────────────────────────
              addMetric('BUTS', computeRealPercentile(Number(cp.Gls) || 0, 'Gls', true), 'ATTAQUE');
-             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', false), 'ATTAQUE');
+             addMetric('EXPECTED GOALS (xG)', computeRealPercentile(Number(cp.xG) || 0, 'xG', true), 'ATTAQUE');
              addMetric('TOTAL TIRS', computeRealPercentile(Number(cp.Sh) || 0, 'Sh', true), 'ATTAQUE');
              addMetric('TIRS CADRÉS (%)', computeRealPercentile(Number(cp['SoT%']) || 0, 'SoT%', false), 'ATTAQUE');
              const gsh = Number(cp['G/Sh']);
              if (gsh > 0) addMetric('EFFICACITÉ (G/TIR)', computeRealPercentile(gsh, 'G/Sh', false), 'ATTAQUE');
              addMetric('PASSES DÉCISIVES', computeRealPercentile(Number(cp.Ast) || 0, 'Ast', true), 'CRÉATION');
-             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', false), 'CRÉATION');
+             addMetric('EXPECTED ASSISTS (xA)', computeRealPercentile(Number(cp.xAG) || 0, 'xAG', true), 'CRÉATION');
              if (ss?.keyPasses > 0) addMetric('PASSES CLÉS', Math.min(99, Math.round(ss.keyPasses * 8)), 'CRÉATION');
              const succPct = Number(cp['Succ%']);
              if (succPct > 0) addMetric('DRIBBLES RÉUSSIS (%)', computeRealPercentile(succPct, 'Succ%', false), 'STYLE');
