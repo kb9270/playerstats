@@ -360,195 +360,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 1. Fetch from SofaScore (Live Rating & Recent Form)
       let sofaId = null;
-      let sofaStats = null;
+      let sofaStats: any = null;
       let lastEvents = [];
       let sofaValue = 0;
       let physicalStats: any = {};
 
       const normalizeTeam = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-      try {
-        // PRIORITÉ : Utiliser l'ID SofaScore s'il est déjà dans notre base de données
-        const existingSofaId = (csvPlayer as any).sofascore_id;
-        
-        if (existingSofaId) {
-          sofaId = existingSofaId;
-          console.log(`✅ [SofaScore] Utilisation de l'ID direct pour ${name}: ${sofaId}`);
-        } else {
-          const sofaResults = await sofaScoreService.searchPlayer(name, team);
-          if (sofaResults.length > 0) {
-            let sofaPlayer = sofaResults[0].entity;
-            
-            // Robust team matching: normalize and compare team names
-            const normalizeTeamDeep = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-              .toLowerCase().replace(/\b(fc|sc|cf|ac|as|us|ss|ssc|afc|bsc|vfb|1\.|sv|tsg|rb|rcd|ud|cd|ca|rc|og|oge|racing|sporting|real|atletico|borussia|bayer|hertha)\b/g, '')
-              .replace(/\s+/g, ' ').trim();
-            
-            // Find the result whose team best matches the CSV team
-            const cTeamNorm = normalizeTeamDeep(team);
-            let bestMatch = sofaResults[0];
-            let bestScore = 0;
-            
-            for (const r of sofaResults) {
-              const sTeamNorm = normalizeTeamDeep(r.entity?.team?.name || '');
-              let score = 0;
-              
-              // Exact containment
-              if (sTeamNorm.includes(cTeamNorm) || cTeamNorm.includes(sTeamNorm)) score += 10;
-              // Word overlap
-              const cWords = cTeamNorm.split(' ').filter((w: string) => w.length > 2);
-              const sWords = sTeamNorm.split(' ').filter((w: string) => w.length > 2);
-              const overlap = cWords.filter((w: string) => sWords.some((sw: string) => sw.includes(w) || w.includes(sw))).length;
-              score += overlap * 3;
-              
-              // Player name validation (last name match)
-              const csvLastName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(' ').pop() || '';
-              const sofaName = (r.entity?.name || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-              if (sofaName.includes(csvLastName) || csvLastName.includes(sofaName.split(' ').pop() || '')) score += 5;
-              
-              if (score > bestScore) { bestScore = score; bestMatch = r; }
-            }
-            
-            sofaPlayer = bestMatch.entity;
-            sofaId = sofaPlayer.id;
-            
-            // Log match quality
-            const matchedTeam = sofaPlayer.team?.name || '?';
-            if (bestScore < 5) {
-              console.warn(`⚠️ [SofaScore] LOW CONFIDENCE match: CSV="${name}" (${team}) → SofaScore="${sofaPlayer.name}" (${matchedTeam}) score=${bestScore}`);
-            } else {
-              console.log(`✅ [SofaScore] Match: "${name}" (${team}) → "${sofaPlayer.name}" (${matchedTeam}) confidence=${bestScore}`);
-            }
-          }
-        }
-
-        if (sofaId) {
-          // 1. Fetch match ratings from the offline DB (always available and instant)
-          try {
-            const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId);
-            if (matchRatings && matchRatings.length > 0) {
-              const playerTeamName = (csvPlayer as any).Squad || '—';
-              const mapped = mapMatchesWithOpponent(matchRatings, playerTeamName);
-              // ALWAYS sort by date descending to get the truly most recent matches
-              (csvPlayer as any)._matchRatings = mapped.sort((a: any, b: any) => b.date - a.date);
-            }
-          } catch (e: any) {
-            console.warn(`[Match Ratings Fallback] Error fetching match ratings for ${sofaId}:`, e.message);
-          }
-
-          // 2. Fetch detailed profile from live SofaScore API
-          try {
-            const details = await sofaScoreService.getPlayerDetails(sofaId);
-            if (details) {
-              physicalStats.height = details.height;
-              physicalStats.foot = details.preferredFoot;
-              if (details.marketValue) sofaValue = details.marketValue;
-              
-              // --- RÉCUPÉRATION PRÉCISE DE LA SAISON 2025/26 ---
-              const seasonsResp = await sofaScoreService.fetchWithCache(`/player/${sofaId}/statistics/seasons`);
-              console.log(`DEBUG [SofaScore] Seasons data keys: ${Object.keys(seasonsResp.data)}`);
-              const allSeasons = seasonsResp.data.uniqueTournamentSeasons || [];
-              
-              if (allSeasons.length > 0) {
-                let targetTournament: any = null;
-                let targetSeason: any = null;
-
-                for (const ut of allSeasons) {
-                  const s2526 = (ut.seasons || []).find((s: any) => s.year === "25/26");
-                  // Prioritize Premier League (17) for David Raya / Arsenal
-                  if (s2526 && ut.uniqueTournament?.id === 17) {
-                    targetTournament = ut.uniqueTournament;
-                    targetSeason = s2526;
-                    break;
-                  }
-                }
-                
-                if (!targetTournament) {
-                  for (const ut of allSeasons) {
-                    const s2526 = (ut.seasons || []).find((s: any) => s.year === "25/26");
-                    if (s2526 && [8, 23, 35, 34, 7].includes(ut.uniqueTournament?.id)) {
-                      targetTournament = ut.uniqueTournament;
-                      targetSeason = s2526;
-                      break;
-                    }
-                  }
-                }
-
-                // Fallback sur la toute première saison disponible si rien trouvé pour 25/26
-                if (!targetTournament && allSeasons[0]) {
-                  targetTournament = allSeasons[0].uniqueTournament;
-                  targetSeason = allSeasons[0].seasons?.[0];
-                }
-
-                if (targetTournament && targetSeason) {
-                  const tid = targetTournament.id;
-                  const sid = targetSeason.id;
-                  
-                  console.log(`🎯 [SofaScore] Saison cible identifiée : ${targetTournament.name} (${targetSeason.year}) -> TID:${tid} SID:${sid}`);
-                  
-                  // 3. Récupérer les stats et la heatmap pour CETTE compétition précise
-                  const [stats, heatmapData] = await Promise.all([
-                    sofaScoreService.getPlayerStatistics(sofaId, tid, sid),
-                    sofaScoreService.getPlayerHeatmap(sofaId, tid, sid)
-                  ]);
-
-                  if (stats) {
-                    sofaStats = stats;
-                    console.log(`✅ [SofaScore] Stats récupérées : Rating=${stats.rating}`);
-                  }
-                  if (heatmapData) {
-                    (csvPlayer as any)._sofaHeatmap = heatmapData;
-                    console.log(`✅ [SofaScore] Heatmap récupérée : ${heatmapData.points?.length} points`);
-                  }
-                }
-              }
-            }
-          } catch (err: any) {
-            console.warn(`[Sofa Details] Live details failed for ${name}, using offline database fallbacks:`, err.message);
-          }
-
-          // ── HARDCODED HEATMAP FALLBACK for David Raya (GK, Arsenal) ───────────
-          if (sofaId === 581310 && !(csvPlayer as any)._sofaHeatmap?.points?.length) {
-            const gkPts: Array<{x: number; y: number; count: number}> = [];
-            const sixYardCenters = [{x:4,y:40},{x:4,y:50},{x:4,y:60},{x:5,y:45},{x:5,y:55},{x:6,y:50},{x:3,y:50}];
-            for (const c of sixYardCenters) {
-              for (let i = 0; i < 6; i++) gkPts.push({x: c.x + (Math.random()-0.5)*3, y: c.y + (Math.random()-0.5)*6, count: 4});
-            }
-            const penCenters = [{x:12,y:30},{x:12,y:50},{x:12,y:70},{x:15,y:20},{x:15,y:80},{x:10,y:40},{x:10,y:60}];
-            for (const c of penCenters) {
-              for (let i = 0; i < 4; i++) gkPts.push({x: c.x + (Math.random()-0.5)*4, y: c.y + (Math.random()-0.5)*8, count: 2});
-            }
-            for (let i = 0; i < 12; i++) {
-              gkPts.push({x: 15 + Math.random()*10, y: Math.random()*15, count: 1});
-              gkPts.push({x: 15 + Math.random()*10, y: 85 + Math.random()*15, count: 1});
-            }
-            for (let i = 0; i < 8; i++) {
-              gkPts.push({x: 50 + Math.random()*15, y: 20 + Math.random()*60, count: 1});
-            }
-            (csvPlayer as any)._sofaHeatmap = { points: gkPts };
-            console.log(`🛡️ [Heatmap Fallback] Raya heatmap injected (${gkPts.length} synthetic GK points)`);
-          }
-          
-          console.log(`[Detailed Data] ${name} -> Final Rating: ${sofaStats?.rating}, Value: ${sofaValue}€`);
-        }
-      } catch (err: any) { console.warn(`[Sofa] skip ${name}:`, err.message); }
-
-
-      // 2. Fetch from Transfermarkt (Fallback for Value & Height)
-      let tmValue = 0;
-      if (sofaValue === 0 || !physicalStats.height) {
-        try {
-          const tmResults = await optimizedTransfermarktApi.searchByMultipleCriteria(name, team);
-          if (tmResults.length > 0) {
-            tmValue = tmResults[0].marketValue || 0;
-            if (!physicalStats.height && tmResults[0].height) physicalStats.height = tmResults[0].height;
-            if (!physicalStats.foot && tmResults[0].foot) physicalStats.foot = tmResults[0].foot;
-            
-            console.log(`[TM Fallback] ${name} -> Val: ${tmValue}, Height: ${tmResults[0].height}`);
-          }
-        } catch (err) { console.warn(`[TM] skip ${name}`); }
+      // PRIORITÉ : Utiliser l'ID SofaScore s'il est déjà dans notre base de données
+      const existingSofaId = (csvPlayer as any).sofascore_id;
+      
+      if (existingSofaId) {
+        sofaId = existingSofaId;
+        console.log(`✅ [Offline] Utilisation de l'ID direct pour ${name}: ${sofaId}`);
       }
 
+      if (sofaId) {
+        // 1. Fetch match ratings from the offline DB (always available and instant)
+        try {
+          const matchRatings = await sofaScoreService.getPlayerMatchRatings(sofaId);
+          if (matchRatings && matchRatings.length > 0) {
+            const playerTeamName = (csvPlayer as any).Squad || '—';
+            const mapped = mapMatchesWithOpponent(matchRatings, playerTeamName);
+            // ALWAYS sort by date descending to get the truly most recent matches
+            (csvPlayer as any)._matchRatings = mapped.sort((a: any, b: any) => b.date - a.date);
+          }
+        } catch (e: any) {
+          console.warn(`[Match Ratings Fallback] Error fetching match ratings for ${sofaId}:`, e.message);
+        }
+      }
+
+      let tmValue = 0;
       let finalValue = sofaValue || tmValue || 0;
 
       // 3. Similar Players
@@ -3597,6 +3439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+
 
 
 
