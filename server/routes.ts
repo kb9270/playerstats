@@ -391,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       let tmValue = 0;
-      let finalValue = sofaValue || tmValue || 0;
+      let finalValue = Number((csvPlayer as any).MarketValue) || sofaValue || tmValue || 0;
 
       // 3. Similar Players
       const pos = (csvPlayer as any).Pos || '';
@@ -3439,6 +3439,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+
+
 
 
 
